@@ -1,0 +1,11 @@
+# Pinned 2026-11-13. Rule: nothing released after 2026-10-30.
+fastapi==0.162.0
+uvicorn==0.54.0
+pydantic==2.14.2
+httpx==0.28.1
+numpy==2.5.4
+pandas==3.1.0
+pyarrow==26.0.0
+pyyaml==6.0.3
+python-dotenv==1.2.4
+supabase==2.33.0

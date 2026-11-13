@@ -1,0 +1,40 @@
+{
+ "candidate_id": "C0011",
+ "generated_at": "2026-11-13T17:35:08+00:00",
+ "generator": "sample-template",
+ "is_simulated": false,
+ "scout": {
+  "summary": "Stacked SNR 4.5 over 29 epochs; best single-frame SNR 0.8.",
+  "facts": [
+   "patch P003",
+   "17 SPHEREx bands measured"
+  ]
+ },
+ "skeptic": {
+  "checks": [
+   {
+    "name": "known_object",
+    "result": "no JPL SBIdent match (sample)"
+   },
+   {
+    "name": "single_frame_visible",
+    "result": "no"
+   },
+   {
+    "name": "artifact_flags",
+    "result": "none in aperture (sample)"
+   }
+  ],
+  "verdict": "sample"
+ },
+ "reporter": {
+  "headline": "Sample dossier",
+  "dossier_md": "This is placeholder text from the SAMPLE bundle.",
+  "mpc_report": null
+ },
+ "verdict": "candidate",
+ "confidence": 0.5,
+ "sources": [
+  "SAMPLE (synthetic placeholder; not NASA data)"
+ ]
+}

@@ -1,0 +1,17 @@
+[project]
+name = "deepfield"
+version = "0.1.0"
+description = "Deep Field: Planet X x SPHEREx shift-and-stack search (NASA Space Apps 2026)"
+requires-python = ">=3.12"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["deepfield*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["../tests"]
+pythonpath = [".", "../apps/api"]

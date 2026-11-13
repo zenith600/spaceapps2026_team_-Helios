@@ -1,0 +1,21 @@
+# Pinned 2026-11-13. Rule: nothing released after 2026-10-30 (14-day rule).
+numpy==2.5.4
+pandas==3.1.0
+pyarrow==26.0.0
+scipy==1.18.1
+astropy==8.0.2
+astropy-healpix==2.0.1
+pyvo==1.9.1
+requests==2.34.2
+pyyaml==6.0.3
+python-dotenv==1.2.4
+pillow==13.0.0
+duckdb==2.0.0
+onnx==1.23.2
+onnxruntime==1.31.1
+anthropic==2.3.0
+pytest==9.2.0
+ruff==0.17.3
+# torch 2.15.0 (2026-10-28). CPU wheel from PyPI; for CUDA install with
+#   pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cu128
+torch==2.15.0

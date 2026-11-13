@@ -1,0 +1,97 @@
+{
+ "probability": [
+  {
+   "p": 0.5,
+   "answer": "real",
+   "skill": {
+    "real_correct": 0,
+    "real_seen": 0,
+    "bogus_correct": 0,
+    "bogus_seen": 0
+   },
+   "expected": 0.6
+  },
+  {
+   "p": 0.3,
+   "answer": "real",
+   "skill": {
+    "real_correct": 7,
+    "real_seen": 7,
+    "bogus_correct": 7,
+    "bogus_seen": 7
+   },
+   "expected": 0.6818181818181819
+  },
+  {
+   "p": 0.8,
+   "answer": "artifact",
+   "skill": {
+    "real_correct": 12,
+    "real_seen": 15,
+    "bogus_correct": 9,
+    "bogus_seen": 10
+   },
+   "expected": 0.5555555555555556
+  },
+  {
+   "p": 0.999,
+   "answer": "nothing",
+   "skill": {
+    "real_correct": 1,
+    "real_seen": 20,
+    "bogus_correct": 1,
+    "bogus_seen": 20
+   },
+   "expected": 0.999
+  },
+  {
+   "p": 0.0,
+   "answer": "real",
+   "skill": {
+    "real_correct": 50,
+    "real_seen": 50,
+    "bogus_correct": 50,
+    "bogus_seen": 50
+   },
+   "expected": 0.018664047151276997
+  }
+ ],
+ "skill": [
+  {
+   "answer": "real",
+   "truth": "real",
+   "skill": {
+    "real_correct": 0,
+    "real_seen": 0,
+    "bogus_correct": 0,
+    "bogus_seen": 0
+   },
+   "p_real": 0.6666666666666666,
+   "p_bogus": 0.6
+  },
+  {
+   "answer": "nothing",
+   "truth": "real",
+   "skill": {
+    "real_correct": 3,
+    "real_seen": 4,
+    "bogus_correct": 2,
+    "bogus_seen": 2
+   },
+   "p_real": 0.6,
+   "p_bogus": 0.7142857142857143
+  },
+  {
+   "answer": "artifact",
+   "truth": "bogus",
+   "skill": {
+    "real_correct": 3,
+    "real_seen": 4,
+    "bogus_correct": 2,
+    "bogus_seen": 2
+   },
+   "p_real": 0.6666666666666666,
+   "p_bogus": 0.75
+  }
+ ]
+}
