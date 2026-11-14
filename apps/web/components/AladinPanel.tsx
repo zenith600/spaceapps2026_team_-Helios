@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 /**
  * "Where is this on the sky?" — CDS's Aladin Lite, which the brief recommends by name.
  *
- * Two things broke this panel, and neither was the code that draws it:
+ * Three things broke this panel, and none was the code that draws it:
  *
  * 1. The library used to be fetched from
  *    https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js, a path CDS has
@@ -19,6 +19,11 @@ import { cn } from "@/lib/utils";
  *    (irsa.ipac.caltech.edu): the same NASA archive every SPHEREx image here already comes
  *    from, already allowlisted, and serving tiles. So surveys are named by their IRSA URL,
  *    which also stops Aladin from consulting CDS at all to find them.
+ *
+ * 3. Startup. Aladin preloads a built-in list of default surveys by asking CDS's MocServer
+ *    about each one, regardless of which survey was requested. Those servers were failing,
+ *    so the panel died with "Failed to fetch" before showing anything. It is now handed
+ *    its survey list explicitly (the three IRSA URLs), so it never contacts CDS to start.
  *
  * Aladin reports survey failures from inside its own promise chains, not through anything
  * this component can `catch`, so they surfaced as a page-wide runtime error. They are now
@@ -111,6 +116,14 @@ export function AladinPanel({ ra, dec, fovDeg, name }: {
         try {
           view.current = A.aladin(box.current, {
             survey: survey.url,
+            // Without this Aladin preloads its built-in default survey list at startup, and
+            // resolves each entry through CDS's MocServer (alaskybis/alasky.unistra.fr) --
+            // servers that were refusing or timing out, which surfaced as "Failed to fetch"
+            // even though the survey we actually asked for, on IRSA, was fine. Plain URL
+            // strings are used directly, so nothing here needs CDS to look anything up.
+            hipsList: SURVEYS.map((s) => s.url),
+            showSettingsControl: false,
+            showSimbadPointerControl: false,
             fov: Math.max(fovDeg * 6, 0.3),
             target: `${ra} ${dec}`,
             cooFrame: "ICRS",
