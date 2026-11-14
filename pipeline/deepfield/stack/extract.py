@@ -5,9 +5,41 @@ import numpy as np
 from scipy.ndimage import maximum_filter
 
 
-def find_peaks(snr: np.ndarray, nden: np.ndarray, threshold: float = 5.0, edge: int = 8, min_sep: int = 4,
+def noise_threshold(snr: np.ndarray, psf_area_px: float = 2.7, edge: int = 8,
+                    safety: float = 1.0) -> float:
+    """The level the *trial-maximised* noise reaches in this map, measured from the map itself.
+
+    A fixed 5-sigma cut is meaningless here. `snr` is already a maximum over every trial at every
+    pixel, which inflates it far above a single-test z-score: on a real two-visit patch with 8038
+    trials the map's own MEDIAN was 4.7, so a 5-sigma threshold passed roughly half of it as
+    "detections". The 14 peaks the first P001 run reported were almost certainly all noise.
+
+    So calibrate against the map: take a robust centre and width (median and MAD, which the one
+    real source cannot move), then add the Gaussian expected-maximum term for the number of
+    independent resolution elements, sqrt(2 ln N). Pixels inside one PSF are not independent,
+    hence `psf_area_px`.
+    """
+    s = np.asarray(snr)[edge:-edge, edge:-edge] if snr.shape[0] > 2 * edge else np.asarray(snr)
+    s = s[np.isfinite(s)]
+    if s.size < 32:
+        return 5.0
+    med = float(np.median(s))
+    sigma = 1.4826 * float(np.median(np.abs(s - med)))
+    if not np.isfinite(sigma) or sigma <= 0:
+        return med + 5.0
+    n_eff = max(s.size / max(psf_area_px, 1.0), 2.0)
+    return med + safety * np.sqrt(2.0 * np.log(n_eff)) * sigma
+
+
+def find_peaks(snr: np.ndarray, nden: np.ndarray, threshold: float | None = None, edge: int = 8, min_sep: int = 4,
                min_coverage: float = 0.5, max_peaks: int = 50) -> list[dict]:
-    """Local maxima of the SNR map above threshold, away from the edges and in well-covered pixels."""
+    """Local maxima of the SNR map above threshold, away from the edges and in well-covered pixels.
+
+    `threshold=None` calibrates it from the map with `noise_threshold`, which is what you want
+    unless you are deliberately probing a fixed level.
+    """
+    if threshold is None:
+        threshold = noise_threshold(snr, edge=edge)
     s = np.where(np.isfinite(snr), snr, -np.inf)
     cov_ok = nden >= min_coverage * np.nanmedian(nden[nden > 0]) if np.any(nden > 0) else np.ones_like(nden, bool)
     local = maximum_filter(s, size=2 * min_sep + 1)
@@ -36,9 +68,14 @@ def peak_near(snr: np.ndarray, x: float, y: float, radius: float = 2.5) -> tuple
     return float(sub[k]), float(xx[k]), float(yy[k])
 
 
-def rule_score(snr_stack: float, snr_single_max: float, stationary: bool, known: bool) -> float:
-    """Transparent heuristic score in [0, 1]: high stacked SNR, invisible in singles, not stationary, not known."""
-    s = 1 / (1 + np.exp(-(snr_stack - 5.0) / 1.5))
+def rule_score(snr_stack: float, snr_single_max: float, stationary: bool, known: bool,
+               threshold: float = 5.0) -> float:
+    """Transparent heuristic score in [0, 1]: high stacked SNR, invisible in singles, not stationary, not known.
+
+    `threshold` is the patch's calibrated noise level, so the score is centred on what counts as
+    a detection *in that map* rather than on a fixed 5 sigma.
+    """
+    s = 1 / (1 + np.exp(-(snr_stack - threshold) / 1.5))
     if snr_single_max > 4:
         s *= 0.5      # visible in a single frame: more likely a static residual or artifact
     if stationary:

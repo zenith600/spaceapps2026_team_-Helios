@@ -11,6 +11,16 @@
    "dec_deg": -7.245147000000003,
    "n_points": 40,
    "n_bands": 37,
+   "n_exposures": 44,
+   "n_excluded": 4,
+   "quality": {
+    "n_usable": 40,
+    "n_exposures": 44,
+    "flags": [
+     "source"
+    ],
+    "saturated": false
+   },
    "points": [
     {
      "wave_um": 0.7487,
@@ -382,6 +392,16 @@
    "dec_deg": -7.245147000000003,
    "n_points": 40,
    "n_bands": 37,
+   "n_exposures": 44,
+   "n_excluded": 4,
+   "quality": {
+    "n_usable": 40,
+    "n_exposures": 44,
+    "flags": [
+     "source"
+    ],
+    "saturated": false
+   },
    "points": [
     {
      "wave_um": 0.7487,
@@ -753,6 +773,16 @@
    "dec_deg": -7.245147000000003,
    "n_points": 40,
    "n_bands": 37,
+   "n_exposures": 44,
+   "n_excluded": 4,
+   "quality": {
+    "n_usable": 40,
+    "n_exposures": 44,
+    "flags": [
+     "source"
+    ],
+    "saturated": false
+   },
    "points": [
     {
      "wave_um": 0.7487,
@@ -1124,6 +1154,16 @@
    "dec_deg": -7.2895614555024935,
    "n_points": 42,
    "n_bands": 39,
+   "n_exposures": 44,
+   "n_excluded": 2,
+   "quality": {
+    "n_usable": 42,
+    "n_exposures": 44,
+    "flags": [
+     "source"
+    ],
+    "saturated": false
+   },
    "points": [
     {
      "wave_um": 0.7487,
@@ -1513,6 +1553,16 @@
    "dec_deg": -7.200728167088383,
    "n_points": 39,
    "n_bands": 36,
+   "n_exposures": 44,
+   "n_excluded": 5,
+   "quality": {
+    "n_usable": 39,
+    "n_exposures": 44,
+    "flags": [
+     "artifact"
+    ],
+    "saturated": false
+   },
    "points": [
     {
      "wave_um": 0.7487,
@@ -1875,6 +1925,16 @@
    "dec_deg": -7.226354168250972,
    "n_points": 41,
    "n_bands": 38,
+   "n_exposures": 44,
+   "n_excluded": 3,
+   "quality": {
+    "n_usable": 40,
+    "n_exposures": 44,
+    "flags": [
+     "artifact"
+    ],
+    "saturated": false
+   },
    "points": [
     {
      "wave_um": 0.7487,

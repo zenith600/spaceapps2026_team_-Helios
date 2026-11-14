@@ -259,7 +259,26 @@ tolerance read from the codec rather than guessed.
  "source":"…"}
 ```
 
-## 8. Honest limits shown in the UI
+## 8. When a pixel has no spectrum
+
+Bright sources saturate. SPHEREx's Level 2 pipeline zeroes and flags the saturated core, so
+clicking the obvious bright blob on R Draconis finds **0 of 93 exposures usable** — 26 at 5
+pixels out, 75 at 8. That is a real instrumental limit, but an empty chart with no explanation
+reads as a broken feature, so the spectrum response carries a `quality` block:
+
+```jsonc
+{"n_usable": 0, "n_exposures": 93, "flags": ["source", "bad_pixel"], "saturated": true,
+ "reason": "No exposure has usable data at this pixel. This source is bright enough to saturate…",
+ "nearest_usable": {"x": 33, "y": 29, "dx": 4, "dy": 0, "n_usable": 48, "distance_arcsec": 24.6}}
+```
+
+The panel shows the reason and a button that jumps to the nearest usable pixel. The flag names
+come from a per-pixel bitmask (`pixel_quality.flag_class` in `sky.json`, unioned over exposures)
+over the same four classes as the contamination overlay, so the explanation and the overlay agree.
+
+Computed identically in Python and TypeScript, and held together by the cross-language test.
+
+## 9. Honest limits shown in the UI
 
 - 6.15″ pixels: crowded fields blend. Stated on the page.
 - "N of 102 bands", never "102 bands".

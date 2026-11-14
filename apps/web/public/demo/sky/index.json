@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated_at": "2026-11-14T09:14:33+00:00",
+ "generated_at": "2026-11-14T09:52:04+00:00",
  "source": "NASA SPHEREx Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
  "collections_at_bake_time": [
   "spherex_dr1",
@@ -27,7 +27,7 @@
    "baseline_days": 402.8,
    "mjd_min": 60902.865380749,
    "mjd_max": 61305.628686814,
-   "generated_at": "2026-11-14T09:11:42+00:00"
+   "generated_at": "2026-11-14T09:51:42+00:00"
   },
   {
    "slug": "ra331.0438-dec-56.7827-fov0.100",
@@ -45,7 +45,7 @@
    "baseline_days": 525.6,
    "mjd_min": 60789.85618796,
    "mjd_max": 61315.478741768,
-   "generated_at": "2026-11-14T09:12:15+00:00"
+   "generated_at": "2026-11-14T09:51:45+00:00"
   },
   {
    "slug": "ra133.7951-dec-7.2451-fov0.100",
@@ -63,7 +63,7 @@
    "baseline_days": 373.6,
    "mjd_min": 60800.70069465,
    "mjd_max": 61174.287883944,
-   "generated_at": "2026-11-14T09:12:17+00:00"
+   "generated_at": "2026-11-14T09:51:47+00:00"
   },
   {
    "slug": "ra76.9565-dec+30.4014-fov0.100",
@@ -81,7 +81,7 @@
    "baseline_days": 380.5,
    "mjd_min": 60919.420312786,
    "mjd_max": 61299.896562983,
-   "generated_at": "2026-11-14T09:12:18+00:00"
+   "generated_at": "2026-11-14T09:51:49+00:00"
   },
   {
    "slug": "ra248.1676-dec+66.7550-fov0.100",
@@ -92,14 +92,14 @@
    "ra_deg": 248.16761083,
    "dec_deg": 66.75497942,
    "fov_deg": 0.1,
-   "n_frames": 91,
+   "n_frames": 93,
    "n_visits": 31,
-   "n_bands": 81,
+   "n_bands": 82,
    "bands_total": 102,
    "baseline_days": 425.9,
    "mjd_min": 60811.956495321,
    "mjd_max": 61237.873900124,
-   "generated_at": "2026-11-14T09:14:33+00:00"
+   "generated_at": "2026-11-14T09:52:04+00:00"
   }
  ],
  "note": "Pre-baked so the viewer opens instantly and works with no API and no network. Any other coordinate is fetched live from IRSA."

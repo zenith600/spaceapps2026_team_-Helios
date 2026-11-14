@@ -337,7 +337,8 @@ function SkyViewer() {
               <Card>
                 <CardHeader><CardTitle>Spectrum on the fly</CardTitle></CardHeader>
                 <CardContent>
-                  <SkySpectrum bundle={bundle} pixel={pixel} radius={radius} onRadius={setRadius} />
+                  <SkySpectrum bundle={bundle} pixel={pixel} radius={radius} onRadius={setRadius}
+                    onJump={setPixel} />
                 </CardContent>
               </Card>
 

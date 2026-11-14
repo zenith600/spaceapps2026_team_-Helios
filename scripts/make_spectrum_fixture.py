@@ -38,6 +38,8 @@ def main() -> int:
             "x": s["x"], "y": s["y"], "r": s["r"],
             "ra_deg": s["ra_deg"], "dec_deg": s["dec_deg"],
             "n_points": s["n_points"], "n_bands": s["n_bands"],
+            "n_exposures": s["n_exposures"], "n_excluded": s["n_excluded"],
+            "quality": {k: s["quality"][k] for k in ("n_usable", "n_exposures", "flags", "saturated")},
             "points": [{k: p[k] for k in ("wave_um", "flux_mjysr", "flux_err_mjysr",
                                           "detector", "visit", "n_pixels", "obs_id")}
                        for p in s["points"]],

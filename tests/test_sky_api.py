@@ -393,6 +393,104 @@ def test_spectrum_reports_sky_coordinates_of_the_pixel(client, fake_bundle):
     assert s["dec_deg"] == pytest.approx(20.0, abs=1e-3)
 
 
+# ---------------------------------------------------------------------------
+# Pixel quality: a saturated core is an instrumental limit, not an empty panel
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def saturated_bundle(tmp_path, monkeypatch):
+    """A bundle whose centre is flagged in every exposure, like a star that saturates.
+
+    R Draconis does exactly this on real data: 0 of 91 exposures are usable at the centre
+    pixel, 26 at 5 px out, 75 at 8 px out. SPHEREx zeroes and flags the saturated core.
+    """
+    slug = SVC.SkyRequest(40.0, 10.0, 0.1).slug
+    d = tmp_path / slug
+    d.mkdir(parents=True)
+    npix, n = 21, 8
+    rng = np.random.default_rng(11)
+    flux = rng.normal(1.0, 0.05, (n, npix, npix)).astype(np.float32)
+    good = np.ones((n, npix, npix), bool)
+    c = npix // 2
+    good[:, c - 2:c + 3, c - 2:c + 3] = False          # the flagged core, every exposure
+    flag_class = np.zeros((npix, npix), np.uint16)
+    flag_class[c - 2:c + 3, c - 2:c + 3] = (1 << 0) | (1 << 3)      # source + bad_pixel
+    np.savez_compressed(
+        d / "cube.npz", flux=flux, var=np.full((n, npix, npix), 0.01, np.float32), good=good,
+        flag_class=flag_class, mjd=np.linspace(60800, 61100, n),
+        wave_um=np.linspace(1.0, 4.0, n).astype(np.float32),
+        bandwidth_um=np.full(n, 0.01, np.float32), detector=np.arange(n, dtype=np.int16) % 6 + 1,
+        visit=np.arange(n, dtype=np.int16), obs_id=np.array([f"O{i}" for i in range(n)], dtype=object))
+    (d / "sky.json").write_text(json.dumps({
+        "schema_version": 1, "slug": slug, "ra_deg": 40.0, "dec_deg": 10.0, "fov_deg": 0.1,
+        "npix": npix, "source": "NASA SPHEREx via IRSA", "generated_at": "2026-11-14T00:00:00+00:00",
+        "wcs": {"ctype": ["RA---TAN", "DEC--TAN"], "crval": [40.0, 10.0],
+                "crpix": [npix / 2 + 0.5, npix / 2 + 0.5], "cdelt": [-6.15 / 3600, 6.15 / 3600]},
+        "coverage": {"n_used": n, "n_bands": n, "bands_total": 102},
+        "pixel_quality": {"flag_class": [int(v) for v in flag_class.ravel()],
+                          "classes": ["source", "transient", "artifact", "bad_pixel"], "note": ""},
+        "freshness": {"built_from": {}, "built_at": ""},
+        "frames": {"epochs": [], "detectors": [], "visits": []},
+    }))
+    monkeypatch.setattr(SVC, "SKY_DIR", tmp_path)
+    import deepfield_api.sky as API_SKY
+    monkeypatch.setattr(API_SKY.SVC, "SKY_DIR", tmp_path)
+    return slug, d, npix, n
+
+
+def test_saturated_core_explains_itself(client, saturated_bundle):
+    """Clicking the obvious bright blob must say why there is nothing, not just return nothing."""
+    slug, _d, npix, n = saturated_bundle
+    c = npix // 2
+    s = client.get(f"/sky/spectrum/{slug}", params={"x": c, "y": c, "r": 0}).json()
+    assert s["n_points"] == 0
+    assert s["n_exposures"] == n and s["n_excluded"] == n
+    q = s["quality"]
+    assert q["n_usable"] == 0
+    assert q["saturated"] is True
+    assert "saturate" in q["reason"]
+    assert "bad_pixel" in q["flags"]
+
+
+def test_saturated_core_points_at_a_usable_pixel(client, saturated_bundle):
+    slug, _d, npix, n = saturated_bundle
+    c = npix // 2
+    q = client.get(f"/sky/spectrum/{slug}", params={"x": c, "y": c, "r": 0}).json()["quality"]
+    near = q["nearest_usable"]
+    assert near is not None
+    assert near["n_usable"] >= n // 2
+    assert max(abs(near["dx"]), abs(near["dy"])) == 3, "the flagged core is 5 px across"
+    assert near["distance_arcsec"] > 0
+    # and that pixel really does give a spectrum
+    s2 = client.get(f"/sky/spectrum/{slug}", params={"x": near["x"], "y": near["y"], "r": 0}).json()
+    assert s2["n_points"] == n
+    assert s2["quality"]["reason"] is None
+
+
+def test_a_healthy_pixel_says_nothing(client, saturated_bundle):
+    """No nagging on pixels that are fine."""
+    slug, _d, npix, _n = saturated_bundle
+    s = client.get(f"/sky/spectrum/{slug}", params={"x": 1, "y": 1, "r": 0}).json()
+    assert s["quality"]["reason"] is None
+    assert s["quality"]["nearest_usable"] is None
+    assert s["n_excluded"] == 0
+
+
+def test_partially_flagged_pixel_reports_how_many_survived(client, saturated_bundle, tmp_path):
+    slug, d, npix, n = saturated_bundle
+    with np.load(d / "cube.npz", allow_pickle=True) as z:
+        data = {k: z[k] for k in z.files}
+    good = data["good"]
+    good[: n - 2, 0, 0] = False          # only 2 of 8 usable at (0,0)
+    data["good"] = good
+    np.savez_compressed(d / "cube.npz", **data)
+    s = client.get(f"/sky/spectrum/{slug}", params={"x": 0, "y": 0, "r": 0}).json()
+    assert s["n_points"] == 2
+    assert s["quality"]["n_usable"] == 2
+    assert "Only 2 of 8" in s["quality"]["reason"]
+    assert s["quality"]["saturated"] is False
+
+
 def test_freshness_flags_new_data(client, fake_bundle, monkeypatch):
     slug, _ = fake_bundle
     import deepfield_api.sky as API_SKY

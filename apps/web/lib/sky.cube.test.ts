@@ -66,6 +66,14 @@ describe("uint16 cube decoder matches the Python reference", () => {
         });
       });
 
+      it("counts usable and excluded exposures the same way Python does", () => {
+        expect(got.n_exposures).toBe(c.n_exposures);
+        expect(got.n_excluded).toBe(c.n_excluded);
+        expect(got.quality.n_usable).toBe(c.quality.n_usable);
+        expect(got.quality.saturated).toBe(c.quality.saturated);
+        expect([...got.quality.flags].sort()).toEqual([...c.quality.flags].sort());
+      });
+
       it("maps the pixel to the same sky position", () => {
         // Python inverts the full TAN projection; the browser uses the small-angle
         // approximation, which is good to well under a pixel over a 0.1 deg field.
@@ -74,6 +82,50 @@ describe("uint16 cube decoder matches the Python reference", () => {
       });
     });
   }
+});
+
+// R Draconis is a real saturation case: it is bright enough that SPHEREx zeroes and flags its
+// core in every exposure, so a click on the obvious bright blob has no photometry behind it.
+// The viewer has to explain that rather than show an empty panel.
+describe("real saturated source (R Draconis)", () => {
+  const dir = resolve(__dirname, "../public/demo/sky/ra248.1676-dec+66.7550-fov0.100");
+  const rdra = JSON.parse(readFileSync(resolve(dir, "sky.json"), "utf8")) as SkyBundle;
+  const raw2 = readFileSync(resolve(dir, "cube.u16"));
+  const cube2 = new Uint16Array(raw2.buffer, raw2.byteOffset, raw2.byteLength / 2);
+  const c = Math.floor(rdra.npix / 2);
+
+  it("has no usable exposure at the saturated centre", () => {
+    const s = decodeSpectrum(rdra, cube2, c, c, 0);
+    expect(s.n_points).toBe(0);
+    expect(s.quality.n_usable).toBe(0);
+    expect(s.n_excluded).toBe(s.n_exposures);
+  });
+
+  it("says why, and names the flag classes", () => {
+    const q = decodeSpectrum(rdra, cube2, c, c, 0).quality;
+    expect(q.reason).toMatch(/saturate/);
+    expect(q.saturated).toBe(true);
+    expect(q.flags.length).toBeGreaterThan(0);
+  });
+
+  it("points at a nearby pixel that does have data", () => {
+    const q = decodeSpectrum(rdra, cube2, c, c, 0).quality;
+    expect(q.nearest_usable).not.toBeNull();
+    const near = q.nearest_usable!;
+    expect(near.n_usable).toBeGreaterThanOrEqual(Math.floor(rdra.coverage.n_used / 2));
+    expect(near.distance_arcsec).toBeGreaterThan(0);
+    // and that pixel really does yield a spectrum
+    const s2 = decodeSpectrum(rdra, cube2, near.x, near.y, 0);
+    expect(s2.n_points).toBeGreaterThanOrEqual(near.n_usable);
+    expect(s2.quality.reason).toBeNull();
+  });
+
+  it("usable exposures increase with distance from the saturated core", () => {
+    const counts = [0, 2, 5, 8, 12].map((d) => decodeSpectrum(rdra, cube2, c + d, c, 0).quality.n_usable);
+    expect(counts[0]).toBe(0);
+    expect(counts[counts.length - 1]).toBeGreaterThan(counts[1]);
+    for (let i = 1; i < counts.length; i++) expect(counts[i]).toBeGreaterThanOrEqual(counts[i - 1]);
+  });
 });
 
 describe("decoder edge cases", () => {

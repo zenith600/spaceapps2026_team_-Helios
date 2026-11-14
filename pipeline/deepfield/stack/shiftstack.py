@@ -54,14 +54,38 @@ def visit_groups(mjds: np.ndarray, gap_days: float = 30.0) -> np.ndarray:
     return lab
 
 
-def prepare(frames: list[Frame], mask_known_sources: bool = True, dev: torch.device | None = None) -> Prepared:
+#: Visits needed before the global median is a clean static template. With V visits a moving
+#: source occupies 1/V of the frames at any one position, so the per-pixel median is unaffected
+#: once V >= 3. At V == 2 it sits exactly on the 50% boundary and is unreliable.
+MIN_VISITS_FOR_CROSS_VISIT = 3
+
+
+def prepare(frames: list[Frame], mask_known_sources: bool = True, dev: torch.device | None = None,
+            template: str = "auto") -> Prepared:
     """Static-sky removal + matched filter.
 
-    SPHEREx observes at ~90 deg solar elongation, where a distant object's parallax motion within one visit is
-    sub-pixel. A per-pixel median over all epochs would therefore absorb the object. With two or more visits
-    (months apart) each visit's static template is the median of the *other* visits: stars cancel, a mover that
-    sits at different positions in different visits survives. With one visit we fall back to the global median
-    and the search is a plain co-add (no distance information) - this is reported in the patch summary.
+    SPHEREx observes at ~90 deg solar elongation, where a distant object's parallax motion within
+    one visit is sub-pixel, so a median over a single visit would absorb the object.
+
+    Choosing the static template across visits is subtler than it looks. Building visit g's
+    template from the median of the *other* visits (`template="others"`) seems right -- stars
+    cancel, and the mover is at a different place in each visit -- but with V visits the source
+    occupies 1/(V-1) of the frames going into that median. At V == 2 that is 100%: the template
+    *is* the other visit, source included, so subtracting it stamps a NEGATIVE image of the source
+    into the residual at the other visit's position. Those ghosts are real signal, and the trial
+    search locks onto them, producing peaks stronger than the true one. (Measured on synthetic
+    two-visit data: visit 1's residual reads -3.97 at visit 0's source position for an amp-8
+    source in unit noise.)
+
+    The global median over all epochs does not have this problem once V >= 3, because the source
+    is then at any one position in only 1/V of the frames. So:
+
+      template="global"  per-pixel median of every epoch. Correct for V >= 3.
+      template="others"  median of the other visits. Kept for comparison; see the ghosts above.
+      template="auto"    global, which is right for V >= 3 and the lesser evil at V <= 2.
+
+    With one visit the search is a plain co-add with no distance information, as reported in the
+    patch summary.
     """
     dev = dev or device()
     imgs = np.stack([f.image for f in frames]).astype(np.float32)
@@ -73,10 +97,13 @@ def prepare(frames: list[Frame], mask_known_sources: bool = True, dev: torch.dev
     groups = visit_groups(mjds_arr)
     with np.errstate(all="ignore"):
         global_static = np.nanmedian(imgs, axis=0)
+    use_others = template == "others"
+    if template not in ("auto", "global", "others"):
+        raise ValueError(f"template must be auto|global|others, got {template!r}")
     templates = {}
     for g in np.unique(groups):
         others = imgs[groups != g]
-        if len(np.unique(groups)) >= 2 and len(others) >= 3:
+        if use_others and len(np.unique(groups)) >= 2 and len(others) >= 3:
             with np.errstate(all="ignore"):
                 t = np.nanmedian(others, axis=0)
         else:

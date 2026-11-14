@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Plot, darkLayout } from "@/components/Plot";
+import { Button } from "@/components/ui/button";
 import { SourceTag } from "@/components/Tags";
 import { type SkyBundle, type Spectrum, formatDec, formatRa, getSpectrum, mjdLabel } from "@/lib/sky";
+import { cn } from "@/lib/utils";
 
 const DETECTOR_COLOURS = ["#f59e0b", "#60a5fa", "#22c55e", "#f472b6", "#e6e8ee", "#a78bfa"];
 
@@ -12,11 +14,12 @@ const DETECTOR_COLOURS = ["#f59e0b", "#60a5fa", "#22c55e", "#f472b6", "#e6e8ee",
  * different band, so a stack of exposures *is* a spectrum -- that is what makes this
  * possible without a dedicated spectral extraction.
  */
-export function SkySpectrum({ bundle, pixel, radius, onRadius }: {
+export function SkySpectrum({ bundle, pixel, radius, onRadius, onJump }: {
   bundle: SkyBundle;
   pixel: { x: number; y: number } | null;
   radius: number;
   onRadius: (r: number) => void;
+  onJump?: (p: { x: number; y: number }) => void;
 }) {
   const [spec, setSpec] = useState<Spectrum | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +82,28 @@ export function SkySpectrum({ bundle, pixel, radius, onRadius }: {
       {error ? <p className="rounded border border-danger/40 bg-danger/10 p-2 text-[11px] text-danger">{error}</p> : null}
       {loading && !spec ? <p className="text-xs text-muted">building spectrum…</p> : null}
 
+      {/* A saturated core is a real instrumental limit, not a broken panel. Say so. */}
+      {spec?.quality?.reason ? (
+        <div className={cn("flex flex-col gap-2 rounded border p-2 text-[11px]",
+          spec.quality.saturated ? "border-accent/40 bg-accent/10" : "border-line bg-panel")}>
+          <p className={spec.quality.saturated ? "text-accent" : "text-muted"}>{spec.quality.reason}</p>
+          <div className="flex flex-wrap items-center gap-2 text-muted">
+            <span className="mono">{spec.quality.n_usable} of {spec.quality.n_exposures} exposures usable here</span>
+            {spec.quality.flags.length ? (
+              <span className="mono">· flagged: {spec.quality.flags.map((f) => f.replace("_", " ")).join(", ")}</span>
+            ) : null}
+          </div>
+          {spec.quality.nearest_usable && onJump ? (
+            <div>
+              <Button size="sm" variant="outline"
+                onClick={() => onJump({ x: spec.quality.nearest_usable!.x, y: spec.quality.nearest_usable!.y })}>
+                jump {spec.quality.nearest_usable.distance_arcsec}″ to the nearest usable pixel
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       {spec && spec.points.length > 0 ? (
         <>
           <div className="h-60">
@@ -115,10 +140,6 @@ export function SkySpectrum({ bundle, pixel, radius, onRadius }: {
         </>
       ) : null}
 
-      {spec && spec.points.length === 0 ? (
-        <p className="text-xs text-muted">No good pixels at this position in any exposure — it is probably outside the
-          overlap of the frames, or entirely flagged.</p>
-      ) : null}
     </div>
   );
 }

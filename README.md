@@ -27,7 +27,7 @@ instantly, with no API and no network:
 | Epsilon Indi Ba/Bb | 55 | 19 | 526 d | 49 / 102 |
 | WISE 0855−0714 | 44 | 11 | 374 d | 41 / 102 |
 | RW Aurigae | 42 | 7 | 380 d | 42 / 102 |
-| R Draconis | 91 | 31 | 426 d | 81 / 102 |
+| R Draconis | 93 | 31 | 426 d | 82 / 102 |
 
 Any other coordinate is fetched live from IRSA when the API is running.
 

@@ -53,6 +53,7 @@ export type SkyBundle = {
   static: { png: string; method: string; note: string };
   scale: { mode: string; vmin: number; vmax: number; unit: string; note: string };
   flag_legend: { id: string; colour: string; flags: string[] }[];
+  pixel_quality?: { flag_class: number[]; classes: string[]; note: string };
   limits: string[];
   cube_u16?: CubeU16;
   file_base?: string;
@@ -90,10 +91,17 @@ export type SpectrumPoint = {
   wave_um: number; bandwidth_um: number; flux_mjysr: number; flux_err_mjysr: number;
   mjd: number; detector: number; visit: number; obs_id: string; n_pixels: number;
 };
+export type PixelQuality = {
+  n_usable: number; n_exposures: number; flags: string[]; saturated: boolean;
+  reason: string | null;
+  nearest_usable: { x: number; y: number; dx: number; dy: number; n_usable: number; distance_arcsec: number } | null;
+};
+
 export type Spectrum = {
   slug: string; x: number; y: number; r: number; ra_deg: number; dec_deg: number;
-  n_points: number; n_bands: number; bands_total: number; points: SpectrumPoint[];
-  unit: string; source: string; note: string;
+  n_points: number; n_exposures: number; n_excluded: number;
+  n_bands: number; bands_total: number; points: SpectrumPoint[];
+  unit: string; source: string; note: string; quality: PixelQuality;
 };
 
 export const FOV_MIN = 0.02;
@@ -296,12 +304,79 @@ export function decodeSpectrum(bundle: SkyBundle, data: Uint16Array, x: number, 
   return {
     slug, x: xi, y: yi, r: rr, ra_deg: ra, dec_deg: dec,
     n_points: points.length,
+    n_exposures: n,
+    n_excluded: n - points.length,
     n_bands: new Set(points.map((p) => p.wave_um.toFixed(2))).size,
     bands_total: bundle.coverage.bands_total ?? BANDS_TOTAL,
     points, unit: "MJy/sr", source: bundle.source,
+    quality: pixelQuality(bundle, data, xi, yi),
     note: "Each point is one SPHEREx exposure, at the wavelength that exposure's filter position gave this pixel. " +
       "Points at the same wavelength from different visits show variability, not spectral structure.",
   };
+}
+
+/** How many exposures are usable at one pixel (the same rule the spectrum applies). */
+function usableAt(bundle: SkyBundle, data: Uint16Array, x: number, y: number): number {
+  const cube = bundle.cube_u16!;
+  const [, n, ny, nx] = cube.shape;
+  if (x < 0 || x >= nx || y < 0 || y >= ny) return 0;
+  const plane = ny * nx, off = y * nx + x;
+  let c = 0;
+  for (let i = 0; i < n; i++) {
+    if (data[i * plane + off] !== cube.nodata_code && data[(n + i) * plane + off] !== cube.nodata_code) c++;
+  }
+  return c;
+}
+
+/**
+ * Why does this pixel have few or no usable exposures, and where should the user click?
+ * Mirrors `pixel_quality` in pipeline/deepfield/sky/service.py. A bright source saturates
+ * the detector and SPHEREx flags its core; an unexplained empty panel reads as a broken
+ * feature rather than the real instrumental limit it is.
+ */
+export function pixelQuality(bundle: SkyBundle, data: Uint16Array, x: number, y: number): PixelQuality {
+  const cube = bundle.cube_u16!;
+  const [, n, ny, nx] = cube.shape;
+  const nUsed = usableAt(bundle, data, x, y);
+  const pq = bundle.pixel_quality;
+  const here = pq ? (pq.flag_class[y * bundle.npix + x] ?? 0) : 0;
+  const flags = pq ? pq.classes.filter((_c, i) => here & (1 << i)) : [];
+
+  const out: PixelQuality = { n_usable: nUsed, n_exposures: n, flags, saturated: false, reason: null, nearest_usable: null };
+  const want = Math.max(1, Math.floor(n / 2));
+  if (nUsed >= want) return out;
+
+  const blocking = flags.includes("bad_pixel") || flags.includes("artifact");
+  out.saturated = nUsed === 0 && blocking;
+  out.reason = nUsed === 0
+    ? "No exposure has usable data at this pixel. " +
+      (blocking
+        ? "This source is bright enough to saturate the detector: SPHEREx's pipeline zeroes and flags the " +
+          "saturated core, so there is no photometry to show here. "
+        : "Every exposure flags it, or it falls outside the overlap of the frames. ") +
+      "Click a few pixels away from the centre for a real spectrum."
+    : `Only ${nUsed} of ${n} exposures have usable data at this pixel; the rest are flagged. ` +
+      "The spectrum below is built from those few.";
+
+  outer:
+  for (let radius = 1; radius < Math.min(nx, ny) / 2; radius++) {
+    for (let dy = -radius; dy <= radius; dy++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
+        const xx = x + dx, yy = y + dy;
+        if (xx < 0 || xx >= nx || yy < 0 || yy >= ny) continue;
+        const c = usableAt(bundle, data, xx, yy);
+        if (c >= want) {
+          out.nearest_usable = {
+            x: xx, y: yy, dx, dy, n_usable: c,
+            distance_arcsec: Math.round(Math.hypot(dx, dy) * bundle.pixel_arcsec * 10) / 10,
+          };
+          break outer;
+        }
+      }
+    }
+  }
+  return out;
 }
 
 export async function getSpectrum(bundle: SkyBundle, x: number, y: number, r = 1): Promise<Spectrum> {

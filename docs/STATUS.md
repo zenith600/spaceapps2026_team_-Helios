@@ -20,7 +20,7 @@ run against the live service and the numbers quoted are from that run.
 | Test on Epsilon Indi B | **Real.** 55 frames, 19 visits, 526-day baseline, 49/102 bands. |
 | Test on WISE 0855 | **Real.** 44 frames, 11 visits, 374-day baseline, 41/102 bands. |
 | Test on RW Aurigae | **Real.** 42 frames, 7 visits, 380-day baseline, 42/102 bands. |
-| Test on R Draconis | **Real.** 91 frames, 31 visits, 426-day baseline, 81/102 bands. |
+| Test on R Draconis | **Real.** 93 frames, 31 visits, 426-day baseline, 82/102 bands. Its core saturates (0 of 93 exposures usable at the centre pixel, 75 at 8 px out), which the spectrum panel now explains instead of showing an empty chart. |
 
 ### Optional considerations from the brief
 
@@ -28,7 +28,7 @@ run against the live service and the numbers quoted are from that run.
 | --- | --- |
 | Easy to update with new data releases | **Real.** Collections are discovered from IRSA ObsTAP, not hardcoded; a background refresher reports new exposures and new releases; a weekly workflow re-bakes the demo. See §Live refresh. |
 | Creative use of the 102 bands | **Partly real.** Per-detector coadds, per-visit coadds, per-exposure wavelengths, honest "N of 102" everywhere. Not done: a colour composite across detectors. |
-| Spectra on the fly | **Real.** Click a pixel; the spectrum is assembled at click time from the per-exposure cube, in the browser on a static deployment or in the API otherwise. |
+| Spectra on the fly | **Real.** Click a pixel; the spectrum is assembled at click time from the per-exposure cube, in the browser on a static deployment or in the API otherwise. A pixel with no usable data explains why (saturation, flags) and offers a jump to the nearest usable pixel. |
 | Add/subtract images from different times | **Partly real.** Stack-all and static-sky overlays, and difference-from-first-visit frames. Not done: user-chosen arbitrary A−B pairs. |
 | Let users choose the field of view | **Real.** 0.02°–0.5°, in the URL. |
 | Overlay other telescopes (Gaia, WISE) | **Not done.** |
@@ -63,7 +63,7 @@ run against the live service and the numbers quoted are from that run.
 
 | Thing | Why |
 | --- | --- |
-| `test_stack_two_visits` fails | The cross-visit parallax template puts the peak at (12, 99) instead of (85, 77). Pre-existing, predates the Sky Viewer work, untouched by it. Either fix the trial geometry or cut the feature. |
+| Two-visit patches cannot be localised | **Diagnosed and now enforced, not a bug.** Two time samples cannot separate parallax (curved in time) from proper motion (linear): a wrong (distance, rate) pair reproduces the same inter-visit shift and peaks elsewhere, often harder than the truth. Measured: the search put its peak 73 px from an amp-8 source it had ample signal to find. Three visits recover the position; four recover the distance to 0.4%. `run_patch` now searches distance only at two visits and says so in the summary. See §Cross-visit search. |
 | Nothing is deployed | No Vercel, Fly.io or Supabase credentials on this machine. `vercel.json`, `fly.toml`, Dockerfiles and the Supabase migration are all committed and ready; the deploy itself is a human action. |
 | CDS Sesame resolution | The CDS load balancer currently sends every request to `vizier.idia.ac.za`, which is timing out. Name resolution therefore falls back to the built-in catalogue, which covers the five test targets and a few more. Not a blocker for the demo; typed coordinates always work. |
 | ONNX in the browser | Model exported and validated in Python; not loaded client-side. |
@@ -89,12 +89,38 @@ Three independent layers, so no single thing has to be remembered:
 Knobs: `SKY_REFRESH_MINUTES`, `SKY_AUTO_REBUILD`, `SKY_ALLOW_LIVE`, `SKY_FETCH_WORKERS`,
 `SKY_MAX_ACTIVE_JOBS`, `SKY_FRESHNESS_TTL_HOURS`, `SPHEREX_COLLECTIONS`.
 
+## Cross-visit search — what the visit count buys you
+
+Measured on synthetic patches (a source at 500 AU plus two variable stars, amp 8 in unit noise):
+
+| Visits | Result |
+| --- | --- |
+| 1 | Plain co-add. No distance information; the global median absorbs a sub-pixel mover. |
+| 2 | **Position not recoverable.** Peak lands 73 px away even though the source is strong. Two time samples cannot separate parallax from proper motion. |
+| 3 | Position recovered to within 2 px. Distance poorly constrained. |
+| 4 | Position recovered; distance 498 AU against a true 500 AU. |
+
+Two further findings, both now pinned by tests:
+
+- **The detection threshold was meaningless.** The SNR map is a *maximum over every trial* at
+  every pixel, which inflates it far above a single-test z-score. On a real two-visit patch with
+  8038 trials the map's own median was 4.7, so the fixed 5-sigma cut passed roughly half the map.
+  The 14 peaks the first P001 run reported were almost certainly all noise. The threshold is now
+  calibrated per patch from the map's own robust median and MAD plus `sqrt(2 ln N_eff)`, floored
+  at 5, and recorded in `summary.json`.
+- **"Median of the other visits" is the wrong static template at two visits.** With V visits the
+  source occupies 1/(V−1) of the frames in that median, so at V = 2 the template *is* the other
+  visit, source included, and subtracting it stamps a negative ghost of the source into the
+  residual (measured: −3.97 at the other visit's source position for an amp-8 source in unit
+  noise). The search locks onto those ghosts. `prepare()` now defaults to the global median,
+  which is clean for V ≥ 3 because the source is then in only 1/V of the frames.
+
 ## Tests
 
 ```
-python -m pytest tests -q          101 pass, 1 fail (test_stack_two_visits, pre-existing)
+python -m pytest tests -q          115 pass, 0 fail
                                    5 network tests skip when CDS/IRSA are unreachable
-cd apps/web && npm test            57 pass
+cd apps/web && npm test            134 pass
 cd apps/web && npx tsc --noEmit    clean
 cd apps/web && npm run build       clean
 python scripts/check_manifest_domains.py   allowlist holds

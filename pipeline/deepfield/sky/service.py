@@ -445,11 +445,23 @@ def build_sky_bundle(req: SkyRequest, out_root: Path | None = None, *, progress=
     RENDER.write_png(static_img, out / "static.png", source=source, vmin=vmin, vmax=vmax)
 
     # --- the cube that makes spectra on-the-fly possible --------------------
+    # `flag_class` is a per-pixel bitmask over the four display flag classes, unioned
+    # across exposures. It is what lets a spectrum say *why* a pixel has no usable data
+    # ("this source saturates the detector") instead of just returning an empty list.
+    flag_class = np.zeros((npix, npix), dtype=np.uint16)
+    for ci, (_name, _colour, bits) in enumerate(RENDER.OVERLAY_CLASSES):
+        m = np.zeros((npix, npix), dtype=bool)
+        for b in bits:
+            for f in loaded:
+                m |= (f.flags & SX.FLAG_BITS[b]) != 0
+        flag_class[m] |= np.uint16(1 << ci)
+
     np.savez_compressed(
         out / "cube.npz",
         flux=np.stack([f.image for f in loaded]).astype(np.float32),
         var=np.stack([f.variance for f in loaded]).astype(np.float32),
         good=np.stack([f.good for f in loaded]),
+        flag_class=flag_class,
         mjd=np.array([f.cutout.mjd for f in loaded], dtype=np.float64),
         wave_um=np.array([f.cutout.wave_um for f in loaded], dtype=np.float32),
         bandwidth_um=np.array([f.cutout.bandwidth_um for f in loaded], dtype=np.float32),
@@ -499,6 +511,12 @@ def build_sky_bundle(req: SkyRequest, out_root: Path | None = None, *, progress=
         "scale": {"mode": "asinh", "vmin": float(vmin), "vmax": float(vmax), "unit": "MJy/sr",
                   "note": "one stretch shared by every frame so brightness is comparable"},
         "flag_legend": RENDER.overlay_legend(),
+        "pixel_quality": {
+            "flag_class": [int(v) for v in flag_class.ravel()],
+            "classes": [c[0] for c in RENDER.OVERLAY_CLASSES],
+            "note": ("Row-major npix*npix bitmask: bit i is set where any exposure flagged that "
+                     "pixel with class i. Used to explain why a pixel has no usable spectrum."),
+        },
         "cube": "cube.npz",
         "skipped": skipped[:20],
         "elapsed_s": round(time.time() - t0, 1),
@@ -570,19 +588,89 @@ def spectrum_at(bundle_dir: Path, x: float, y: float, r: int = 1) -> dict:
             "obs_id": str(obs[i]), "n_pixels": int(npx[i]),
         })
     points.sort(key=lambda p: p["wave_um"])
+    quality = pixel_quality(meta, flux, var, good, xi, yi, n)
     return {
         "slug": meta["slug"], "x": xi, "y": yi, "r": r,
         "ra_deg": float(ra[0]), "dec_deg": float(dec[0]),
         "n_points": len(points),
+        "n_exposures": int(n),
+        "n_excluded": int(n - len(points)),
         "n_bands": len({round(p["wave_um"], 2) for p in points}),
         "bands_total": BANDS_TOTAL,
         "points": points,
         "unit": "MJy/sr",
         "source": meta["source"],
+        "quality": quality,
         "note": ("Each point is one SPHEREx exposure, at the wavelength that exposure's filter "
                  "position gave this pixel. Points at the same wavelength from different visits "
                  "show variability, not spectral structure."),
     }
+
+
+def _usable_count(flux, var, good, x: int, y: int) -> int:
+    """Exposures with trustworthy data at one pixel, by the same rule the spectrum uses."""
+    f, v, g = flux[:, y, x], var[:, y, x], good[:, y, x]
+    return int(np.count_nonzero(g & np.isfinite(f) & np.isfinite(v) & (v > 0)))
+
+
+def pixel_quality(meta: dict, flux, var, good, x: int, y: int, n: int) -> dict:
+    """Why does this pixel have few or no usable exposures, and where should the user click?
+
+    A bright source saturates the detector; SPHEREx's Level 2 pipeline zeroes and flags
+    its core. Returning an empty spectrum with no explanation reads as a broken feature
+    rather than the real instrumental limit that it is, so say what happened and point
+    at the nearest pixel that does have data.
+    """
+    n_used = _usable_count(flux, var, good, x, y)
+    pq = meta.get("pixel_quality") or {}
+    classes = pq.get("classes") or []
+    flat = pq.get("flag_class") or []
+    npix = int(meta.get("npix", 0))
+    here = int(flat[y * npix + x]) if flat and 0 <= y * npix + x < len(flat) else 0
+    flags_here = [c for i, c in enumerate(classes) if here & (1 << i)]
+
+    out = {"n_usable": n_used, "n_exposures": int(n), "flags": flags_here,
+           "saturated": False, "reason": None, "nearest_usable": None}
+    if n_used >= max(1, n // 2):
+        return out
+
+    blocking = {"bad_pixel", "artifact"} & set(flags_here)
+    out["saturated"] = bool(n_used == 0 and blocking)
+    if n_used == 0:
+        out["reason"] = (
+            "No exposure has usable data at this pixel. "
+            + ("This source is bright enough to saturate the detector: SPHEREx's pipeline zeroes "
+               "and flags the saturated core, so there is no photometry to show here. "
+               if blocking else
+               "Every exposure flags it, or it falls outside the overlap of the frames. ")
+            + "Click a few pixels away from the centre for a real spectrum.")
+    else:
+        out["reason"] = (f"Only {n_used} of {n} exposures have usable data at this pixel; "
+                         "the rest are flagged. The spectrum below is built from those few.")
+
+    # Nearest pixel with a decent number of usable exposures, searched outward.
+    ny, nx = flux.shape[1], flux.shape[2]
+    want = max(1, n // 2)
+    best = None
+    for radius in range(1, min(nx, ny) // 2):
+        for dy in range(-radius, radius + 1):
+            for dx in range(-radius, radius + 1):
+                if max(abs(dx), abs(dy)) != radius:
+                    continue
+                xx, yy = x + dx, y + dy
+                if not (0 <= xx < nx and 0 <= yy < ny):
+                    continue
+                c = _usable_count(flux, var, good, xx, yy)
+                if c >= want:
+                    best = {"x": xx, "y": yy, "dx": dx, "dy": dy, "n_usable": c,
+                            "distance_arcsec": round(float(np.hypot(dx, dy) * SPHEREX_PIXEL_ARCSEC), 1)}
+                    break
+            if best:
+                break
+        if best:
+            break
+    out["nearest_usable"] = best
+    return out
 
 
 def load_bundle(bundle_dir: Path) -> dict:
