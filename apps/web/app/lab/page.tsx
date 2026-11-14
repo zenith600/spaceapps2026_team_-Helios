@@ -61,7 +61,7 @@ export default function Lab() {
                   <Stat k="best single-frame SNR" v={fmt(c.snr_single_max, 1)} />
                   <Stat k="stacked SNR" v={fmt(c.snr_stack, 1)} accent />
                   <Stat k="epochs stacked" v={String(c.n_epochs)} />
-                  <Stat k="best trial distance" v={`${fmt(c.best_distance_au, 0)} AU`} />
+                  <Stat k="best trial distance" v={c.best_distance_au == null ? "not moving" : `${fmt(c.best_distance_au, 0)} AU`} />
                   <Stat k="trial rate RA" v={`${fmt(c.best_rate_ra_arcsec_day, 2)} ″/d`} />
                   <Stat k="trial rate Dec" v={`${fmt(c.best_rate_dec_arcsec_day, 2)} ″/d`} />
                   <Stat k="stacked flux" v={`${fmt(c.flux_mjysr * 1000, 2)} kJy/sr`} />
