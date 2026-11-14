@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 /**
  * "Where is this on the sky?" — CDS's Aladin Lite, which the brief recommends by name.
  *
- * Three things broke this panel, and none was the code that draws it:
+ * Four things broke this panel, and none was the code that draws it (the fourth, a
+ * usage-logging ping on by default, is described where `log: false` is set below):
  *
  * 1. The library used to be fetched from
  *    https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js, a path CDS has
@@ -122,10 +123,18 @@ export function AladinPanel({ ra, dec, fovDeg, name }: {
             // even though the survey we actually asked for, on IRSA, was fine. Plain URL
             // strings are used directly, so nothing here needs CDS to look anything up.
             hipsList: SURVEYS.map((s) => s.url),
+            // On by default: a startup ping to alasky.unistra.fr/cgi/AladinLiteLogger/log.py
+            // carrying window.location.href and document.referrer. That host was refusing
+            // connections -- this was the "Failed to fetch" -- and the page URL contains the
+            // coordinates or object the visitor searched for. A public tool should not send
+            // its users' searches to a third party, so it is off.
+            log: false,
             showSettingsControl: false,
             showSimbadPointerControl: false,
             fov: Math.max(fovDeg * 6, 0.3),
-            target: `${ra} ${dec}`,
+            // Fixed-point, never exponent form: Aladin sends any target containing a letter
+            // to CDS's name resolver, and String(1e-7) is "1e-7".
+            target: `${ra.toFixed(6)} ${dec.toFixed(6)}`,
             cooFrame: "ICRS",
             showReticle: true,
             showZoomControl: true,
