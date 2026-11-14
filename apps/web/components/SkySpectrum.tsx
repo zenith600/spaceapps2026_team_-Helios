@@ -162,6 +162,11 @@ export function SkySpectrum({ bundle, pixel, radius, onRadius, onJump }: {
                 ) : null}
               </div>
               <p className="mt-1 text-[11px] text-muted">{cls.meaning}</p>
+              {cls.unexplained ? (
+                <p className="mt-1.5 rounded border border-sim/40 bg-sim/10 px-2 py-1 text-[10px] text-sim">
+                  <strong>Odd one out.</strong> {cls.anomaly_note}
+                </p>
+              ) : null}
               <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted">
                 {cls.temperature?.temperature_k ? (
                   <span>colour temperature <span className="mono text-fg">{cls.temperature.temperature_k} K</span></span>

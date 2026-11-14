@@ -127,6 +127,29 @@ def test_very_noisy_data_is_not_called_confident():
     assert res["confident"] is False, "a fit this noisy must not claim to have decided"
 
 
+def test_a_spectrum_our_templates_explain_is_not_flagged_odd():
+    res = classify_point(synth("planet"))
+    assert res["unexplained"] is False
+    assert res["anomaly_note"] is None
+    assert res["best_chi2_per_dof"] < 5.0
+
+
+def test_a_spectrum_none_of_the_templates_fit_is_flagged_odd():
+    """The only honest 'anomaly' available: our three shapes all fail. That is a statement
+    about our model library, not a claim about the object, and the note says so."""
+    rng = np.random.default_rng(5)
+    w = np.array([0.8, 1.0, 1.3, 1.6, 2.0, 2.5, 3.1, 3.9, 4.7])
+    # A sawtooth no smooth template can follow, with small error bars so it cannot be noise.
+    f = 1.0 + 0.8 * ((np.arange(w.size) % 2) * 2 - 1) + rng.normal(0, 0.01, w.size)
+    pts = [{"wave_um": float(a), "flux_mjysr": float(b), "flux_err_mjysr": 0.01}
+           for a, b in zip(w, f)]
+    res = classify_point(pts)
+    assert res["available"] is True
+    assert res["unexplained"] is True
+    assert res["best_chi2_per_dof"] > 5.0
+    assert "not evidence of something new" in res["anomaly_note"]
+
+
 def test_every_verdict_carries_its_method_and_caveat():
     res = classify_point(synth("planet"))
     assert "trained" in res["method"] and "templates" in res["method"]

@@ -49,6 +49,8 @@ the wavelength of what you are looking at:
 | `detectors` | all exposures of one detector in one visit, coadded | depth: ~√N noise gain at a near-constant wavelength (the brief's own suggestion) |
 | `visits` | all exposures of one visit, coadded | **motion**: one clean frame per visit, visits are ~6 months apart |
 
+| `colour` | a visit's exposures split into three wavelength groups → RGB | **composition**: longest wavelengths red, shortest blue, so a cold dusty source looks different from a hot star without reading a chart |
+
 `visits` is the default, because inter-visit motion is what the challenge is about.
 
 Band coverage is reported honestly: a point gets ~10–30 distinct bands per visit, not
@@ -278,7 +280,24 @@ over the same four classes as the contamination overlay, so the explanation and 
 
 Computed identically in Python and TypeScript, and held together by the cross-language test.
 
-## 9. Honest limits shown in the UI
+## 9. Analysis layered on a view
+
+All of it reads data the bundle already carries, so every feature also works in the browser
+on a static deployment; the API versions exist for live views and to keep Python and
+TypeScript honest against each other through generated fixtures.
+
+| Feature | Module | Method | Trained? |
+| --- | --- | --- | --- |
+| False colour | `service.build_colour` | thirds of the wavelength-sorted exposures → R/G/B, one stretch per channel | no |
+| Known-source overlay | `sky/catalogs.py` | TAP cone search (Gaia DR3 @ ESA, AllWISE + 2MASS @ IRSA), projected onto the bundle WCS, cached 30 days | no |
+| Find what changed | `sky/analyse.change_map` | per-pixel χ²/dof against one constant brightness, noise-weighted; peaks by local maximum | no |
+| What kind of thing | `sky/analyse.classify_point` | weighted LSQ of three closed-form templates + blackbody colour temperature | no |
+| Odd one out | same | best-template χ²/dof > 5 — reported as a gap in our library, never as a discovery | no |
+| Any two dates | `GET /sky/difference`, `differenceImage()` | coadd visit A and visit B from calibrated flux, subtract, symmetric stretch | no |
+| Field caption | `ai/explain.py` | LLM over a numeric fact sheet, claim filter, deterministic fallback | third-party text service |
+| Real/bogus score | `ml/model.py` → ONNX → `lib/onnxScore.ts` | small CNN over 3×32×32 normalised stamps | **ours, from scratch** |
+
+## 10. Honest limits shown in the UI
 
 - 6.15″ pixels: crowded fields blend. Stated on the page.
 - "N of 102 bands", never "102 bands".

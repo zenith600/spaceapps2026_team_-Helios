@@ -126,6 +126,7 @@ export type ChangeReport = {
 export type Classification = {
   available: boolean; reason?: string; best?: string; label?: string; meaning?: string;
   confident?: boolean; methane_score?: number | null; n_bands?: number;
+  unexplained?: boolean; best_chi2_per_dof?: number | null; anomaly_note?: string | null;
   ranking?: { template: string; label: string; chi2_per_dof: number }[];
   temperature?: { temperature_k: number | null; chi2_per_dof: number | null };
   method?: string; caveat?: string;

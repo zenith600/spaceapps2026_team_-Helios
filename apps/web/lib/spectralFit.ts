@@ -119,9 +119,20 @@ export function classifyPoints(points: SpectrumPoint[]): Classification {
   const [label, meaning] = TEMPLATE_LABELS[best] ?? TEMPLATE_LABELS.none;
   const dof = Math.max(fit.n - 1, 1);
   const ranked = Object.entries(fit.chi2).filter(([, v]) => Number.isFinite(v)).sort((a, b) => a[1] - b[1]);
+  // How badly does even the best template fit? High means none of our shapes explain this,
+  // which says something about our small model library rather than about the object.
+  const bestChi = ranked.length ? Math.round((ranked[0][1] / dof) * 100) / 100 : null;
+  const unexplained = bestChi !== null && bestChi > 5.0;
   return {
     available: true, best, label, meaning,
     confident: ranked.length > 1 && ranked[1][1] - ranked[0][1] > 2.0,
+    unexplained,
+    best_chi2_per_dof: bestChi,
+    anomaly_note: unexplained
+      ? "None of the three templates fits this spectrum well. That makes it worth a look, but it is a " +
+        "gap in our small model library, not evidence of something new — a blended pair, a variable " +
+        "source, or a bad measurement all land here too."
+      : null,
     methane_score: Number.isFinite(fit.methane_score) ? Math.round(fit.methane_score * 1000) / 1000 : null,
     n_bands: nBands,
     ranking: ranked.map(([k, v]) => ({ template: k, label: TEMPLATE_LABELS[k][0], chi2_per_dof: Math.round((v / dof) * 100) / 100 })),

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { BlinkViewer } from "@/components/BlinkViewer";
+import { BrowserClassifier } from "@/components/BrowserClassifier";
 import { Plot, darkLayout } from "@/components/Plot";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -96,14 +97,15 @@ export default function Lab() {
 
               <Card>
                 <CardHeader><CardTitle>Scores</CardTitle></CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-col gap-3">
                   <dl className="grid grid-cols-2 gap-y-1 text-xs">
                     <Stat k="CNN (trained from scratch on injections)" v={c.ml_score == null ? "—" : fmt(c.ml_score, 2)} />
                     <Stat k="rule-based score" v={fmt(c.rule_score, 2)} />
                     <Stat k="crowd P(real)" v={fmt(c.crowd_p_real, 2)} />
                     <Stat k="votes" v={String(c.n_votes)} />
                   </dl>
-                  <SourceTag source={c.source} className="mt-2 block" />
+                  <BrowserClassifier candidate={c} />
+                  <SourceTag source={c.source} className="block" />
                 </CardContent>
               </Card>
             </div>

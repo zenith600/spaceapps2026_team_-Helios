@@ -22,6 +22,9 @@ from deepfield.spectral.templates import fit_templates, planck_nu
 #: chi2/dof above this is "something changed here" rather than noise.
 CHANGE_THRESHOLD = float(3.0)
 
+#: Best-template chi2/dof above this means none of our shapes explain the spectrum.
+UNEXPLAINED_CHI2 = float(5.0)
+
 
 def change_map(flux: np.ndarray, var: np.ndarray, good: np.ndarray,
                visit: np.ndarray | None = None) -> dict:
@@ -145,12 +148,26 @@ def classify_point(points: list[dict]) -> dict:
     dof = max(fit.get("n", 1) - 1, 1)
     confident = len(ranked) > 1 and (ranked[1][1] - ranked[0][1]) > 2.0
 
+    # How badly does even the *best* template explain this point? A high value means none
+    # of our shapes fit, which is the only honest form of "anomalous" available here: it is
+    # a statement about our model library, not a claim about the object. An unmodelled but
+    # perfectly ordinary source scores high, and so does a bad measurement.
+    best_chi2_per_dof = round(float(ranked[0][1]) / dof, 2) if ranked else None
+    unexplained = bool(best_chi2_per_dof is not None and best_chi2_per_dof > UNEXPLAINED_CHI2)
+
     return {
         "available": True,
         "best": best,
         "label": label,
         "meaning": meaning,
         "confident": bool(confident),
+        "unexplained": unexplained,
+        "best_chi2_per_dof": best_chi2_per_dof,
+        "anomaly_note": (
+            "None of the three templates fits this spectrum well. That makes it worth a look, "
+            "but it is a gap in our small model library, not evidence of something new — a "
+            "blended pair, a variable source, or a bad measurement all land here too."
+            if unexplained else None),
         "methane_score": None if fit.get("methane_score") is None or not np.isfinite(fit["methane_score"])
                          else round(float(fit["methane_score"]), 3),
         "n_bands": n_bands,
