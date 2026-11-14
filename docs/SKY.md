@@ -82,8 +82,23 @@ Output lives in `data/sky/<slug>/`, and the five challenge targets are also expo
 into `apps/web/public/demo/sky/<slug>/` so they load instantly with no API and no
 network.
 
-`<slug>` is `name-ra-dec-fov` (e.g. `wise-0855-133.79513-7.245147-0.100`), so a bundle
-is addressable and cacheable.
+### The slug is positional, not named
+
+`<slug>` is `ra{ra:.4f}-dec{dec:+.4f}-fov{fov:.3f}`, e.g.
+`ra133.7951-dec-7.2451-fov0.100`. Deliberately **not** the target name.
+
+The first implementation put the resolved name in the slug, and the live check caught
+what that costs: searching "WISE 0855" and typing its coordinates produced two different
+slugs for the same patch of sky, so `/sky/epochs` reported `already_built: false` for a
+view that had just been built, and a second identical build would have downloaded 190 MB
+again. The name is metadata; the position and field of view are the identity.
+
+Four decimal places is 0.36 arcsec — well inside one 6.15 arcsec pixel — so two queries
+that round to the same slug really are the same patch.
+
+`apps/web/lib/sky.ts` computes the same slug in TypeScript, and both sides pin the exact
+strings in tests, because a drift there would silently split DEMO mode and API mode into
+addressing different bundles.
 
 ## 4. Live refresh — "new SPHEREx data is arriving fast"
 
@@ -97,13 +112,22 @@ Three mechanisms, smallest to largest:
    are listed but not searched.
 2. **Per-bundle freshness.** Every `sky.json` records, per collection, the exposure
    count and the latest `t_max` seen when it was built. `GET /sky/bundle/{slug}/freshness`
-   re-runs the SIA2 search (cached, 10 min TTL) and reports
-   `{new_exposures, new_collections, latest_mjd, stale}`. The web app polls it and shows
-   a **"N new exposures since this view was built — Rebuild"** banner.
+   diffs that against what IRSA has now and reports
+   `{new_exposures, new_collections, latest_mjd, stale}`. The web app polls it every
+   60 s and shows a **"N new exposures since this view was built — Rebuild"** banner.
+
+   Answers come from a **background sweep**, not from the poll. Each check is a SIA2
+   query per collection; measured against the real WISE 0855 bundle an uncached check
+   takes 4.8 s and a cached one 0.002 s. With one upstream query per poll per viewer,
+   this feature would be an abuse of someone else's archive. The sweep runs every
+   `SKY_REFRESH_MINUTES` (default 30), caches per slug, and `?force=1` or
+   `POST /sky/refresh` bypasses it deliberately. `SKY_AUTO_REBUILD=1` additionally
+   rebuilds a stale view by itself — off by default, because spending bandwidth and
+   disk unasked should be a deliberate act.
 3. **Scheduled re-bake.** `python -m deepfield.cli sky bake --refresh` rebuilds every
    pinned target that has gone stale. `.github/workflows/sky-refresh.yml` runs it on a
    cron and opens a PR when the demo bundle changes, so the shipped demo tracks new
-   releases without anyone remembering to do it.
+   releases without anyone remembering to do it. A human still approves the merge.
 
 Nothing is hardcoded to DR1. The collection list is data, not code.
 
@@ -126,16 +150,20 @@ So:
 
 ```
 pipeline/deepfield/sky/
-  resolver.py    names and coordinate strings -> (ra, dec); built-in catalogue first
-  releases.py    IRSA ObsTAP collection discovery + cache + freshness comparison
-  service.py     search_epochs, build_sky_bundle, spectrum_at, flag summaries
-  render.py      array -> PNG (asinh/zscale), flag mask -> RGBA overlay
-apps/api/deepfield_api/sky.py      /sky/* routes + the job runner
-apps/web/app/sky/page.tsx          the viewer screen
-apps/web/components/SkyPlayer.tsx  blink player (play/pause/speed/scrub/step)
-apps/web/components/SkySpectrum.tsx on-the-fly spectrum panel
-data/sky/<slug>/                   built bundles (gitignored)
-apps/web/public/demo/sky/<slug>/   the five baked challenge targets (committed)
+  resolver.py     names and coordinate strings -> (ra, dec); built-in catalogue first
+  releases.py     IRSA ObsTAP collection discovery + cache + freshness comparison
+  service.py      search_epochs, build_sky_bundle, spectrum_at, flag summaries
+  render.py       array -> PNG (one shared asinh stretch), flag mask -> RGBA overlay
+  bake.py         pre-build + export the challenge targets, uint16 cube re-encoding
+apps/api/deepfield_api/sky.py        /sky/* routes, job runner, background refresher
+apps/web/app/sky/page.tsx            the viewer screen (all state in the URL)
+apps/web/components/SkyPlayer.tsx    blink player (play/pause/speed/scrub/step/keys)
+apps/web/components/SkySpectrum.tsx  on-the-fly spectrum panel
+apps/web/lib/sky.ts                  both backends + the TS ports of parser/slug/decoder
+scripts/make_spectrum_fixture.py     Python reference for the cross-language test
+.github/workflows/sky-refresh.yml    weekly re-bake -> pull request
+data/sky/<slug>/                     built bundles (gitignored)
+apps/web/public/demo/sky/<slug>/     the five baked challenge targets (committed)
 ```
 
 ## 7. Contracts
@@ -178,6 +206,32 @@ apps/web/public/demo/sky/<slug>/   the five baked challenge targets (committed)
 `cube.npz` holds `flux [n_exposures, npix, npix] float32`, `var`, `good`, plus
 `mjd/wave_um/bandwidth_um/detector` vectors — that is what makes the spectrum
 on-the-fly rather than precomputed.
+
+### `cube.u16` — spectra with no server
+
+`cube.npz` is float32 NumPy inside a zip, neither of which a browser reads without a
+library. The exported demo bundles therefore carry a flat little-endian uint16 buffer
+the browser maps straight onto a `Uint16Array`, with one `(offset, scale)` pair per
+plane and frame in `sky.json`:
+
+```
+value = offset + code * scale          code 65535 = no data
+```
+
+Two details are load-bearing, and both were found by testing the browser decoder against
+the Python one on a real bundle rather than by reasoning about it:
+
+- **The `good` mask is folded into the no-data code.** The browser has no other copy of
+  it, so without this it averaged flagged pixels that `spectrum_at` excludes in Python,
+  and the same click gave different answers on a static deployment than through the API.
+- **The range is taken over good pixels only.** Reprojection fills unusable variance
+  with `1e6`; letting that into the range made the variance quantisation step ~15
+  MJy²/sr² and destroyed the error bars on every real pixel.
+
+Quantisation error is then 1/65534 of each frame's own range — far below the per-pixel
+noise — at half the size of float32 (~600 KB per target, loaded lazily on first click).
+`apps/web/lib/sky.cube.test.ts` holds the two implementations to each other, with a
+tolerance read from the codec rather than guessed.
 
 ### `GET /sky/spectrum/{slug}?x=&y=&r=`
 
