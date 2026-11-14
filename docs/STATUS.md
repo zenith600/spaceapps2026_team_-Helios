@@ -40,9 +40,9 @@ run against the live service and the numbers quoted are from that run.
 
 | Feature | State |
 | --- | --- |
-| Find what changed | **Real.** Per-pixel χ² against a constant-brightness model. Untrained and transparent: a steady star scores ~1, a mover or variable scores high. Runs in the browser from the pixel cube. |
-| Spectral classification | **Real.** Three physical templates (methane-rich / reflected sunlight / stellar) plus a blackbody colour temperature, with a χ² ranking. Refuses below three distinct colours rather than guessing. |
-| "Odd one out" flag | **Real.** When even the best template fits badly (χ²/dof > 5) the point is flagged — stated as a gap in our model library, not as a discovery. |
+| Find what changed | **Real, calibrated on real data.** Removes each exposure's background, fits each pixel's brightness as a smooth curve in wavelength, and scores the residual against the field's own distribution. On the baked targets the two variable stars rank first in their fields (RW Aurigae z=43, R Draconis z=10). **Limit:** slow movers in crowded fields do not top the list — Barnard's Star moves ~1.8 px over the whole baseline and other sources in its dense field vary more. |
+| Spectral classification | **Real.** Three physical templates (methane-rich / reflected sunlight / stellar) plus a blackbody colour temperature, with a χ² ranking and a 10% systematic floor. Refuses below three distinct colours rather than guessing. **Limit:** these are toy shapes — Barnard's Star, an M dwarf, comes out as "reflected sunlight". The UI says a shape match is a hint, not an identification. |
+| "Odd one out" flag | **Real, field-relative.** Flagged when a point fits worse than 95% of 150 randomly sampled points in the same field, calibrated at bake time. On the baked data it fires on exactly the two variable stars, whose changing brightness scrambles their spectra across epochs, and on none of the three steady targets. |
 | Machine-written field captions | **Real.** Coordinates outside the built-in catalogue get a plain-language caption written from measured facts by an LLM, with claim-rejection and a deterministic fallback. Always labelled. |
 | Classifier in the browser | **Real.** The from-scratch CNN ships as ONNX and scores a candidate on the visitor's machine from the same normalised float stamps used in training. |
 
@@ -130,9 +130,9 @@ Two further findings, both now pinned by tests:
 ## Tests
 
 ```
-python -m pytest tests -q          115 pass, 0 fail
+python -m pytest tests -q          188 pass, 0 fail
                                    5 network tests skip when CDS/IRSA are unreachable
-cd apps/web && npm test            134 pass
+cd apps/web && npm test            186 pass
 cd apps/web && npx tsc --noEmit    clean
 cd apps/web && npm run build       clean
 python scripts/check_manifest_domains.py   allowlist holds
@@ -148,6 +148,22 @@ failure mode that silent divergence would cause:
   WISE 0855 cube and compares it against a Python-generated fixture
   (`scripts/make_spectrum_fixture.py`). It found two genuine bugs: a dropped good-pixel
   mask, and a quantiser range poisoned by the 1e6 variance fill used for bad pixels.
+
+## Three features that passed their tests and were still wrong
+
+Each was caught by running the merged app on the real baked targets, not by the synthetic
+tests, and each is now pinned by a test that would have caught it:
+
+- **Change detection detected colour.** A constant-brightness model ignores that every SPHEREx
+  exposure sees a different wavelength. Median χ²/dof across *empty sky* was 7–97 and nearly
+  every pixel flagged. Fixed with per-frame background removal (7.1 → 0.95 on Barnard's Star),
+  a wavelength-polynomial model, and a field-relative z.
+- **"Odd one out" fired on every real star.** Random sky pixels have a median best-template
+  χ²/dof of 13–19, so any fixed threshold flags everything. Now field-relative.
+- **The browser cube lost variance precision.** Variance spans ~4×10⁹ within one frame; linear
+  uint16 left 10% of pixels wrong by >38%. Now stored in log space (p99 error 0.015%). The test
+  that should have caught it derived its tolerance from the quantiser's own step — a tolerance
+  that scales with the quantiser cannot catch a bad quantiser. It is now a fixed 0.5%.
 
 ## AI and ML — what is trained, what is not, and on whose weights
 
