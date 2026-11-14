@@ -23,7 +23,12 @@ from contextlib import asynccontextmanager
 async def _lifespan(app_: FastAPI):
     root = get_bundle().root
     app_.mount("/files", StaticFiles(directory=str(root)), name="files")
-    yield
+    from deepfield_api import sky as _sky
+    _sky.start_refresher()
+    try:
+        yield
+    finally:
+        _sky.stop_refresher()
 
 
 app = FastAPI(title="Deep Field API", version="0.1.0", lifespan=_lifespan,
@@ -31,6 +36,10 @@ app = FastAPI(title="Deep Field API", version="0.1.0", lifespan=_lifespan,
 app.add_middleware(CORSMiddleware,
                    allow_origins=[o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",")],
                    allow_methods=["*"], allow_headers=["*"])
+
+from deepfield_api.sky import router as sky_router  # noqa: E402  (after app/middleware exist)
+
+app.include_router(sky_router)
 
 store = make_store()
 _rng = random.Random(int(os.environ.get("TASK_SEED", "0")) or None)

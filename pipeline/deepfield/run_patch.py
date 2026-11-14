@@ -24,11 +24,13 @@ from deepfield.prior.priormap import propagate_population
 from deepfield.spectral.templates import fit_templates
 from deepfield.stack import geometry as G
 from deepfield.stack import shiftstack as S
-from deepfield.stack.extract import find_peaks, peak_near, rule_score
+from deepfield.stack.extract import find_peaks, noise_threshold, peak_near, rule_score
 from deepfield.stack.reproject import reproject_cutout, target_wcs
 
 log = logging.getLogger("deepfield.run_patch")
-SNR_THRESHOLD = 5.0
+#: Floor only. The working threshold is calibrated per patch from its own SNR map, because the
+#: map is a maximum over thousands of trials and a fixed 5 sigma sits near its median.
+SNR_FLOOR = 5.0
 
 
 def load_patch_frames(ra0: float, dec0: float, max_exposures: int = PATCH_MAX_EXPOSURES,
@@ -86,10 +88,17 @@ def search_patch(patch_id: str, ra0: float, dec0: float, work_dir: Path, *, n_in
         return [reproject_cutout(c, wcs_out, npix) for c in cuts]
 
     n_visits = len(np.unique(S.visit_groups(mjds)))
-    if n_visits >= 2:
-        # Two visits ~6 months apart: the inter-visit parallax shift is hundreds of arcsec, so a fine distance grid
-        # (~1-2 px steps in shift) plus a small orbital-rate grid gives real distance discrimination.
+    if n_visits >= S.MIN_VISITS_FOR_CROSS_VISIT:
+        # Three or more visits: parallax (curved in time) separates from proper motion (linear),
+        # so a fine distance grid plus a small orbital-rate grid gives real distance discrimination.
         trials = G.default_trial_grid(distances=tuple(np.geomspace(250, 1500, 36)) + (np.inf,), rates=(-0.5, -0.25, 0.0, 0.25, 0.5))
+    elif n_visits == 2:
+        # Two time samples cannot separate parallax from proper motion: a wrong (distance, rate)
+        # pair reproduces the same inter-visit shift and peaks somewhere else entirely, often
+        # harder than the truth. Verified on synthetic two-visit data, where the search put the
+        # peak 73 px from a source it had the signal to find. So do not offer free rates here --
+        # search distance only, and say in the summary that position is weakly constrained.
+        trials = G.default_trial_grid(distances=tuple(np.geomspace(250, 1500, 36)) + (np.inf,), rates=(0.0,))
     else:
         trials = G.default_trial_grid()
     off = S.offsets_pixels(trials, ra0, dec0, mjds, obs_xyz, mjd_ref)
@@ -99,9 +108,13 @@ def search_patch(patch_id: str, ra0: float, dec0: float, work_dir: Path, *, n_in
     frames_clean = frames_from(cutouts)
     prep_clean = S.prepare(frames_clean, dev=dev)
     snr_c, flux_c, best_c, nden_c = S.stack_trials(prep_clean, off)
-    peaks = find_peaks(snr_c, nden_c, SNR_THRESHOLD)
-    log.info("%s: %d epochs, %d trials, %d peaks >= %.1f in clean stack (max %.2f)", patch_id, len(cutouts), len(trials),
-             len(peaks), SNR_THRESHOLD, np.nanmax(np.where(np.isfinite(snr_c), snr_c, -np.inf)))
+    # Calibrated against this map's own noise, not a fixed 5 sigma: the map is a maximum over
+    # every trial, so its median already sits near 5 when the trial grid is large.
+    snr_threshold = max(SNR_FLOOR, noise_threshold(snr_c))
+    peaks = find_peaks(snr_c, nden_c, snr_threshold)
+    log.info("%s: %d epochs, %d visits, %d trials, threshold %.2f, %d peaks (max %.2f)", patch_id,
+             len(cutouts), n_visits, len(trials), snr_threshold, len(peaks),
+             np.nanmax(np.where(np.isfinite(snr_c), snr_c, -np.inf)))
 
     # known small bodies (JPL SBIdent); failure is logged, not fatal
     try:
@@ -126,7 +139,7 @@ def search_patch(patch_id: str, ra0: float, dec0: float, work_dir: Path, *, n_in
         for inj in injs:
             s_pk, xp, yp = peak_near(snr_i, inj.x_ref, inj.y_ref, radius=2.5)
             s_clean, _, _ = peak_near(snr_c, inj.x_ref, inj.y_ref, radius=2.5)
-            recovered = bool(np.isfinite(s_pk) and s_pk >= SNR_THRESHOLD and s_pk > s_clean + 2.0)
+            recovered = bool(np.isfinite(s_pk) and s_pk >= snr_threshold and s_pk > s_clean + 2.0)
             bt = int(best_i[int(yp), int(xp)]) if np.isfinite(s_pk) else stationary_idx
             tr = trials[bt]
             rec = {"patch_id": patch_id, "run": run, "injection_id": inj.injection_id, "pop_index": inj.pop_index,
@@ -195,7 +208,7 @@ def search_patch(patch_id: str, ra0: float, dec0: float, work_dir: Path, *, n_in
                      meta={"candidate_id": cid, "patch_id": patch_id, "injected_mag": inj.vmag if inj else None,
                            "trial": {"distance_au": None if stationary else trial.distance_au,
                                      "rate_ra": trial.rate_ra_arcsec_day, "rate_dec": trial.rate_dec_arcsec_day}})
-        rs = rule_score(snr_val, single_max, stationary, known_name is not None)
+        rs = rule_score(snr_val, single_max, stationary, known_name is not None, threshold=snr_threshold)
         cands.append({
             "candidate_id": cid, "patch_id": patch_id, "ra_deg": ra, "dec_deg": dec, "is_simulated": is_sim,
             "injection_id": inj.injection_id if inj else None, "injected_mag": inj.vmag if inj else None,
@@ -275,7 +288,14 @@ def search_patch(patch_id: str, ra0: float, dec0: float, work_dir: Path, *, n_in
         "visit_label": f"{cutouts[0].obs_id.split('_')[0]}..{cutouts[-1].obs_id.split('_')[0]}",
         "n_bands": len({round(w, 2) for w in waves}), "detectors": sorted({c.detector for c in cutouts}),
         "n_trials": len(trials), "n_visits": int(n_visits),
-        "mode": "two-visit parallax stack (cross-visit static templates)" if n_visits >= 2 else "single-visit co-add (no distance information)",
+        "mode": ("cross-visit parallax stack (position and distance constrained)"
+                 if n_visits >= S.MIN_VISITS_FOR_CROSS_VISIT else
+                 "two-visit stack, distance grid only (two time samples cannot separate parallax "
+                 "from proper motion, so position is weakly constrained)" if n_visits == 2 else
+                 "single-visit co-add (no distance information)"),
+        "snr_threshold": float(snr_threshold),
+        "snr_threshold_note": ("calibrated from this patch's own max-over-trials SNR map "
+                               "(robust median + sqrt(2 ln N_eff) * MAD), floored at 5"),
         "observer": obs_label, "known_bodies": known_label,
         "clean_peaks": peaks[:20], "clean_snr_max": float(np.nanmax(np.where(np.isfinite(snr_c), snr_c, -np.inf))),
         "median_pixel_sigma_mjysr": noise, "device": str(dev),

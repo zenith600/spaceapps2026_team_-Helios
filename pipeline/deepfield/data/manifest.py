@@ -61,6 +61,20 @@ def assert_allowed(url: str) -> None:
         )
 
 
+def assert_response_allowed(resp: requests.Response) -> None:
+    """Check every hop a redirect chain actually went through, not just the URL we asked for.
+
+    This matters: CDS Sesame load-balances across mirrors, and one of them is
+    vizier.china-vo.org. Validating only the requested URL would let a 302 walk us
+    straight past the project rule.
+    """
+    for hop in (*resp.history, resp):
+        if not host_allowed(hop.url):
+            raise DisallowedDomain(
+                f"Refusing {hop.url!r}: redirected to a host that is not in the "
+                f"manifest.yaml allowlist")
+
+
 def fetch(url: str, *, params: dict | None = None, timeout: float = 180.0,
           stream: bool = False, headers: dict | None = None, retries: int = 4) -> requests.Response:
     """GET with the allowlist enforced and exponential backoff on 5xx / connection errors. Raises for HTTP errors."""
@@ -71,6 +85,7 @@ def fetch(url: str, *, params: dict | None = None, timeout: float = 180.0,
         try:
             resp = requests.get(url, params=params, timeout=timeout, stream=stream,
                                 headers={"User-Agent": "DeepField/0.1 (NASA Space Apps 2026)", **(headers or {})})
+            assert_response_allowed(resp)
             if resp.status_code >= 500 and attempt < retries:
                 last = requests.HTTPError(f"{resp.status_code} from {url}")
                 time.sleep(2.0 * 2 ** attempt)

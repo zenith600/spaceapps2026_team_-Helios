@@ -14,3 +14,4 @@ out/
 *.tsbuildinfo
 *.log
 *.sqlite
+AGENTS.md

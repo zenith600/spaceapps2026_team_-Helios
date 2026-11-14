@@ -60,6 +60,48 @@ datasets:
     domains: [irsa.ipac.caltech.edu]
     used_for: static star masking (stretch)
 
+  - id: irsa_obscore_tap
+    name: IRSA ObsTAP (ivoa.obscore) collection discovery
+    owner: NASA / NSF (IRSA)
+    country: USA
+    licence: Public domain
+    access: ["https://irsa.ipac.caltech.edu/TAP/sync"]
+    domains: [irsa.ipac.caltech.edu]
+    used_for: >
+      discovering which SPHEREx collections IRSA currently publishes
+      (spherex_dr1, spherex_qr3, ...) so the Sky Viewer picks up a new data
+      release with no code change
+    verified: "2026-11-14 returns spherex_dr1, spherex_dr1_cal, spherex_dr1_cube, spherex_dr1_deep, spherex_qr3, spherex_qr3_deep"
+
+  - id: cds_sesame
+    name: CDS Sesame name resolver (SIMBAD / NED / VizieR)
+    owner: Centre de Donnees astronomiques de Strasbourg (CNRS / Universite de Strasbourg)
+    country: France
+    licence: Free for research and education (CDS terms of use)
+    access: ["https://cds.unistra.fr/cgi-bin/nph-sesame/-oI/SNV"]
+    # cds.unistra.fr 302-redirects to whichever VizieR mirror its load balancer picks.
+    # Listed below are the mirrors we accept. The China-VO mirror (vizier.china-vo.org)
+    # is deliberately NOT listed: the redirect guard in data/manifest.py checks every
+    # hop, so if CDS ever sends us there the fetch is refused and name resolution falls
+    # back to the offline catalogue. Verified 2026-11-14: cds.unistra.fr -> vizier.idia.ac.za.
+    domains:
+      - cds.unistra.fr
+      - cdsweb.u-strasbg.fr
+      - vizier.cds.unistra.fr      # France (CDS)
+      - vizier.cfa.harvard.edu     # USA (Harvard CfA)
+      - vizier.idia.ac.za          # South Africa (IDIA)
+      - vizier.nao.ac.jp           # Japan (NAOJ)
+      - vizier.iucaa.in            # India (IUCAA)
+    excluded_mirrors:
+      - vizier.china-vo.org        # refused by the project rule
+    optional: true
+    used_for: >
+      resolving an object name typed by the user into RA/Dec. Optional: the
+      five challenge test targets and a built-in catalogue resolve offline with
+      no network call. CDS is the author of the Aladin tool the challenge brief
+      recommends; it is not a Chinese source, so the project rule is satisfied.
+    verified: "2026-11-14 Barnard's Star -> 269.45208 +4.69336; RW Aur -> 76.95653 +30.40144; R Dra -> 248.16761 +66.75498"
+
 # Hosting / tooling domains that are not datasets but may appear in code or config.
 infrastructure_domains:
   - api.anthropic.com      # dossier agent (Claude API), optional
