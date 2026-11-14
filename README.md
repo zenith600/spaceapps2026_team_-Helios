@@ -2,7 +2,8 @@
 
 NASA Space Apps 2026 entry.
 
-**Live demo: <http://144.24.143.52/sky>** — the five challenge targets open instantly; any other
+**Live demo: <https://deep-field-theta.vercel.app/sky>** (also <http://144.24.143.52/sky>; the
+Vercel front end proxies `/api/*` to the same server, see `apps/web/vercel.json`) — the five challenge targets open instantly; any other
 position is built live from NASA's archive by the API on the same server (about a minute to search,
 a few minutes to build, then cached). Try Barnard's Star, then switch the Interface toggle to **Pro**.
 Every page and button is explained, with screenshots, in the

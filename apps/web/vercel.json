@@ -2,5 +2,7 @@
   "framework": "nextjs",
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
-  "env": { "NEXT_PUBLIC_DEMO_MODE": "1" }
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "http://144.24.143.52/api/:path*" }
+  ]
 }
