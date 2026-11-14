@@ -404,8 +404,8 @@ function SkyViewer() {
                 </Button>
                 {change && showChange ? (
                   <span className="text-muted">
-                    <span className="mono text-sim">{change.peaks.length}</span> spots where the brightness
-                    does not stay constant{change.peaks[0] ? `, strongest χ²/dof ${change.peaks[0].chi2_per_dof}` : ""}.
+                    <span className="mono text-sim">{change.peaks.length}</span> spots that vary far more
+                    than a typical pixel in this field{change.peaks[0] ? ` (strongest ${change.peaks[0].z}× the usual spread)` : ""}.
                     Click one below.
                   </span>
                 ) : (
@@ -420,7 +420,7 @@ function SkyViewer() {
                         className={cn("rounded border px-2 py-0.5 text-[10px] mono",
                           pixel?.x === p.x && pixel?.y === p.y
                             ? "border-accent/60 bg-accent/10 text-accent" : "border-line text-muted hover:text-fg")}>
-                        ({p.x},{p.y}) χ² {p.chi2_per_dof}
+                        ({p.x},{p.y}) z {p.z}
                       </button>
                     ))}
                   </div>

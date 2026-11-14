@@ -137,6 +137,41 @@ def test_tensors_match_what_training_feeds_the_network(tmp_path):
     assert np.array_equal(shipped, expected)
 
 
+def test_the_browser_cube_keeps_variance_precise_across_a_huge_dynamic_range(tmp_path):
+    """Regression test for the quantiser, not the readers. Real SPHEREx variance spans ~4e9x
+    within one frame (sky against a bright star's core). Linear uint16 over that range left
+    10% of pixels wrong by more than 38%; log space gives every pixel the same relative
+    precision. Checked across every valid pixel, not a handful of fixture cases."""
+    import numpy as np
+    from deepfield.sky.bake import export_cube_u16
+    rng = np.random.default_rng(4)
+    n, npix = 4, 32
+    flux = rng.normal(1.0, 0.1, (n, npix, npix)).astype(np.float32)
+    var = (10 ** rng.uniform(-6, 3.6, (n, npix, npix))).astype(np.float32)   # ~4e9x range
+    good = np.ones((n, npix, npix), bool)
+    good[0, :3, :3] = False
+    np.savez_compressed(tmp_path / "cube.npz", flux=flux, var=var, good=good,
+                        mjd=np.arange(n, dtype=float), wave_um=np.linspace(1, 4, n).astype(np.float32),
+                        bandwidth_um=np.full(n, 0.01, np.float32), detector=np.ones(n, np.int16),
+                        visit=np.arange(n, dtype=np.int16), obs_id=np.array(["o"] * n, dtype=object))
+    meta = export_cube_u16(tmp_path, tmp_path)
+    raw = np.frombuffer((tmp_path / "cube.u16").read_bytes(), dtype="<u2").reshape(2, n, npix, npix)
+    codec = {(c["plane"], c["i"]): c for c in meta["codec"]}
+    assert all(c["transform"] == "log" for c in meta["codec"] if c["plane"] == "var")
+
+    worst_var, worst_flux = 0.0, 0.0
+    for i in range(n):
+        cv, cf = codec[("var", i)], codec[("flux", i)]
+        ok = good[i]
+        assert (raw[1, i][~ok] == 65535).all(), "masked pixels must carry the no-data code"
+        dec_var = np.exp(cv["offset"] + raw[1, i][ok] * cv["scale"])
+        dec_flux = cf["offset"] + raw[0, i][ok] * cf["scale"]
+        worst_var = max(worst_var, float(np.max(np.abs(dec_var - var[i][ok]) / var[i][ok])))
+        worst_flux = max(worst_flux, float(np.max(np.abs(dec_flux - flux[i][ok]))))
+    assert worst_var < 1e-3, f"variance relative error {worst_var:.2%} -- the quantiser is lossy"
+    assert worst_flux < 1e-4
+
+
 def test_api_serves_the_dossiers_it_advertises(client):
     rows = client.get("/candidates").json()["candidates"]
     for c in rows[:3]:

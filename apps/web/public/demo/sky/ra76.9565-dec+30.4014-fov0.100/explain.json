@@ -1,5 +1,5 @@
 {
- "text": "This 6\u2011arcmin patch of sky has been imaged 42 times over a year, covering wavelengths from 0.74 to 4.96 microns. Watch the two faint solar\u2011system bodies, 416526 (2003 YK171) and 476778 (2008 UF128), as they drift across the frame.",
+ "text": "This 6-arcmin patch of sky has been imaged 42 times over a year, covering wavelengths from 0.74 to 4.96 microns. Watch the two faint solar-system bodies, 416526 (2003 YK171) and 476778 (2008 UF128), as they drift across the frame.",
  "generator": "llm:openai/gpt-oss-20b",
  "facts": {
   "right_ascension_deg": 76.9565,

@@ -1,0 +1,94 @@
+{
+ "generated_by": "scripts/make_spectrum_fixture.py",
+ "slug": "ra133.7951-dec-7.2451-fov0.100",
+ "note": "Python change_map on float32 flux. The browser runs on the uint16 cube, so values agree to quantisation; peak positions must agree exactly.",
+ "median": 1.7675373971608543,
+ "mad": 1.5342373305212842,
+ "n_significant": 200,
+ "peaks": [
+  {
+   "x": 53,
+   "y": 14,
+   "z": 27.1,
+   "chi2_per_dof": 43.28,
+   "n_used": 39
+  },
+  {
+   "x": 33,
+   "y": 2,
+   "z": 18.8,
+   "chi2_per_dof": 30.67,
+   "n_used": 37
+  },
+  {
+   "x": 50,
+   "y": 53,
+   "z": 18.1,
+   "chi2_per_dof": 29.58,
+   "n_used": 38
+  },
+  {
+   "x": 29,
+   "y": 22,
+   "z": 16.8,
+   "chi2_per_dof": 27.5,
+   "n_used": 40
+  },
+  {
+   "x": 8,
+   "y": 8,
+   "z": 12.6,
+   "chi2_per_dof": 21.14,
+   "n_used": 42
+  },
+  {
+   "x": 17,
+   "y": 57,
+   "z": 11.4,
+   "chi2_per_dof": 19.31,
+   "n_used": 36
+  },
+  {
+   "x": 16,
+   "y": 48,
+   "z": 11.3,
+   "chi2_per_dof": 19.14,
+   "n_used": 41
+  },
+  {
+   "x": 33,
+   "y": 58,
+   "z": 11.1,
+   "chi2_per_dof": 18.75,
+   "n_used": 41
+  },
+  {
+   "x": 10,
+   "y": 54,
+   "z": 10.8,
+   "chi2_per_dof": 18.41,
+   "n_used": 38
+  },
+  {
+   "x": 42,
+   "y": 50,
+   "z": 10.1,
+   "chi2_per_dof": 17.34,
+   "n_used": 39
+  },
+  {
+   "x": 10,
+   "y": 38,
+   "z": 9.9,
+   "chi2_per_dof": 16.95,
+   "n_used": 38
+  },
+  {
+   "x": 23,
+   "y": 52,
+   "z": 9.3,
+   "chi2_per_dof": 16.08,
+   "n_used": 41
+  }
+ ]
+}

@@ -41,7 +41,16 @@ def enrich_one(slug: str, *, overlays: bool = True, explain: bool = True) -> dic
     """
     src = SVC.SKY_DIR / slug
     meta = SVC.load_bundle(src)
-    out = {"overlay": None, "explain": None}
+    out = {"overlay": None, "explain": None, "odd_threshold": None}
+
+    # Calibrate "odd one out" against this field's own points (see analyse.field_odd_threshold).
+    try:
+        from deepfield.sky.analyse import field_odd_threshold
+        meta["classify"] = field_odd_threshold(src)
+        (src / "sky.json").write_text(json.dumps(meta, indent=1, default=float))
+        out["odd_threshold"] = meta["classify"]["odd_threshold"]
+    except Exception as exc:
+        log.warning("%s: odd-threshold calibration failed: %s: %s", slug, type(exc).__name__, exc)
 
     if overlays:
         try:
@@ -101,9 +110,17 @@ def export_cube_u16(src: Path, dst: Path) -> dict:
     valid = np.asarray(good, dtype=bool) & np.isfinite(flux) & np.isfinite(var) & (np.asarray(var) > 0)
     planes, codec = [], []
     for name, cube in (("flux", flux), ("var", var)):
+        # Variance is strictly positive and spans up to ~4e9x within one frame (sky against a
+        # bright star's core). Linear quantisation over that range left 10% of pixels with
+        # variance wrong by more than 38% -- so browser error bars and change-detection weights
+        # were wrong. In log space every pixel gets the same *relative* precision (~0.02%).
+        # Flux can be negative and sits within a few hundred sigma, so it stays linear.
+        transform = "log" if name == "var" else "linear"
         for i in range(n):
             a = np.asarray(cube[i], dtype=np.float64)
             ok = valid[i]
+            if transform == "log":
+                a = np.log(np.where(ok, a, 1.0))
             lo = float(a[ok].min()) if ok.any() else 0.0
             hi = float(a[ok].max()) if ok.any() else 1.0
             scale = (hi - lo) / 65534.0 if hi > lo else 1.0
@@ -111,7 +128,7 @@ def export_cube_u16(src: Path, dst: Path) -> dict:
             code = np.where(ok, np.clip((a - lo) / scale, 0, 65534).round(), 65535)
             planes.append(code.astype("<u2"))
             codec.append({"plane": name, "i": i, "offset": lo, "scale": scale,
-                          "n_valid": int(ok.sum())})
+                          "transform": transform, "n_valid": int(ok.sum())})
 
     (dst / "cube.u16").write_bytes(np.stack(planes).tobytes())
     return {
@@ -123,9 +140,10 @@ def export_cube_u16(src: Path, dst: Path) -> dict:
         "detector": [int(v) for v in meta["detector"]],
         "visit": [int(v) for v in meta["visit"]],
         "obs_id": obs,
-        "note": ("value = offset + code * scale, per plane and frame; code 65535 means no data "
-                 "(flagged, non-finite, or zero variance) and must be skipped, exactly as the "
-                 "good mask is applied in Python"),
+        "note": ("value = offset + code * scale per plane and frame; where the codec says "
+                 "transform 'log' (the variance plane) the value is exp() of that. Code 65535 "
+                 "means no data (flagged, non-finite, or zero variance) and must be skipped, "
+                 "exactly as the good mask is applied in Python"),
     }
 
 

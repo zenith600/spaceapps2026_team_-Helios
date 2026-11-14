@@ -402,21 +402,30 @@ def sky_change(slug: str, limit: int = Query(12, ge=1, le=50)):
     from deepfield.sky.analyse import change_map, change_peaks
     d = bundle_dir(slug)
     z = _load_cube(d)
-    cm = change_map(z["flux"], z["var"], z["good"], z.get("visit"))
+    cm = change_map(z["flux"], z["var"], z["good"], z["wave_um"])
     peaks = change_peaks(cm, max_peaks=limit)
+    finite = lambda v: None if v is None or v != v else round(float(v), 3)  # noqa: E731
     return {
         "slug": slug,
         "threshold": cm["threshold"],
-        "median_chi2_per_dof": None if cm["median"] != cm["median"] else round(cm["median"], 3),
+        "median_chi2_per_dof": finite(cm["median"]),
+        "mad_chi2_per_dof": finite(cm["mad"]),
         "n_significant_pixels": cm["n_significant"],
         "peaks": peaks,
-        "method": ("chi-squared of each pixel's brightness against a single constant value, "
-                   "weighted by the measured noise. Transparent and untrained: it cannot "
-                   "invent a detection, only report where the data disagree with 'nothing "
-                   "happened here'."),
-        "caveat": ("Flags change of any kind — real movement, variability, a cosmic ray, or "
-                   "the edge of a saturated star. It is a place to look, not a discovery."),
+        "method": CHANGE_METHOD,
+        "caveat": CHANGE_CAVEAT,
     }
+
+
+CHANGE_METHOD = (
+    "Each exposure's own background is removed, then every pixel's brightness is fitted as a "
+    "smooth curve in wavelength — because SPHEREx sees a different colour in each shot, a "
+    "star's brightness legitimately varies with its spectrum. What that curve cannot explain "
+    "is scored against the rest of this field, so 'changed' means 'varies far more than a "
+    "typical pixel here'. No trained model: it cannot invent a detection.")
+CHANGE_CAVEAT = (
+    "Flags change of any kind — real movement, variability, a cosmic ray, or the edge of a "
+    "saturated star. It is a place to look, not a discovery.")
 
 
 @router.get("/classify/{slug}")
@@ -430,7 +439,9 @@ def sky_classify(slug: str, x: float = Query(...), y: float = Query(...), r: int
         spec = SVC.spectrum_at(d, x, y, r)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
-    return {"slug": slug, "x": spec["x"], "y": spec["y"], **classify_point(spec["points"])}
+    # The field's own calibration, written at bake time; absent for older bundles.
+    odd = (SVC.load_bundle(d).get("classify") or {}).get("odd_threshold")
+    return {"slug": slug, "x": spec["x"], "y": spec["y"], **classify_point(spec["points"], odd)}
 
 
 @router.get("/difference/{slug}")
