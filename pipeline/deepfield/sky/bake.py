@@ -29,7 +29,7 @@ WEB_SKY_DIR = REPO_ROOT / "apps" / "web" / "public" / "demo" / "sky"
 DEFAULT_FOV = 0.1
 DEFAULT_MAX_FRAMES = 48
 
-WEB_FILES = ("sky.json", "stack.png", "static.png", "colour.png", "overlay.json", "explain.json")
+WEB_FILES = ("sky.json", "stack.png", "static.png", "colour.png", "overlay.json", "explain.json", "motion.json")
 WEB_DIRS = ("frames", "visits", "detectors", "diff", "flags", "colour")
 
 
@@ -59,6 +59,13 @@ def enrich_one(slug: str, *, overlays: bool = True, explain: bool = True) -> dic
             out["overlay"] = {L["id"]: L["n"] for L in ov["layers"]}
         except Exception as exc:
             log.warning("%s: overlay failed: %s: %s", slug, type(exc).__name__, exc)
+
+    try:
+        from deepfield.sky.motion import write_motion
+        m = write_motion(src)
+        out["motion"] = m["pm"]["total_arcsec_yr"] if m.get("available") else m.get("reason")
+    except Exception as exc:
+        log.warning("%s: motion failed: %s: %s", slug, type(exc).__name__, exc)
 
     if explain:
         try:

@@ -1,0 +1,144 @@
+{
+ "slug": "ra76.9565-dec+30.4014-fov0.100",
+ "available": true,
+ "prior": {
+  "x": 29.0,
+  "y": 29.0,
+  "note": "the view centre"
+ },
+ "min_wave_um": null,
+ "pixel_arcsec": 6.15,
+ "reference": {
+  "pmra_mas": 2.6406431770317083,
+  "pmdec_mas": -27.397582540455325,
+  "g_mag": 12.184072,
+  "parallax_mas": 6.406249329219477,
+  "separation_px": 0.09,
+  "source": "Gaia DR3 (gaiadr3.gaia_source)"
+ },
+ "method": "The challenge's movers shift 1-2 SPHEREx pixels over the survey so far -- real, but easy to miss by eye. This turns \"watch closely\" into a number with an error bar that can be checked against Gaia:",
+ "located": {
+  "x": 30.0,
+  "y": 29.0,
+  "snr": 451.3
+ },
+ "visits": [
+  {
+   "visit": 0,
+   "mjd": 60921.03791971533,
+   "n_exposures": 6,
+   "x": 29.1215,
+   "y": 28.8508,
+   "ex": 0.0546,
+   "ey": 0.0545,
+   "snr": 20.2,
+   "sigma_px": 0.708
+  },
+  {
+   "visit": 1,
+   "mjd": 60927.63845841916,
+   "n_exposures": 6,
+   "x": 29.1525,
+   "y": 28.8341,
+   "ex": 0.0569,
+   "ey": 0.0553,
+   "snr": 8.0,
+   "sigma_px": 0.672
+  },
+  {
+   "visit": 2,
+   "mjd": 60936.37666405216,
+   "n_exposures": 6,
+   "x": 29.0883,
+   "y": 28.9172,
+   "ex": 0.0589,
+   "ey": 0.0573,
+   "snr": 6.7,
+   "sigma_px": 0.716
+  },
+  {
+   "visit": 3,
+   "mjd": 61092.06160581683,
+   "n_exposures": 6,
+   "x": 29.1298,
+   "y": 28.8235,
+   "ex": 0.0562,
+   "ey": 0.0562,
+   "snr": 5.3,
+   "sigma_px": 0.612
+  },
+  {
+   "visit": 4,
+   "mjd": 61104.38309980617,
+   "n_exposures": 6,
+   "x": 29.2264,
+   "y": 28.8133,
+   "ex": 0.0638,
+   "ey": 0.0598,
+   "snr": 8.2,
+   "sigma_px": 0.646
+  },
+  {
+   "visit": 5,
+   "mjd": 61285.134739219655,
+   "n_exposures": 6,
+   "x": 29.0946,
+   "y": 28.8268,
+   "ex": 0.056,
+   "ey": 0.0545,
+   "snr": 14.8,
+   "sigma_px": 0.68
+  },
+  {
+   "visit": 6,
+   "mjd": 61295.8018628925,
+   "n_exposures": 6,
+   "x": 29.107,
+   "y": 28.7653,
+   "ex": 0.0558,
+   "ey": 0.0552,
+   "snr": 11.0,
+   "sigma_px": 0.698
+  }
+ ],
+ "t_ref_mjd": 61080.34776427455,
+ "fit": {
+  "x0": 29.1286468431583,
+  "y0": 28.832861552850623,
+  "vx_px_per_yr": -0.016082343402371618,
+  "vy_px_per_yr": -0.07076961297919956,
+  "ex0": 0.02164314459322218,
+  "ey0": 0.021179882307412398,
+  "evx": 0.0515736550292997,
+  "evy": 0.05063204067868502,
+  "chi2_x": 3.43,
+  "chi2_y": 1.97,
+  "dof": 5
+ },
+ "pm": {
+  "pmra_arcsec_yr": 0.099,
+  "pmdec_arcsec_yr": -0.435,
+  "err_pmra": 0.317,
+  "err_pmdec": 0.311,
+  "total_arcsec_yr": 0.446,
+  "err_total": 0.312,
+  "pa_deg": 167.2
+ },
+ "baseline_days": 374.8,
+ "shift_px": 0.07,
+ "caveat": "A straight-line fit to one position per visit. Parallax is not modelled, and a blended neighbour can pull a position; the error bars come from the fit and are scaled up when the visits scatter more than they predict.",
+ "target": {
+  "name": "RW Aurigae",
+  "epoch_note": ""
+ },
+ "comparison": {
+  "total_arcsec_yr": 0.028,
+  "pmra_arcsec_yr": 0.003,
+  "pmdec_arcsec_yr": -0.027,
+  "pa_deg": 174.5,
+  "diff_pmra": 0.096,
+  "diff_pmdec": -0.408,
+  "n_sigma": 0.95,
+  "agrees": true
+ }
+}

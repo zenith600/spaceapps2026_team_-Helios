@@ -1,0 +1,122 @@
+{
+ "slug": "ra269.4463-dec+4.7679-fov0.100",
+ "available": true,
+ "prior": {
+  "x": 29.0,
+  "y": 29.0,
+  "note": "the view centre"
+ },
+ "min_wave_um": null,
+ "pixel_arcsec": 6.15,
+ "reference": {
+  "pmra_mas": -801.5509783684709,
+  "pmdec_mas": 10362.394206546573,
+  "g_mag": 8.1939745,
+  "parallax_mas": 546.975939730948,
+  "separation_px": 0.06,
+  "source": "Gaia DR3 (gaiadr3.gaia_source)"
+ },
+ "method": "The challenge's movers shift 1-2 SPHEREx pixels over the survey so far -- real, but easy to miss by eye. This turns \"watch closely\" into a number with an error bar that can be checked against Gaia:",
+ "located": {
+  "x": 31.0,
+  "y": 29.0,
+  "snr": 251.0
+ },
+ "visits": [
+  {
+   "visit": 0,
+   "mjd": 60903.0044446615,
+   "n_exposures": 2,
+   "x": 29.0048,
+   "y": 28.5396,
+   "ex": 0.062,
+   "ey": 0.057,
+   "snr": 9.7,
+   "sigma_px": 1.068
+  },
+  {
+   "visit": 2,
+   "mjd": 60908.527699893,
+   "n_exposures": 3,
+   "x": 29.1345,
+   "y": 28.6773,
+   "ex": 0.0691,
+   "ey": 0.0621,
+   "snr": 7.5,
+   "sigma_px": 1.173
+  },
+  {
+   "visit": 7,
+   "mjd": 61114.146880417335,
+   "n_exposures": 3,
+   "x": 28.8862,
+   "y": 29.548,
+   "ex": 0.0636,
+   "ey": 0.0578,
+   "snr": 8.7,
+   "sigma_px": 1.053
+  },
+  {
+   "visit": 11,
+   "mjd": 61164.6087187645,
+   "n_exposures": 2,
+   "x": 29.0828,
+   "y": 29.9028,
+   "ex": 0.0638,
+   "ey": 0.0573,
+   "snr": 7.2,
+   "sigma_px": 0.878
+  },
+  {
+   "visit": 12,
+   "mjd": 61272.5007970515,
+   "n_exposures": 2,
+   "x": 29.2044,
+   "y": 30.2569,
+   "ex": 0.0552,
+   "ey": 0.0551,
+   "snr": 8.2,
+   "sigma_px": 1.015
+  }
+ ],
+ "t_ref_mjd": 61072.557708157576,
+ "fit": {
+  "x0": 29.0644102162551,
+  "y0": 29.382529949661937,
+  "vx_px_per_yr": 0.10154558143830579,
+  "vy_px_per_yr": 1.6869227306698749,
+  "ex0": 0.06067001745093986,
+  "ey0": 0.03524060584129729,
+  "evx": 0.14849235362904323,
+  "evy": 0.08801133531866277,
+  "chi2_x": 14.1,
+  "chi2_y": 5.57,
+  "dof": 3
+ },
+ "pm": {
+  "pmra_arcsec_yr": -0.625,
+  "pmdec_arcsec_yr": 10.375,
+  "err_pmra": 0.913,
+  "err_pmdec": 0.541,
+  "total_arcsec_yr": 10.393,
+  "err_total": 0.543,
+  "pa_deg": 356.6
+ },
+ "baseline_days": 369.5,
+ "shift_px": 1.71,
+ "caveat": "A straight-line fit to one position per visit. Parallax is not modelled, and a blended neighbour can pull a position; the error bars come from the fit and are scaled up when the visits scatter more than they predict.",
+ "target": {
+  "name": "Barnard's Star",
+  "epoch_note": "Centred on Gaia DR3's position carried forward to 2025-09-07. Its J2000 position is 4.4 arcmin south, outside this view."
+ },
+ "comparison": {
+  "total_arcsec_yr": 10.393,
+  "pmra_arcsec_yr": -0.802,
+  "pmdec_arcsec_yr": 10.362,
+  "pa_deg": 355.6,
+  "diff_pmra": 0.177,
+  "diff_pmdec": 0.013,
+  "n_sigma": 0.14,
+  "agrees": true
+ }
+}

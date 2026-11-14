@@ -14,6 +14,7 @@ Routes
   GET  /sky/bundle/{slug}           the built sky.json
   GET  /sky/bundle/{slug}/freshness has new data landed since it was built?
   GET  /sky/spectrum/{slug}?x=&y=   on-the-fly spectrum at one pixel
+  GET  /sky/motion/{slug}?x=&y=     measured proper motion, compared with Gaia DR3
   GET  /sky/cache                   read-only: disk cache, built views, job counts
   files are served from /sky/files/{slug}/...
 """
@@ -506,6 +507,29 @@ def sky_overlay(slug: str, catalogs: str | None = None, refresh: bool = False):
         except Exception:
             pass
     return out
+
+
+@router.get("/motion/{slug}")
+def sky_motion(slug: str, x: float | None = Query(None), y: float | None = Query(None),
+               min_wave: float | None = Query(None, ge=0.7, le=5.0)):
+    """Measured proper motion of a source: one position per visit and a straight-line fit.
+
+    With no position, serves the baked measurement of the view's target (or measures the
+    view centre). With x and y, measures the source at that pixel. Compared with Gaia DR3
+    where a Gaia source matches.
+    """
+    import json as _json
+
+    from deepfield.sky.motion import motion_for_bundle
+    d = bundle_dir(slug)
+    cached = d / "motion.json"
+    if x is None and y is None and min_wave is None and cached.exists():
+        return _json.loads(cached.read_text())
+    if not (d / "cube.npz").exists():
+        raise HTTPException(404, "this bundle was exported without its pixel cube")
+    if (x is None) != (y is None):
+        raise HTTPException(400, "give both x and y, or neither")
+    return motion_for_bundle(d, x, y, min_wave_um=min_wave)
 
 
 # ---------------------------------------------------------------------------

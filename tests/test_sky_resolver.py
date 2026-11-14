@@ -114,9 +114,36 @@ def test_epsilon_indi_b_matches_its_2mass_designation():
     """
     t = R.resolve("eps Ind B", allow_network=False)
     ra, dec = R.parse_coords("22 04 10.52 -56 46 57.7")
-    assert sep_arcsec(t.ra_deg, t.dec_deg, ra, dec) < 1.0
+    # The designation is a 1999 position: the *catalogue* position must match it...
+    assert sep_arcsec(t.catalog_ra_deg, t.catalog_dec_deg, ra, dec) < 1.0
     a_ra, a_dec = R.parse_coords("22 03 21.65 -56 47 09.5")   # Epsilon Indi A
     assert sep_arcsec(t.ra_deg, t.dec_deg, a_ra, a_dec) > 300.0
+    # ...while the view is centred where the pair is during SPHEREx, ~2 arcmin away.
+    assert 100.0 < sep_arcsec(t.ra_deg, t.dec_deg, ra, dec) < 140.0
+
+
+def test_movers_are_viewed_where_they_are_during_the_survey():
+    """A 10"/yr star is ~4.4 arcmin from its J2000 position by 2025: outside a 0.1 deg view.
+
+    The view must be centred on the Gaia DR3 solution carried to VIEW_EPOCH_MJD, and that
+    must stay inside the field across the whole DR1 span (MJD 60800-61174).
+    """
+    b = R.resolve("Barnard's Star", allow_network=False)
+    assert 250.0 < sep_arcsec(b.ra_deg, b.dec_deg, b.catalog_ra_deg, b.catalog_dec_deg) < 280.0
+    known = R._BY_KEY["barnards star"]
+    for mjd in (60800.0, 61174.0):
+        ra, dec = known.astrometry.at(mjd)
+        assert sep_arcsec(ra, dec, b.ra_deg, b.dec_deg) < 10.0      # < 2 pixels either way
+    # Gaia's 2016 position plus 9.7 years at +10.36"/yr is north of it by ~100".
+    ra16, dec16 = known.astrometry.at(R.GAIA_DR3_EPOCH_MJD)
+    assert abs((b.dec_deg - dec16) * 3600 - 10.362 * (R.VIEW_EPOCH_MJD - R.GAIA_DR3_EPOCH_MJD) / 365.25) < 0.01
+    assert b.epoch_note
+
+
+def test_brief_position_is_kept_verbatim_for_wise_0855():
+    t = R.resolve("WISE 0855", allow_network=False)
+    assert (t.ra_deg, t.dec_deg) == (t.catalog_ra_deg, t.catalog_dec_deg)
+    assert "brief" in t.epoch_note
 
 
 def test_unresolvable_name_offline_raises_with_help():
@@ -140,4 +167,5 @@ def test_builtin_coordinates_match_sesame(name):
         pytest.skip("CDS Sesame unreachable")
     ra, dec, _ = hit
     ours = R.resolve(name, allow_network=False)
-    assert sep_arcsec(ra, dec, ours.ra_deg, ours.dec_deg) < 30.0, f"{name}: builtin drifted from Sesame"
+    # Sesame answers in J2000, so compare the catalogue position, not the propagated view.
+    assert sep_arcsec(ra, dec, ours.catalog_ra_deg, ours.catalog_dec_deg) < 30.0, f"{name}: builtin drifted from Sesame"

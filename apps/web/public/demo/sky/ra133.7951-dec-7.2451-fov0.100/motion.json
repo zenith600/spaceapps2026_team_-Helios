@@ -1,0 +1,16 @@
+{
+ "slug": "ra133.7951-dec-7.2451-fov0.100",
+ "available": false,
+ "pixel_arcsec": 6.15,
+ "min_wave_um": null,
+ "prior": {
+  "x": null,
+  "y": null,
+  "note": "not measured"
+ },
+ "target": {
+  "name": "WISE 0855-0714",
+  "epoch_note": "The position given in the challenge brief, used verbatim. It is from 2010-era WISE data and WISE 0855 is too cold for Gaia, so it is not carried forward."
+ },
+ "reason": "WISE 0855-0714 is not at the centre of this view, so the source there is not it. The coldest brown dwarf known, about -23 C. The brief's position is from 2010; by 2025 it has moved 2 arcmin west (right of centre), to within 8 arcsec of a brighter star that SPHEREx's 6-arcsec pixels cannot cleanly separate from it."
+}

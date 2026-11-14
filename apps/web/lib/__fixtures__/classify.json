@@ -83,14 +83,14 @@
      "chi2_per_dof": 0.1
     },
     {
+     "template": "star",
+     "label": "star-like",
+     "chi2_per_dof": 31.32
+    },
+    {
      "template": "asteroid",
      "label": "reflected sunlight",
      "chi2_per_dof": 45.78
-    },
-    {
-     "template": "star",
-     "label": "star-like",
-     "chi2_per_dof": 46.72
     }
    ]
   },
@@ -177,7 +177,7 @@
     {
      "template": "star",
      "label": "star-like",
-     "chi2_per_dof": 0.77
+     "chi2_per_dof": 0.46
     },
     {
      "template": "planet",

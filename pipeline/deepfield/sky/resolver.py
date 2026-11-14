@@ -29,9 +29,46 @@ class Target:
     slug: str = ""
     look_for: str = ""  # plain-language "what to watch for", shown above the player
     kind: str = ""      # short human label, e.g. "moving star"
+    #: For movers: the catalogue position before propagation (J2000 / survey epoch), and
+    #: a sentence saying how the view position was derived from it.
+    catalog_ra_deg: float | None = None
+    catalog_dec_deg: float | None = None
+    epoch_note: str = ""
 
     def as_dict(self) -> dict:
         return asdict(self)
+
+
+# ---------------------------------------------------------------------------
+# Proper motion. A star moving 10 arcsec a year is 260 arcsec from its J2000 position by
+# 2026 -- more than the half-width of a 0.1 deg view -- so a mover's view is centred on
+# where it is during the SPHEREx survey, not where an old catalogue left it.
+# ---------------------------------------------------------------------------
+
+#: The epoch every mover's view is centred on: 2025-09-07, inside DR1 (MJD 60800-61174).
+#: Fixed, not "now", so a target's view (and its slug) does not change from day to day.
+VIEW_EPOCH_MJD = 61000.0
+
+
+@dataclass(frozen=True)
+class Astrometry:
+    ra_deg: float
+    dec_deg: float
+    epoch_mjd: float
+    pmra_mas: float       # mu_alpha * cos(dec), mas/yr
+    pmdec_mas: float      # mas/yr
+    source: str
+
+    def at(self, mjd: float) -> tuple[float, float]:
+        """Linear propagation. Over a decade at 10"/yr the neglected curvature is < 0.01"."""
+        import math
+        dt = (mjd - self.epoch_mjd) / 365.25
+        dec = self.dec_deg + self.pmdec_mas * dt / 3.6e6
+        ra = self.ra_deg + self.pmra_mas * dt / 3.6e6 / math.cos(math.radians(self.dec_deg))
+        return ra % 360.0, dec
+
+
+GAIA_DR3_EPOCH_MJD = 57388.5   # J2016.0
 
 
 @dataclass(frozen=True)
@@ -48,12 +85,30 @@ class _Known:
     #: who does not already know what they are looking at.
     look_for: str = ""
     kind: str = ""          # short human label: "moving star", "variable star", ...
+    #: When set, views are centred on this solution propagated to VIEW_EPOCH_MJD.
+    astrometry: Astrometry | None = None
+    epoch_note: str = ""
+    #: False when the view centre is known *not* to be the object (WISE 0855: the brief's
+    #: 2010 position). Measuring "the source at the centre" there would describe some
+    #: other star and read as the target's motion.
+    centre_is_target: bool = True
+
+    def position(self) -> tuple[float, float]:
+        """Where to point a view: the propagated position for movers, else the catalogue one."""
+        return self.astrometry.at(VIEW_EPOCH_MJD) if self.astrometry else (self.ra_deg, self.dec_deg)
+
+
+def _gaia(source_id: str, ra: float, dec: float, pmra: float, pmdec: float) -> Astrometry:
+    return Astrometry(ra, dec, GAIA_DR3_EPOCH_MJD, pmra, pmdec, f"Gaia DR3 {source_id} (epoch J2016.0)")
 
 
 # ---------------------------------------------------------------------------
 # Built-in catalogue. The five featured entries are the challenge's test targets.
-# Coordinates are ICRS/J2000 degrees. Where the challenge brief states a position
-# (WISE 0855) that is the value used, verbatim.
+# `ra_deg/dec_deg` are the catalogue positions (ICRS, J2000 or the survey epoch of the
+# designation). Movers also carry a Gaia DR3 solution, and their views are centred on it
+# propagated to VIEW_EPOCH_MJD. Where the challenge brief states a position (WISE 0855)
+# that is the value used, verbatim -- WISE 0855 is too cold for Gaia, and its brief
+# position is from 2010-era WISE data, so it now sits ~2 arcmin west of the view centre.
 # ---------------------------------------------------------------------------
 CATALOGUE: tuple[_Known, ...] = (
     _Known(
@@ -63,9 +118,12 @@ CATALOGUE: tuple[_Known, ...] = (
         ("barnard", "barnards star", "barnard's star", "barnard star", "gj 699", "gl 699",
          "hip 87937", "v2500 oph"), featured=True,
         kind="moving star",
-        look_for="Watch the bright star at the centre creep against the fixed background. "
-                 "It shifts about one SPHEREx pixel per year — the fastest motion of any star "
-                 "in the sky."),
+        look_for="Watch the bright star at the centre creep upwards (north) against the fixed "
+                 "background: 10.4 arcsec a year, about 1.7 SPHEREx pixels — the fastest motion "
+                 "of any star in the sky.",
+        astrometry=_gaia("4472832130942575872", 269.448503, 4.73942, -801.550978, 10362.394207),
+        epoch_note="Centred on Gaia DR3's position carried forward to 2025-09-07. Its J2000 "
+                   "position is 4.4 arcmin south, outside this view."),
     _Known(
         # Position decoded from the 2MASS designation 2MASS J22041052-5646577, which is
         # the discovery identifier for this pair: 22h04m10.52s, -56d46m57.7s.
@@ -77,9 +135,13 @@ CATALOGUE: tuple[_Known, ...] = (
         ("eps ind b", "epsilon indi b", "eps ind ba", "epsilon indi ba", "eps indi b",
          "epsilon ind b", "eps ind bab", "2mass j22041052-5646577"), featured=True,
         kind="brown dwarf pair",
-        look_for="Two failed stars too small to burn, orbiting each other. They are cold and "
-                 "methane-rich, so they are far brighter in infrared than in visible light — "
-                 "click the centre to see that in the spectrum."),
+        look_for="Two failed stars too small to burn, orbiting each other — the dot at the centre, "
+                 "drifting down and to the left (south-east) at 4.7 arcsec a year. They give off most "
+                 "of their light in the infrared: click the dot for its spectrum.",
+        # Gaia DR3 resolves Ba; its motion matches Epsilon Indi A's, as a bound companion's must.
+        astrometry=_gaia("6412596012146801152", 331.076453, -56.793812, 3981.976663, -2466.831815),
+        epoch_note="Centred on Gaia DR3's position for Epsilon Indi Ba carried forward to "
+                   "2025-09-07, about 2 arcmin from its 2MASS-era (1999) position."),
     _Known(
         "wise-0855", "WISE 0855-0714", 133.795129, -7.245147,
         "The coldest known brown dwarf, 250 K, 7.5 light years away. Moves about 8 arcsec "
@@ -87,9 +149,12 @@ CATALOGUE: tuple[_Known, ...] = (
         ("wise 0855", "wise0855", "wise j0855", "wise 0855-0714", "wise j0855-0714",
          "wise j085510.83-071442.5", "w0855"), featured=True,
         kind="coldest brown dwarf",
-        look_for="The coldest object of its kind ever found — about -23 C, cold enough for "
-                 "water-ice clouds. It is 7.5 light years away and drifts roughly one SPHEREx "
-                 "pixel every nine months, so watch the centre across the full time-lapse."),
+        look_for="The coldest brown dwarf known, about -23 C. The brief's position is from 2010; by "
+                 "2025 it has moved 2 arcmin west (right of centre), to within 8 arcsec of a brighter "
+                 "star that SPHEREx's 6-arcsec pixels cannot cleanly separate from it.",
+        epoch_note="The position given in the challenge brief, used verbatim. It is from 2010-era "
+                   "WISE data and WISE 0855 is too cold for Gaia, so it is not carried forward.",
+        centre_is_target=False),
     _Known(
         "rw-aurigae", "RW Aurigae", 76.95652603, 30.40143817,
         "A young binary T Tauri star that dims by magnitudes for months at a time when its "
@@ -130,8 +195,12 @@ CATALOGUE: tuple[_Known, ...] = (
         ("teegarden", "teegardens star", "teegarden's star", "2mass j02530084+1652532"),
         kind="moving star",
         look_for="A small, cool red dwarf 12 light years away with two planets that could hold "
-                 "liquid water. It moves noticeably against the background."),
+                 "liquid water. It moves noticeably against the background.",
+        astrometry=_gaia("35227046884571776", 43.269642, 16.864374, 3429.082827, -3805.541123),
+        epoch_note="Centred on Gaia DR3's position carried forward to 2025-09-07."),
 )
+# Not yet carried forward (no Gaia solution fetched): Proxima Centauri (3.9"/yr, ~1.6 arcmin
+# from J2000 by 2025, still inside a 0.1 deg view) and Luhman 16 (not in Gaia DR3; 2.8"/yr).
 
 _BY_KEY: dict[str, _Known] = {}
 for _k in CATALOGUE:
@@ -140,8 +209,24 @@ for _k in CATALOGUE:
 
 
 def _entry(k: _Known) -> dict:
-    return {"slug": k.slug, "name": k.name, "ra_deg": k.ra_deg, "dec_deg": k.dec_deg,
-            "note": k.note, "look_for": k.look_for, "kind": k.kind, "featured": k.featured}
+    """Catalogue row as the web app reads it. `ra_deg/dec_deg` is where to point a view."""
+    ra, dec = k.position()
+    out = {"slug": k.slug, "name": k.name, "ra_deg": ra, "dec_deg": dec,
+           "note": k.note, "look_for": k.look_for, "kind": k.kind, "featured": k.featured,
+           "catalog_ra_deg": k.ra_deg, "catalog_dec_deg": k.dec_deg, "epoch_note": k.epoch_note,
+           # So the browser resolves "eps Ind B" or "GJ 699" offline exactly as this module does.
+           "aliases": list(k.aliases)}
+    if k.astrometry:
+        a = k.astrometry
+        out["astrometry"] = {"ra_deg": a.ra_deg, "dec_deg": a.dec_deg, "epoch_mjd": a.epoch_mjd,
+                             "pmra_mas": a.pmra_mas, "pmdec_mas": a.pmdec_mas, "source": a.source,
+                             "view_epoch_mjd": VIEW_EPOCH_MJD}
+    return out
+
+
+def known(slug: str) -> _Known | None:
+    """The built-in entry with this slug, if any."""
+    return next((k for k in CATALOGUE if k.slug == slug), None)
 
 
 def featured() -> list[dict]:
@@ -260,8 +345,9 @@ def resolve(query: str, *, allow_network: bool = True) -> Target:
 
     known = _BY_KEY.get(_norm(q))
     if known is not None:
-        return Target(q, known.name, known.ra_deg, known.dec_deg, "builtin", known.note, known.slug,
-                      known.look_for, known.kind)
+        ra, dec = known.position()
+        return Target(q, known.name, ra, dec, "builtin", known.note, known.slug,
+                      known.look_for, known.kind, known.ra_deg, known.dec_deg, known.epoch_note)
 
     try:
         coords = parse_coords(q)

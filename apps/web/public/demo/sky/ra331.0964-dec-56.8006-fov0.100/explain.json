@@ -1,0 +1,23 @@
+{
+ "text": "This 6-arcminute patch was observed 19 times over 1.4 years, with 51 images covering 0.77 to 5.0 microns. In a time-lapse you can look for subtle changes in brightness or color, though no known solar system objects appear.",
+ "generator": "llm:openai/gpt-oss-20b",
+ "facts": {
+  "right_ascension_deg": 331.0964,
+  "declination_deg": -56.8006,
+  "field_width_arcmin": 6.0,
+  "number_of_visits": 19,
+  "images_used": 51,
+  "years_covered": 1.4,
+  "infrared_colours_measured": 43,
+  "infrared_colours_possible": 102,
+  "wavelength_range_microns": [
+   0.7674,
+   5.0043
+  ],
+  "pixel_size_arcsec": 6.15,
+  "known_solar_system_objects_in_field": []
+ },
+ "generated_at": "2026-11-14T15:55:40+00:00",
+ "is_machine_written": true,
+ "disclaimer": "Written automatically from measured survey statistics. Not a discovery claim."
+}

@@ -81,7 +81,8 @@ export function Workstation() {
   const jump = useCallback((i: number) => setHistory((h) => jumpTo(h, i)), []);
 
   // ---- layers ----------------------------------------------------------------
-  const tree = useMemo(() => (bundle ? buildLayerTree(bundle, session.overlay, mode) : null), [bundle, session.overlay, mode]);
+  const tree = useMemo(() => (bundle ? buildLayerTree(bundle, session.overlay, mode, session.motion) : null),
+    [bundle, session.overlay, mode, session.motion]);
   const layers = useMemo(() => (tree ? resolveLayers(tree, doc.layers) : []), [tree, doc.layers]);
   const layerMap = useMemo(() => new Map(layers.map((l) => [l.node.id, l])), [layers]);
   const layer = useCallback((id: string) => layerMap.get(id), [layerMap]);

@@ -1,0 +1,265 @@
+{
+ "slug": "ra331.0964-dec-56.8006-fov0.100",
+ "available": true,
+ "prior": {
+  "x": 29.0,
+  "y": 29.0,
+  "note": "the view centre"
+ },
+ "min_wave_um": null,
+ "pixel_arcsec": 6.15,
+ "reference": {
+  "pmra_mas": 3981.97666296105,
+  "pmdec_mas": -2466.8318147663504,
+  "g_mag": 18.030664,
+  "parallax_mas": 270.6580324694526,
+  "separation_px": 0.07,
+  "source": "Gaia DR3 (gaiadr3.gaia_source)"
+ },
+ "method": "The challenge's movers shift 1-2 SPHEREx pixels over the survey so far -- real, but easy to miss by eye. This turns \"watch closely\" into a number with an error bar that can be checked against Gaia:",
+ "located": {
+  "x": 29.0,
+  "y": 29.0,
+  "snr": 194.3
+ },
+ "visits": [
+  {
+   "visit": 0,
+   "mjd": 60793.161286197,
+   "n_exposures": 3,
+   "x": 29.3064,
+   "y": 29.1945,
+   "ex": 0.0581,
+   "ey": 0.0597,
+   "snr": 17.0,
+   "sigma_px": 0.68
+  },
+  {
+   "visit": 1,
+   "mjd": 60799.7056104195,
+   "n_exposures": 2,
+   "x": 29.3244,
+   "y": 29.1659,
+   "ex": 0.0608,
+   "ey": 0.0582,
+   "snr": 13.4,
+   "sigma_px": 0.6
+  },
+  {
+   "visit": 2,
+   "mjd": 60802.05894704567,
+   "n_exposures": 3,
+   "x": 29.2852,
+   "y": 29.163,
+   "ex": 0.0531,
+   "ey": 0.0531,
+   "snr": 29.8,
+   "sigma_px": 0.7
+  },
+  {
+   "visit": 3,
+   "mjd": 60815.131868492,
+   "n_exposures": 2,
+   "x": 29.1924,
+   "y": 29.1547,
+   "ex": 0.0527,
+   "ey": 0.0531,
+   "snr": 28.3,
+   "sigma_px": 0.66
+  },
+  {
+   "visit": 4,
+   "mjd": 60832.688301137,
+   "n_exposures": 2,
+   "x": 29.1989,
+   "y": 29.0246,
+   "ex": 0.0551,
+   "ey": 0.0542,
+   "snr": 20.7,
+   "sigma_px": 0.637
+  },
+  {
+   "visit": 5,
+   "mjd": 60836.188985572,
+   "n_exposures": 3,
+   "x": 29.2134,
+   "y": 29.1538,
+   "ex": 0.0535,
+   "ey": 0.0531,
+   "snr": 24.3,
+   "sigma_px": 0.573
+  },
+  {
+   "visit": 6,
+   "mjd": 60948.9357440015,
+   "n_exposures": 2,
+   "x": 29.1,
+   "y": 28.9761,
+   "ex": 0.0545,
+   "ey": 0.0538,
+   "snr": 21.1,
+   "sigma_px": 0.524
+  },
+  {
+   "visit": 7,
+   "mjd": 60961.726760209334,
+   "n_exposures": 3,
+   "x": 29.4306,
+   "y": 28.9074,
+   "ex": 0.0763,
+   "ey": 0.076,
+   "snr": 16.3,
+   "sigma_px": 1.006
+  },
+  {
+   "visit": 8,
+   "mjd": 60964.709961401335,
+   "n_exposures": 3,
+   "x": 29.077,
+   "y": 29.0922,
+   "ex": 0.0651,
+   "ey": 0.0643,
+   "snr": 21.6,
+   "sigma_px": 1.022
+  },
+  {
+   "visit": 10,
+   "mjd": 60971.6148204775,
+   "n_exposures": 2,
+   "x": 29.0953,
+   "y": 28.9079,
+   "ex": 0.0535,
+   "ey": 0.0536,
+   "snr": 20.0,
+   "sigma_px": 0.608
+  },
+  {
+   "visit": 11,
+   "mjd": 60982.37150378567,
+   "n_exposures": 3,
+   "x": 29.0084,
+   "y": 28.8814,
+   "ex": 0.0535,
+   "ey": 0.0534,
+   "snr": 25.8,
+   "sigma_px": 0.615
+  },
+  {
+   "visit": 12,
+   "mjd": 60986.67240773234,
+   "n_exposures": 3,
+   "x": 29.1346,
+   "y": 28.9532,
+   "ex": 0.0534,
+   "ey": 0.0536,
+   "snr": 23.8,
+   "sigma_px": 0.581
+  },
+  {
+   "visit": 13,
+   "mjd": 60991.178656498,
+   "n_exposures": 3,
+   "x": 28.899,
+   "y": 29.1354,
+   "ex": 0.0826,
+   "ey": 0.0842,
+   "snr": 12.0,
+   "sigma_px": 0.874
+  },
+  {
+   "visit": 14,
+   "mjd": 61150.56667109267,
+   "n_exposures": 3,
+   "x": 28.6573,
+   "y": 28.8385,
+   "ex": 0.0526,
+   "ey": 0.0526,
+   "snr": 40.5,
+   "sigma_px": 0.818
+  },
+  {
+   "visit": 15,
+   "mjd": 61155.703082211665,
+   "n_exposures": 3,
+   "x": 28.7546,
+   "y": 28.832,
+   "ex": 0.0574,
+   "ey": 0.0578,
+   "snr": 15.5,
+   "sigma_px": 0.62
+  },
+  {
+   "visit": 16,
+   "mjd": 61159.93336338466,
+   "n_exposures": 3,
+   "x": 28.6633,
+   "y": 28.7757,
+   "ex": 0.052,
+   "ey": 0.0521,
+   "snr": 29.1,
+   "sigma_px": 0.584
+  },
+  {
+   "visit": 17,
+   "mjd": 61163.98451507433,
+   "n_exposures": 3,
+   "x": 28.6226,
+   "y": 28.7351,
+   "ex": 0.0518,
+   "ey": 0.0519,
+   "snr": 30.6,
+   "sigma_px": 0.597
+  },
+  {
+   "visit": 18,
+   "mjd": 61310.499785869,
+   "n_exposures": 3,
+   "x": 28.4766,
+   "y": 28.5179,
+   "ex": 0.0552,
+   "ey": 0.0546,
+   "snr": 19.9,
+   "sigma_px": 0.643
+  }
+ ],
+ "t_ref_mjd": 60979.26845947784,
+ "fit": {
+  "x0": 29.01502752321755,
+  "y0": 28.960601189426075,
+  "vx_px_per_yr": -0.6068923574989168,
+  "vy_px_per_yr": -0.4058218648884868,
+  "ex0": 0.022781991944535594,
+  "ey0": 0.01548906921559629,
+  "evx": 0.05369217640238042,
+  "evy": 0.03645655162505138,
+  "chi2_x": 46.78,
+  "chi2_y": 21.73,
+  "dof": 16
+ },
+ "pm": {
+  "pmra_arcsec_yr": 3.732,
+  "pmdec_arcsec_yr": -2.496,
+  "err_pmra": 0.33,
+  "err_pmdec": 0.224,
+  "total_arcsec_yr": 4.49,
+  "err_total": 0.301,
+  "pa_deg": 123.8
+ },
+ "baseline_days": 517.3,
+ "shift_px": 1.03,
+ "caveat": "A straight-line fit to one position per visit. Parallax is not modelled, and a blended neighbour can pull a position; the error bars come from the fit and are scaled up when the visits scatter more than they predict.",
+ "target": {
+  "name": "Epsilon Indi Ba/Bb",
+  "epoch_note": "Centred on Gaia DR3's position for Epsilon Indi Ba carried forward to 2025-09-07, about 2 arcmin from its 2MASS-era (1999) position."
+ },
+ "comparison": {
+  "total_arcsec_yr": 4.684,
+  "pmra_arcsec_yr": 3.982,
+  "pmdec_arcsec_yr": -2.467,
+  "pa_deg": 121.8,
+  "diff_pmra": -0.25,
+  "diff_pmdec": -0.029,
+  "n_sigma": 0.54,
+  "agrees": true
+ }
+}

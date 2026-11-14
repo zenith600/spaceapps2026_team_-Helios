@@ -8,6 +8,7 @@ import { changeKey, keyOf } from "@/lib/workstation/derived";
 import { BLEND_MODES, type ResolvedLayer } from "@/lib/workstation/layers";
 import { formatArcsec, measure } from "@/lib/workstation/measure";
 import { formatBytes, resourceStatus } from "@/lib/workstation/perf";
+import { MotionSummary } from "@/components/MotionTrack";
 import { fmtCoord } from "../chrome";
 import { usePB, useWS } from "../context";
 import { Check, Empty, KV, Section, Select, Slider, StateChip, TextBtn } from "../ui";
@@ -30,6 +31,7 @@ export function PropertiesPanel() {
 
       {n.kind === "frames" ? <FramesProps l={l} /> : null}
       {n.kind === "change" ? <ChangeProps /> : null}
+      {n.kind === "motion" ? <MotionProps /> : null}
       {n.kind === "catalog" ? <CatalogProps id={n.id} /> : null}
       {n.kind === "flags" ? <FlagsProps /> : null}
       {n.kind === "probe" ? <ProbeProps /> : null}
@@ -247,6 +249,54 @@ function ChangeProps() {
         <p className="mono break-all text-[10px] text-ws-muted">{key}</p>
         <p className="pt-1 text-[10.5px] text-ws-dim">Dataset build, operation version and every parameter. Change one and only this result is recomputed.</p>
       </Section>
+    </>
+  );
+}
+
+function MotionProps() {
+  const ws = useWS();
+  const m = ws.session.motion;
+  if (!m) return <Section title="Motion"><p className="text-[11px] text-ws-muted">No motion measurement for this view.</p></Section>;
+  const p = m.pm, c = m.comparison;
+  return (
+    <>
+      <Section title="Measurement">
+        <MotionSummary motion={m} compact />
+        {p ? (
+          <div className="mt-1.5">
+            <KV k="μα cos δ" v={`${p.pmra_arcsec_yr >= 0 ? "+" : ""}${p.pmra_arcsec_yr.toFixed(3)} ± ${p.err_pmra.toFixed(3)} ″/yr`} />
+            <KV k="μδ" v={`${p.pmdec_arcsec_yr >= 0 ? "+" : ""}${p.pmdec_arcsec_yr.toFixed(3)} ± ${p.err_pmdec.toFixed(3)} ″/yr`} />
+            <KV k="total" v={`${p.total_arcsec_yr.toFixed(3)} ± ${p.err_total.toFixed(3)} ″/yr · PA ${p.pa_deg}°`} />
+            <KV k="shift so far" v={`${m.shift_px} px over ${m.baseline_days} d`} />
+            {m.fit ? <KV k="fit χ² (x, y)" v={`${m.fit.chi2_x}, ${m.fit.chi2_y} on ${m.fit.dof} dof`} /> : null}
+            {m.min_wave_um ? <KV k="wavelengths" v={`≥ ${m.min_wave_um} µm only`} /> : null}
+          </div>
+        ) : null}
+      </Section>
+      {c && m.reference ? (
+        <Section title="Gaia DR3 comparison">
+          <KV k="μα cos δ" v={`${c.pmra_arcsec_yr >= 0 ? "+" : ""}${c.pmra_arcsec_yr.toFixed(3)} ″/yr`} />
+          <KV k="μδ" v={`${c.pmdec_arcsec_yr >= 0 ? "+" : ""}${c.pmdec_arcsec_yr.toFixed(3)} ″/yr`} />
+          <KV k="difference" v={`${c.n_sigma.toFixed(2)} σ (ours)`} />
+          {m.reference.g_mag ? <KV k="Gaia G" v={m.reference.g_mag.toFixed(2)} /> : null}
+          {m.reference.parallax_mas ? <KV k="parallax" v={`${m.reference.parallax_mas.toFixed(1)} mas`} /> : null}
+          <p className="pt-1 text-[10.5px] text-ws-dim">Gaia's own errors are about a thousand times smaller, so the σ is ours.</p>
+        </Section>
+      ) : null}
+      {m.visits?.length ? (
+        <Section title={`Per-visit positions · ${m.visits.length}`} defaultOpen={false}>
+          <table className="w-full text-[10.5px]">
+            <thead className="text-ws-muted"><tr><th className="text-left font-normal">date</th><th className="text-right font-normal">x</th><th className="text-right font-normal">y</th><th className="text-right font-normal">±</th><th className="text-right font-normal">S/N</th></tr></thead>
+            <tbody className="mono text-ws-fg">
+              {m.visits.map((v) => (
+                <tr key={v.visit}><td>{mjdLabel(v.mjd)}</td><td className="text-right">{v.x.toFixed(2)}</td><td className="text-right">{v.y.toFixed(2)}</td>
+                  <td className="text-right">{Math.hypot(v.ex, v.ey).toFixed(2)}</td><td className="text-right">{v.snr.toFixed(0)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="pt-1 text-[10.5px] leading-snug text-ws-dim">{m.method}</p>
+        </Section>
+      ) : null}
     </>
   );
 }

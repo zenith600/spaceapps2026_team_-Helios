@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useEffect, useState, useSyncExternalStore } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { FrameMode, MODES, SkyPlayer } from "@/components/SkyPlayer";
 import { SkySpectrum } from "@/components/SkySpectrum";
 import { TargetGallery } from "@/components/TargetGallery";
 import { VisitCompare } from "@/components/VisitCompare";
+import { MotionSummary } from "@/components/MotionTrack";
+import { UiModeToggle } from "@/components/UiModeToggle";
 import { Workstation } from "@/components/workstation/Workstation";
 import {
   type ChangeReport, type SkyBundle,
@@ -18,29 +20,14 @@ import {
 import { ZOOMS, useSkySession } from "@/lib/useSkySession";
 import { cn } from "@/lib/utils";
 
-/** The workstation needs a desktop-sized window; below this the Simple view is used. */
-const WORKSTATION_MIN_WIDTH = 1024;
-const WIDE_QUERY = `(min-width: ${WORKSTATION_MIN_WIDTH}px)`;
-
-function subscribeWide(cb: () => void) {
-  const mq = window.matchMedia(WIDE_QUERY);
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-}
-
 /**
- * Which interface to show. `?ui=simple` forces the original single-page viewer and
- * `?ui=pro` forces the workstation; otherwise the window width decides. Both read and
- * write the same URL parameters, so a link works in either.
+ * Which interface to show. Simple -- the plain single-page viewer -- is the default for
+ * everyone; `?ui=pro` opens the analysis workstation. Both read and write the same URL
+ * parameters (and keep `ui`), so a link opens the same view in the same interface.
  */
 function SkyRoute() {
   const params = useSearchParams();
-  const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE_QUERY).matches, () => null);
-  const ui = params.get("ui");
-  if (ui === "simple") return <SkyViewer />;
-  if (ui === "pro") return <Workstation />;
-  if (wide === null) return <LoadingBlock label="Loading the viewer…" />;
-  return wide ? <Workstation /> : <SkyViewer />;
+  return params.get("ui") === "pro" ? <Workstation /> : <SkyViewer />;
 }
 
 const EXAMPLES = [
@@ -69,8 +56,10 @@ function LoadingBlock({ label }: { label: string }) {
 function SkyViewer() {
   const {
     qParam, raParam, decParam, fov, modeParam, setUrl, show, clear, query, setQuery,
-    index, target, bundle, status, busy, error, setError, job, epochs, fresh, overlay, explain, build,
+    index, target, bundle, status, busy, error, setError, job, epochs, fresh, overlay, explain, motion, build,
   } = useSkySession();
+  const [showMotion, setShowMotion] = useState(true);
+  const moved = Boolean(motion?.available && motion.pm && motion.pm.total_arcsec_yr >= 2 * motion.pm.err_total);
 
   const [pixel, setPixel] = useState<{ x: number; y: number } | null>(null);
   const [radius, setRadius] = useState(1);
@@ -120,7 +109,7 @@ function SkyViewer() {
         </section>
 
         <SearchBar query={query} setQuery={setQuery} onSubmit={show} error={error} />
-        <div className="-mt-4 flex justify-center"><WorkstationLink onOpen={() => setUrl({ ui: undefined })} /></div>
+        <div className="-mt-4 flex justify-center"><WorkstationLink onOpen={() => setUrl({ ui: "pro" })} /></div>
 
         <section>
           <h2 className="mb-1 text-sm font-semibold">Start with one of these</h2>
@@ -142,7 +131,7 @@ function SkyViewer() {
         <button onClick={clear} className="text-xs text-muted hover:text-fg">
           ← all targets
         </button>
-        <WorkstationLink onOpen={() => setUrl({ ui: undefined })} />
+        <WorkstationLink onOpen={() => setUrl({ ui: "pro" })} />
       </div>
 
       <SearchBar query={query} setQuery={setQuery} onSubmit={show} error={error} compact />
@@ -191,6 +180,7 @@ function SkyViewer() {
                   : target.resolver === "coords" ? "the coordinates you typed" : "resolved by CDS"}
               </span>
             </p>
+            {target.epoch_note ? <p className="mt-1 max-w-3xl">{target.epoch_note}</p> : null}
           </details>
         </header>
       ) : null}
@@ -279,7 +269,15 @@ function SkyViewer() {
               <SkyPlayer bundle={bundle} mode={modeParam} marker={pixel} onPickPixel={setPixel}
                 showFlags={showFlags} onToggleFlags={setShowFlags} hasPicked={pixel !== null}
                 catalogOverlay={overlay} activeLayers={activeLayers}
-                changePeaks={showChange ? change?.peaks ?? null : null} />
+                changePeaks={showChange ? change?.peaks ?? null : null}
+                motion={showMotion && moved ? motion : null} />
+
+              {moved ? (
+                <label className="flex cursor-pointer items-center gap-2 text-[11px] text-muted hover:text-fg">
+                  <input type="checkbox" checked={showMotion} onChange={(e) => setShowMotion(e.target.checked)} />
+                  Show its measured path — dashed ring where it started, solid ring where it is in this frame
+                </label>
+              ) : null}
 
               <ZoomRow fov={fov} onPick={(f) => setUrl({ fov: f })} />
 
@@ -350,6 +348,13 @@ function SkyViewer() {
             </section>
 
             <section className="flex flex-col gap-4">
+              {motion ? (
+                <Card>
+                  <CardHeader><CardTitle>How it moves</CardTitle></CardHeader>
+                  <CardContent><MotionSummary motion={motion} /></CardContent>
+                </Card>
+              ) : null}
+
               <Card>
                 <CardHeader><CardTitle>Colours of a single point</CardTitle></CardHeader>
                 <CardContent>
@@ -425,10 +430,10 @@ function SkyViewer() {
 /** Desktop only: the workstation needs the room. */
 function WorkstationLink({ onOpen }: { onOpen: () => void }) {
   return (
-    <button onClick={onOpen}
-      className="hidden rounded border border-line px-2 py-0.5 text-[11px] text-muted hover:border-accent/60 hover:text-fg lg:inline">
-      Open in the analysis workstation →
-    </button>
+    <div className="hidden items-center gap-2 lg:flex">
+      <span className="text-[11px] text-muted">Interface</span>
+      <UiModeToggle value="simple" onPick={(m) => { if (m === "pro") onOpen(); }} />
+    </div>
   );
 }
 

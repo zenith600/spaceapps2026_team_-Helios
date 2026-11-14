@@ -4,8 +4,9 @@
 // image box rather than CSS-scaling it, so overlay marks stay a constant size on screen and
 // pixels stay crisp ([image-rendering:pixelated]).
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MotionTrack } from "@/components/MotionTrack";
 import { FrameStack, fracToPixel, type StackImage } from "@/components/SkyPlayer";
-import { decode, peekCube, pixelToSky, skyFileUrl } from "@/lib/sky";
+import { catalogAt, decode, peekCube, pixelToSky, skyFileUrl } from "@/lib/sky";
 import { cubePlanesForFrame } from "@/lib/workstation/histogram";
 import { adjustmentFilter } from "@/lib/workstation/layers";
 import { formatArcsec, measure } from "@/lib/workstation/measure";
@@ -148,11 +149,14 @@ export function Canvas() {
     return [{ key: id, src: skyFileUrl(bundle.slug, png), opacity: l.opacity, blend: l.config.blend, z: l.z }];
   }), [L, bundle]);
   const flagsL = L("flags");
+  const frameMjd = pb.frame?.mjd;
   const catalogs = useMemo(() => (ws.session.overlay?.layers ?? []).flatMap((c) => {
     const l = L(`cat:${c.id}`);
-    // l.opacity already includes the layer's 0.85 default and any group opacity.
-    return l?.shown ? [{ layer: c, opacity: l.opacity, z: l.z }] : [];
-  }), [L, ws.session.overlay]);
+    // l.opacity already includes the layer's 0.85 default and any group opacity. Gaia
+    // markers are carried along their proper motion to this frame's date.
+    return l?.shown ? [{ layer: catalogAt(c, frameMjd), opacity: l.opacity, z: l.z }] : [];
+  }), [L, ws.session.overlay, frameMjd]);
+  const motionL = L("motion");
   const changeL = L("change");
   const probeL = L("probe");
   const measureL = L("measure");
@@ -183,6 +187,9 @@ export function Canvas() {
             markerStyle={{ z: probeL?.z, opacity: probeL?.opacity }}
             aperture={ws.doc.radius}
             onFrameLoad={ws.onFrameLoad} />
+          {motionL?.shown && ws.session.motion ? (
+            <MotionTrack motion={ws.session.motion} npix={npix} mjd={frameMjd} z={motionL.z} opacity={motionL.opacity} />
+          ) : null}
           <VectorOverlay npix={npix} scale={view.scale} grid={ws.prefs.grid} ruler={ruler}
             rulerZ={measureL?.z ?? 50} rulerOpacity={measureL?.opacity ?? 1} />
         </div>

@@ -49,7 +49,7 @@ export const TEMPLATE_LABELS: Record<string, [string, string]> = {
   asteroid: ["reflected sunlight",
     "A flat, slightly red reflection spectrum, like rock or ice lit by the Sun."],
   star: ["star-like",
-    "A smooth thermal glow with no absorption dips, like an ordinary star."],
+    "A smooth thermal glow, like a star. A brown dwarf can land here too: these simple shapes cannot tell a warm brown dwarf from a cool star."],
   none: ["not enough data", "Too few bands measured here to tell."],
 };
 
@@ -104,6 +104,31 @@ export function fitTemplates(w: number[], f: number[], e: number[]) {
   return { n: idx.length, chi2, methane_score: p[0], best: KINDS[p.indexOf(Math.max(...p))] as string };
 }
 
+/**
+ * The stellar hypothesis: the best blackbody between 2,300 and 12,000 K, on the same grid as
+ * STAR_T_RANGE_K / STAR_T_STEPS in sky/analyse.py. A single fixed 4500 K shape let a cool M
+ * dwarf fit "reflected sunlight" better than "star".
+ */
+export function starChi2(w: number[], f: number[], e: number[]): { chi2: number; temperature_k: number | null } {
+  const idx = w.map((_, i) => i).filter((i) => Number.isFinite(f[i]) && Number.isFinite(e[i]) && e[i] > 0 && Number.isFinite(w[i]));
+  if (idx.length < 2) return { chi2: Infinity, temperature_k: null };
+  let bestChi = Infinity, bestT: number | null = null;
+  const n = 120, lo = Math.log(2300), hi = Math.log(12000);
+  for (let k = 0; k < n; k++) {
+    const T = Math.exp(lo + ((hi - lo) * k) / (n - 1));
+    const t = idx.map((i) => planckNu(w[i], T));
+    const tmax = Math.max(...t);
+    const tn = t.map((v) => v / Math.max(tmax, 1e-300));
+    let num = 0, den = 0;
+    idx.forEach((i, j) => { const wt = 1 / e[i] ** 2; num += wt * tn[j] * f[i]; den += wt * tn[j] * tn[j]; });
+    const s = Math.max(num / Math.max(den, 1e-30), 0);
+    let chi = 0;
+    idx.forEach((i, j) => { chi += ((f[i] - s * tn[j]) / e[i]) ** 2; });
+    if (chi < bestChi) { bestChi = chi; bestT = T; }
+  }
+  return { chi2: bestChi, temperature_k: bestT === null ? null : Math.round(bestT) };
+}
+
 /** Same verdict shape the API returns, computed locally. */
 /** Matches CLASSIFY_SYS_FLOOR in sky/analyse.py — see there for why it exists. */
 const SYS_FLOOR = 0.10;
@@ -123,6 +148,18 @@ export function classifyPoints(points: SpectrumPoint[], oddThreshold?: number | 
   }
   const fit = fitTemplates(w, f, e);
   const temp = fitTemperature(w, f, e);
+  // Replace the fixed-temperature star with the best stellar blackbody, then re-rank.
+  const star = starChi2(w, f, e);
+  if (Number.isFinite(star.chi2) && Object.keys(fit.chi2).length) {
+    fit.chi2.star = star.chi2;
+    const cs = KINDS.map((k) => fit.chi2[k]);
+    const min = Math.min(...cs);
+    const like = cs.map((c) => Math.exp(-0.5 * (c - min)));
+    const sum = like.reduce((a, b) => a + b, 0);
+    const p = like.map((l) => l / sum);
+    fit.methane_score = p[0];
+    fit.best = KINDS[p.indexOf(Math.max(...p))];
+  }
   const best = fit.best;
   const [label, meaning] = TEMPLATE_LABELS[best] ?? TEMPLATE_LABELS.none;
   const dof = Math.max(fit.n - 1, 1);
@@ -148,8 +185,11 @@ export function classifyPoints(points: SpectrumPoint[], oddThreshold?: number | 
     n_bands: nBands,
     ranking: ranked.map(([k, v]) => ({ template: k, label: TEMPLATE_LABELS[k][0], chi2_per_dof: Math.round((v / dof) * 100) / 100 })),
     temperature: temp,
-    method: "Weighted least-squares fit of three fixed template shapes, plus a single blackbody colour " +
-      "temperature. No trained model, no third-party weights — the templates are simple physical models.",
+    star_temperature_k: star.temperature_k,
+    method: "Weighted least-squares fit of three shapes — reflected sunlight with methane absorption, plain " +
+      "reflected sunlight, and a stellar blackbody whose temperature is fitted between 2,300 and 12,000 K — " +
+      "plus a free blackbody colour temperature. No trained model, no third-party weights: the shapes are " +
+      "simple physical models.",
     caveat: "A shape match is a hint, not an identification: these templates are illustrative, and a " +
       "handful of bands rarely pins down what something is.",
   };

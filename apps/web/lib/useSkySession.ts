@@ -9,9 +9,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DEMO } from "@/lib/api";
 import {
-  DEFAULT_FOV, FOV_MAX, FOV_MIN, type Epochs, type Explanation, type Freshness, type Job, type Overlay,
-  type SkyBundle, type SkyIndexEntry, type SkyTarget,
-  getEpochs, getExplanation, getFreshness, getOverlay, getSkyBundle, getSkyIndex, getSkyJob,
+  DEFAULT_FOV, FOV_MAX, FOV_MIN, type Epochs, type Explanation, type Freshness, type Job, type Motion,
+  type Overlay, type SkyBundle, type SkyIndexEntry, type SkyTarget,
+  getEpochs, getExplanation, getFreshness, getMotion, getOverlay, getSkyBundle, getSkyIndex, getSkyJob,
   resolveTarget, skySlug, startSkyJob,
 } from "@/lib/sky";
 import type { FrameMode } from "@/components/SkyPlayer";
@@ -49,6 +49,7 @@ export function useSkySession() {
   const [fresh, setFresh] = useState<Freshness | null>(null);
   const [overlay, setOverlay] = useState<Overlay | null>(null);
   const [explain, setExplain] = useState<Explanation | null>(null);
+  const [motion, setMotion] = useState<Motion | null>(null);
 
   useEffect(() => { getSkyIndex().then((j) => setIndex(j.targets)); }, []);
 
@@ -110,11 +111,13 @@ export function useSkySession() {
 
   // ---- extras that attach to a loaded bundle -----------------------------
   useEffect(() => {
-    if (!bundle) { setOverlay(null); setExplain(null); return; }
+    if (!bundle) { setOverlay(null); setExplain(null); setMotion(null); return; }
     let cancelled = false;
-    setOverlay(null); setExplain(null);
+    setOverlay(null); setExplain(null); setMotion(null);
     getOverlay(bundle).then((o) => { if (!cancelled) setOverlay(o); }).catch(() => {});
     getExplanation(bundle).then((e) => { if (!cancelled) setExplain(e); }).catch(() => {});
+    // Baked with the view; older views have none, which simply means no measured track.
+    getMotion(bundle).then((m) => { if (!cancelled) setMotion(m); }).catch(() => {});
     return () => { cancelled = true; };
   }, [bundle]);
 
@@ -160,7 +163,7 @@ export function useSkySession() {
     query, setQuery,
     // what was loaded
     index, entry, target, bundle, status, busy, error, setError, job, epochs, fresh, overlay, explain,
-    build,
+    motion, build,
   };
 }
 

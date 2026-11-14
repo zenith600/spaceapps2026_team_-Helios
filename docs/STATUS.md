@@ -1,6 +1,7 @@
 # Status — what works, what is faked, what is blocked
 
-Last updated 2026-11-14, after the Sky Viewer branch (`feat/sky-viewer`).
+Last updated 2026-11-14, on `feat/workstation-motion`: motion measurement, epoch-corrected
+targets, Simple/Pro interfaces, and the Planet X screens moved behind an experimental label.
 
 This page exists so nobody has to guess. If something below is marked **real**, it was
 run against the live service and the numbers quoted are from that run.
@@ -14,13 +15,13 @@ run against the live service and the numbers quoted are from that run.
 
 | Requirement | State |
 | --- | --- |
-| Enter RA/Dec | **Real.** `/sky` takes decimal degrees, sexagesimal in four spellings, or a name. |
-| Series of images as a video | **Real.** Blink player: play/pause, 0.8–10 fps, scrub, step, keyboard. |
-| Test on Barnard's Star | **Real.** 42 frames, 16 visits, 403-day baseline, 39/102 bands. |
-| Test on Epsilon Indi B | **Real.** 55 frames, 19 visits, 526-day baseline, 49/102 bands. |
-| Test on WISE 0855 | **Real.** 44 frames, 11 visits, 374-day baseline, 41/102 bands. |
-| Test on RW Aurigae | **Real.** 42 frames, 7 visits, 380-day baseline, 42/102 bands. |
-| Test on R Draconis | **Real.** 93 frames, 31 visits, 426-day baseline, 82/102 bands. Its core saturates (0 of 93 exposures usable at the centre pixel, 75 at 8 px out), which the spectrum panel now explains instead of showing an empty chart. |
+| Enter RA/Dec | **Real.** `/sky` (also the site's front door) takes decimal degrees, sexagesimal in four spellings, or a name. |
+| Series of images as a video | **Real.** Blink player: play/pause, 0.8–10 fps, scrub, step, loop, keyboard. |
+| Test on Barnard's Star | **Real.** 40 frames, 17 visits, 403-day baseline, 36/102 bands. Motion measured: **10.39 ± 0.54″/yr** (Gaia DR3: 10.39). |
+| Test on Epsilon Indi B | **Real.** 51 frames, 19 visits, 526-day baseline, 43/102 bands. Motion of Ba measured: **4.49 ± 0.30″/yr** (Gaia DR3: 4.68). |
+| Test on WISE 0855 | **Real view, no motion measurement.** 44 frames, 11 visits, 374-day baseline, 41/102 bands. See §WISE 0855. |
+| Test on RW Aurigae | **Real.** 42 frames, 7 visits, 380-day baseline, 42/102 bands. Motion 0.45 ± 0.31″/yr — consistent with zero, as it should be (Gaia: 0.03). |
+| Test on R Draconis | **Real.** 93 frames, 31 visits, 426-day baseline, 82/102 bands. Its core saturates, so no visit gives a usable position and the motion panel says so; the spectrum panel explains the same limit. |
 
 ### Optional considerations from the brief
 
@@ -28,34 +29,108 @@ run against the live service and the numbers quoted are from that run.
 | --- | --- |
 | Easy to update with new data releases | **Real.** Collections are discovered from IRSA ObsTAP, not hardcoded; a background refresher reports new exposures and new releases; a weekly workflow re-bakes the demo. See §Live refresh. |
 | Creative use of the 102 bands | **Real.** Per-detector coadds, per-visit coadds, per-exposure wavelengths, honest "N of 102" everywhere, and false-colour composites mapping the bands to RGB (longest red, shortest blue). |
-| Spectra on the fly | **Real.** Click a pixel; the spectrum is assembled at click time from the per-exposure cube, in the browser on a static deployment or in the API otherwise. A pixel with no usable data explains why (saturation, flags) and offers a jump to the nearest usable pixel. The shape is also fitted against three physical templates plus a blackbody colour temperature. |
+| Spectra on the fly | **Real.** Click a pixel; the spectrum is assembled at click time from the per-exposure cube, in the browser on a static deployment or in the API otherwise. A pixel with no usable data explains why (saturation, flags) and offers a jump to the nearest usable pixel. The shape is fitted against three physical models plus a blackbody colour temperature. |
 | Add/subtract images from different times | **Real.** Stack-all and static-sky overlays, difference-from-first-visit frames, and an arbitrary visit-A-minus-visit-B comparison made on demand from calibrated flux. |
 | Let users choose the field of view | **Real.** 0.02°–0.5°, in the URL, labelled in plain words. |
-| Overlay other telescopes (Gaia, WISE) | **Real.** Gaia DR3 (ESA TAP), AllWISE and 2MASS (IRSA TAP), cone-searched and projected onto the viewer's pixel grid. ~130 sources per layer on Barnard's Star. |
-| Coordinates in the URL for embedding | **Real.** `/sky?ra=&dec=&fov=&mode=`, every control included. |
-| Display metadata like contamination flags | **Real.** Per-frame FLAGS fractions, a colour-coded RGBA overlay with a legend, and a per-pixel flag bitmask used to explain empty spectra. |
+| Overlay other telescopes (Gaia, WISE) | **Real.** Gaia DR3 (ESA TAP), AllWISE and 2MASS (IRSA TAP), cone-searched and projected onto the viewer's pixel grid. Gaia markers move along Gaia's own proper motions to each frame's date; AllWISE (2010) and 2MASS (1997–2001) markers stay at their survey epoch, so a fast mover visibly leaves them. |
+| Coordinates in the URL for embedding | **Real.** `/sky?ra=&dec=&fov=&mode=`, every control included; `&ui=pro` opens the same view in the workstation. |
+| Display metadata like contamination flags | **Real.** Per-frame FLAGS fractions, a colour-coded RGBA overlay with a legend, and a per-pixel flag bitmask used to explain empty spectra. The Pro workstation adds a searchable metadata panel. |
 | Use Astropy / Aladin | **Real.** Astropy throughout the pipeline (WCS, reprojection, coordinates); Aladin Lite v3 embedded as an optional, lazily-loaded sky-context panel. |
 
-### Beyond the brief
+## Seeing the motion: measured, drawn, checked
+
+The movers shift 1–2 SPHEREx pixels over the survey so far. Real, but easy to miss by eye,
+so each view now carries a measurement (`pipeline/deepfield/sky/motion.py`, baked into
+`motion.json`, served by `GET /sky/motion/{slug}`):
+
+1. each exposure loses its own median background;
+2. per visit, the exposures that see the source are inverse-variance coadded and a 2-D
+   Gaussian plus background is fitted in a 7×7 box (SPHEREx under-samples its PSF, so a plain
+   centroid is biased by pixel phase);
+3. x(t), y(t) are fitted as straight lines, errors scaled up when the visits scatter more than
+   they predict;
+4. the nearest Gaia DR3 source, carried to the same epoch, is the comparison.
+
+| Target | This tool, from SPHEREx | Gaia DR3 | |
+| --- | --- | --- | --- |
+| Barnard's Star | 10.393 ± 0.543″/yr, PA 356.6° (5 visits usable; the core is flagged in the rest) | 10.393″/yr, PA 355.6° | 0.14σ |
+| Epsilon Indi Ba | 4.490 ± 0.301″/yr, PA 123.8° (18 visits) | 4.684″/yr, PA 121.8° | 0.54σ |
+| RW Aurigae (control) | 0.446 ± 0.312″/yr — no detectable motion | 0.028″/yr | 0.95σ |
+| A static field star in the WISE 0855 view (control) | 0.29 ± 0.47″/yr | — | — |
+
+The player draws it: a dashed ring where the source started, its measured position at every
+visit, the fitted line, and a solid ring riding the fit to the current frame. Pinned by
+`tests/test_sky_motion.py` (synthetic views with a known answer) and `lib/workstation/engine.test.ts`.
+
+### The epoch bug this exposed
+
+Catalogue positions were J2000. Barnard's Star moves 10.4″/yr, so by 2025 it was 4.4 arcmin
+north of its J2000 position — **outside its own 0.1° view**; the "bright star at the centre"
+was a different star. Epsilon Indi Ba was 2 arcmin off-centre. Built-in movers now carry Gaia
+DR3 astrometry (source ids in `sky/resolver.py`) and are centred on it carried forward to
+2025-09-07 (`VIEW_EPOCH_MJD`, fixed so a view's slug does not change daily). Barnard's Star
+and Epsilon Indi B were rebuilt from IRSA. Proxima Centauri (not a challenge target) is not
+yet carried forward: the Gaia archive timed out on its crowded field.
+
+### WISE 0855
+
+It is too cold for Gaia, and the brief's position — used verbatim — is from 2010-era WISE
+data. Carried forward with its published motion (~8.1″/yr west), it lies about 2 arcmin west
+of the view centre in 2025, **within 8 arcsec of a brighter background star**. SPHEREx's 6″
+pixels do not separate the two. Two hints that it is there: that star is twice as bright at
+4–5 µm relative to its short-wavelength light as the field's typical star (0.55 vs 0.27; 2
+MADs — suggestive, not conclusive), and its long-wavelength position sits ~0.5 px toward the
+predicted WISE 0855 position. Only 4 visits detect it beyond 3.8 µm, so a motion fit gives
+±4.9″/yr — useless — and the tool does not claim one.
+
+## Spectral classification fix
+
+The "star" hypothesis was one fixed 4500 K blackbody, while "reflected sunlight" is a 5772 K
+blackbody tilted red by an asteroid albedo — so cool stars (an M dwarf is ~3100 K) fitted
+"reflected sunlight" better and were labelled asteroids. The star hypothesis is now the best
+blackbody between 2,300 and 12,000 K, in `sky/analyse.py` and its browser port
+`lib/spectralFit.ts`, held together by the regenerated Python fixture. The Planet X search's
+own `fit_templates` is unchanged.
+
+On real data: Barnard's Star now reads **star-like at 3165–3346 K** at every pixel with a
+usable spectrum (an M4 dwarf's effective temperature is ~3100–3200 K). **Limit, measured:**
+Epsilon Indi Ba — a T-type brown dwarf — also reads "star-like", at ~2500 K. The methane
+template is reflected *sunlight* with methane dips, right for a cold planet but not for a
+self-luminous brown dwarf; an emitting version with the same dips fitted Ba *worse* than a
+plain blackbody (Δχ² −270 to −400), because the dips are illustrative rather than real T-dwarf
+band shapes. Rather than add a hypothesis the data rejects, the "star-like" text now says a
+warm brown dwarf can land there, and Ba's guidance no longer promises methane in its spectrum.
+Real brown-dwarf templates are the fix.
+
+## Two interfaces
+
+- **Simple** (default): the original single page, plain language, phone-friendly.
+- **Pro** (`?ui=pro`, desktop): a workstation over the same data session, playback engine and
+  frame renderer — layers (incl. the motion track), properties, searchable metadata, pixel
+  histogram in calibrated MJy/sr, the processing graph, undo/redo, a time-axis timeline, and a
+  cache/performance panel that reads real cache state (and `GET /sky/cache` on the server).
+  Tools with no backing operation (region selections, annotation, tracking) are shown disabled
+  and say what they would need.
+
+## Beyond the brief
 
 | Feature | State |
 | --- | --- |
-| Find what changed | **Real, calibrated on real data.** Removes each exposure's background, fits each pixel's brightness as a smooth curve in wavelength, and scores the residual against the field's own distribution. On the baked targets the two variable stars rank first in their fields (RW Aurigae z=43, R Draconis z=10). **Limit:** slow movers in crowded fields do not top the list — Barnard's Star moves ~1.8 px over the whole baseline and other sources in its dense field vary more. |
-| Spectral classification | **Real.** Three physical templates (methane-rich / reflected sunlight / stellar) plus a blackbody colour temperature, with a χ² ranking and a 10% systematic floor. Refuses below three distinct colours rather than guessing. **Limit:** these are toy shapes — Barnard's Star, an M dwarf, comes out as "reflected sunlight". The UI says a shape match is a hint, not an identification. |
-| "Odd one out" flag | **Real, field-relative.** Flagged when a point fits worse than 95% of 150 randomly sampled points in the same field, calibrated at bake time. On the baked data it fires on exactly the two variable stars, whose changing brightness scrambles their spectra across epochs, and on none of the three steady targets. |
+| Find what changed | **Real, calibrated on real data.** Removes each exposure's background, fits each pixel's brightness as a smooth curve in wavelength, and scores the residual against the field's own distribution. On the baked targets the two variable stars rank first in their fields (RW Aurigae z=43, R Draconis z=10). **Limit:** a slow mover in a crowded field need not top the list — which is why motion is now *measured* rather than left to this scan. |
+| Spectral classification | **Real.** Methane-rich reflection / reflected sunlight / stellar blackbody (fitted temperature), plus a free colour temperature, with a χ² ranking and a 10% systematic floor. Refuses below three distinct colours. **Limit:** these are simple shapes; the UI says a match is a hint, not an identification. |
+| "Odd one out" flag | **Real, field-relative.** Flagged when a point fits worse than 95% of 150 randomly sampled points in the same field, calibrated at bake time. |
 | Machine-written field captions | **Real.** Coordinates outside the built-in catalogue get a plain-language caption written from measured facts by an LLM, with claim-rejection and a deterministic fallback. Always labelled. |
-| Classifier in the browser | **Real.** The from-scratch CNN ships as ONNX and scores a candidate on the visitor's machine from the same normalised float stamps used in training. |
 
 ## Real, verified against live services
 
 | Thing | Evidence |
 | --- | --- |
-| SPHEREx SIA2 search | 2026-11-14: WISE 0855 returns 282 DR1 exposures, 11 visits, MJD 60800.70–61174.29 (374 days). |
-| SPHEREx cutouts | 274 cutouts fetched for the five baked targets. MEF decoded: IMAGE, FLAGS, VARIANCE, ZODI, EPSF, WCS-WAVE. |
+| SPHEREx SIA2 search | 2026-11-14: WISE 0855 returns 282 DR1 exposures, 11 visits, MJD 60800.70–61174.29 (374 days). Barnard's Star (re-centred) 386; Epsilon Indi B (re-centred) 486. |
+| SPHEREx cutouts | 91 fetched on 2026-11-14 for the two re-centred views (101 requested, 10 skipped as unusable); 591 Level 2 cutouts in the local fetch cache in all. MEF decoded: IMAGE, FLAGS, VARIANCE, ZODI, EPSF, WCS-WAVE. |
+| Gaia DR3 astrometry | ESA TAP, 2026-11-14: source ids, J2016.0 positions and proper motions for Barnard's Star, Epsilon Indi Ba and Teegarden's Star. |
 | Release discovery | IRSA ObsTAP returns `spherex_dr1, spherex_dr1_cal, spherex_dr1_cube, spherex_dr1_deep, spherex_qr3, spherex_qr3_deep`. The viewer searches the two image releases. |
-| Freshness checks | Uncached 4.8 s against IRSA, cached 0.002 s. Correctly reports 282 now vs 282 at build time → not stale. |
-| On-the-fly spectra | WISE 0855 centre pixel: 9 points over 7 distinct bands, 0.749–2.365 µm, each from a different exposure, visit and detector. |
-| Browser spectrum decoder | Matches the Python reference on the real bundle to within one quantisation step, with identical good-pixel counts (`lib/sky.cube.test.ts`). |
+| Freshness checks | Uncached 4.8 s against IRSA, cached 0.002 s. |
+| On-the-fly spectra | Assembled per click from the per-exposure cube; the browser decoder matches the Python reference on the real bundle to within one quantisation step (`lib/sky.cube.test.ts`). |
 | Planet X shift-and-stack | Patch P001: 39 exposures, 201 trials, max stacked SNR 33.3, 18 known bodies matched from JPL SBIdent. |
 | JPL Horizons | SPHEREx (−163182) heliocentric vectors, cached. |
 | Caltech reference population | 100,000 orbits, md5 verified. |
@@ -64,23 +139,20 @@ run against the live service and the numbers quoted are from that run.
 
 | Thing | Note |
 | --- | --- |
-| The Hunt / Candidate Lab / Classify / Proof screens | Still serve the synthetic **SAMPLE** bundle (`kind: "SAMPLE"`, candidates C0001–C0012). Every number there is invented and tagged `SAMPLE` / `Simulated`. The Sky Viewer is the only screen on real data. |
+| Planet X · experimental (`/hunt`, `/lab`, `/classify`, `/proof`) | Serve the synthetic **SAMPLE** bundle (candidates C0001–C0012). Grouped under "Planet X · experimental" in the nav, with a banner on every page; the site's front door is the Sky Viewer. |
 | Exclusion counter | Computed from the real Caltech population for the prior term, but the Deep Field term is driven by the SAMPLE patches. |
-| Candidate dossiers | `generator: "offline-template"`. No `ANTHROPIC_API_KEY` on this machine, so the Claude agent team has never run. |
+| Candidate dossiers | `generator: "offline-template"`; the agent team has never run on this machine. |
 | Injection completeness | Real run, but P001 recovered 0/32 injections. The honest answer, and the Proof page curve is therefore flat. |
 
 ## Blocked or not started
 
 | Thing | Why |
 | --- | --- |
-| The LLM endpoint is slow | `openai/gpt-oss-20b` on NVIDIA's endpoint took 62–220 s for a two-token reply when measured on 2026-11-14. Captions are therefore written once at bake time and cached by fact sheet; nothing in the request path ever waits on it. |
-| CDS Sesame / Aladin may be unreachable | CDS has been intermittently down all week. Name resolution falls back to the built-in catalogue; the Aladin panel loads only on request and says so if it fails. Neither blocks the viewer. |
-| Two-visit patches cannot be localised | **Diagnosed and now enforced, not a bug.** Two time samples cannot separate parallax (curved in time) from proper motion (linear): a wrong (distance, rate) pair reproduces the same inter-visit shift and peaks elsewhere, often harder than the truth. Measured: the search put its peak 73 px from an amp-8 source it had ample signal to find. Three visits recover the position; four recover the distance to 0.4%. `run_patch` now searches distance only at two visits and says so in the summary. See §Cross-visit search. |
-| Nothing is deployed | No Vercel, Fly.io or Supabase credentials on this machine. `vercel.json`, `fly.toml`, Dockerfiles and the Supabase migration are all committed and ready; the deploy itself is a human action. |
-| CDS Sesame resolution | The CDS load balancer currently sends every request to `vizier.idia.ac.za`, which is timing out. Name resolution therefore falls back to the built-in catalogue, which covers the five test targets and a few more. Not a blocker for the demo; typed coordinates always work. |
-| ONNX in the browser | Model exported and validated in Python; not loaded client-side. |
-| Gaia / WISE overlays, Aladin | Not started. |
-| Colour composites across detectors | Not started. |
+| Nothing is deployed | `vercel.json`, `fly.toml`, Dockerfiles and the Supabase migration are ready; the deploy itself is a human action. A static Vercel deploy serves the five baked targets with no API; any other coordinate needs the API. |
+| Measuring motion at an arbitrary pixel without the API | `GET /sky/motion/{slug}?x=&y=` does it server side; the static deployment ships only the baked measurement of each view's target. |
+| The LLM endpoint is slow | 62–220 s per reply; captions are written once at bake time and cached, never waited on in the request path. |
+| CDS Sesame / Aladin may be unreachable | Name resolution falls back to the built-in catalogue; the Aladin panel loads only on request and says so if it fails. Typed coordinates always work. |
+| Two-visit patches cannot be localised (Planet X) | **Diagnosed and enforced, not a bug.** See §Cross-visit search. |
 
 ## Live refresh — how the tool keeps up with new data
 
@@ -130,9 +202,9 @@ Two further findings, both now pinned by tests:
 ## Tests
 
 ```
-python -m pytest tests -q          188 pass, 0 fail
-                                   5 network tests skip when CDS/IRSA are unreachable
-cd apps/web && npm test            186 pass
+python -m pytest tests -q -m "not network"   198 pass, 0 fail   (2026-11-14)
+                                   5 network tests (CDS Sesame) run separately; they skip when CDS is down
+cd apps/web && npm test            242 pass
 cd apps/web && npx tsc --noEmit    clean
 cd apps/web && npm run build       clean
 python scripts/check_manifest_domains.py   allowlist holds

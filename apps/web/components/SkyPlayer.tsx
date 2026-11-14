@@ -2,9 +2,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { MotionTrack } from "@/components/MotionTrack";
 import {
-  type DetectorFrame, type EpochFrame, type Overlay, type SkyBundle, type VisitFrame,
-  mjdLabel, skyFileUrl,
+  type DetectorFrame, type EpochFrame, type Motion, type Overlay, type SkyBundle, type VisitFrame,
+  catalogAt, mjdLabel, skyFileUrl,
 } from "@/lib/sky";
 
 export type FrameMode = "visits" | "colour" | "detectors" | "epochs" | "difference";
@@ -245,7 +246,7 @@ export function FrameStack({
 
 export function SkyPlayer({
   bundle, mode, onPickPixel, marker, showFlags, onToggleFlags, hasPicked,
-  catalogOverlay, activeLayers, changePeaks,
+  catalogOverlay, activeLayers, changePeaks, motion,
 }: {
   bundle: SkyBundle;
   mode: FrameMode;
@@ -258,6 +259,8 @@ export function SkyPlayer({
   catalogOverlay?: Overlay | null;
   activeLayers?: string[];
   changePeaks?: { x: number; y: number; chi2_per_dof: number }[] | null;
+  /** A measured motion to draw as a track; null hides it. */
+  motion?: Motion | null;
 }) {
   const frames = useMemo(() => toPlayFrames(bundle, mode), [bundle, mode]);
   const [overlay, setOverlay] = useState<"none" | "stack" | "static">("none");
@@ -308,8 +311,9 @@ export function SkyPlayer({
               src: skyFileUrl(bundle.slug, overlay === "stack" ? bundle.stack.png : bundle.static.png),
             }] : undefined}
             flagSrc={showFlags && cur.flagPng ? skyFileUrl(bundle.slug, cur.flagPng) : null}
-            catalogs={catalogOverlay?.layers.filter((l) => (activeLayers ?? []).includes(l.id)).map((l) => ({ layer: l }))}
+            catalogs={catalogOverlay?.layers.filter((l) => (activeLayers ?? []).includes(l.id)).map((l) => ({ layer: catalogAt(l, cur.mjd) }))}
             changePeaks={changePeaks} marker={marker} />
+          {motion ? <MotionTrack motion={motion} npix={npix} mjd={cur.mjd} /> : null}
           <div className="pointer-events-none absolute left-2 top-2 rounded bg-bg/80 px-2 py-1 text-[11px] mono">
             {cur.title}
           </div>

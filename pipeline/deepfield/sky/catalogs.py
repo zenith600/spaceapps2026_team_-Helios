@@ -129,28 +129,64 @@ def overlay_for_bundle(meta: dict, cat_ids=None, *, limit: int = 300) -> dict:
     npix = int(meta["npix"])
     radius = float(meta["fov_deg"]) * 0.75      # a little beyond the frame, for edge sources
 
+    from deepfield.sky.resolver import GAIA_DR3_EPOCH_MJD
+
+    mid = 0.5 * (float(meta["coverage"]["mjd_min"]) + float(meta["coverage"]["mjd_max"]))
     layers = []
     for cid in (cat_ids or [c.id for c in CATALOGS]):
         cat = BY_ID.get(cid)
         if cat is None:
             continue
         df = cone_search(cid, float(meta["ra_deg"]), float(meta["dec_deg"]), radius, limit=limit)
+        ra = df["ra"].to_numpy(float) if len(df) else np.array([])
+        dec = df["dec"].to_numpy(float) if len(df) else np.array([])
+        # Gaia carries its own proper motions: each source is placed where it is during this
+        # survey and given a velocity in pixels/yr, so the viewer can move it frame by frame.
+        # Without this a fast mover's ring sits where it was in 2016 -- 15 px away for
+        # Barnard's Star. The other catalogues have no usable motions and stay at their epoch.
+        has_pm = cid == "gaia" and len(df) and {"pmra", "pmdec"} <= set(df.columns)
+        vx = vy = None
+        if has_pm:
+            pmra = np.nan_to_num(df["pmra"].to_numpy(float))
+            pmdec = np.nan_to_num(df["pmdec"].to_numpy(float))
+            cosd = np.cos(np.radians(dec))
+
+            def at(mjd):
+                dt = (mjd - GAIA_DR3_EPOCH_MJD) / 365.25
+                return ra + pmra * dt / 3.6e6 / cosd, dec + pmdec * dt / 3.6e6
+
+            x, y = w.all_world2pix(*at(mid), 0)
+            x1, y1 = w.all_world2pix(*at(mid + 365.25), 0)
+            vx, vy = x1 - x, y1 - y
+        elif len(df):
+            x, y = w.all_world2pix(ra, dec, 0)
+        else:
+            x = y = np.array([])
         sources = []
-        if len(df):
-            x, y = w.all_world2pix(df["ra"].to_numpy(float), df["dec"].to_numpy(float), 0)
-            for xi, yi, mag in zip(x, y, df["mag"].to_numpy(float)):
-                if not (np.isfinite(xi) and np.isfinite(yi)):
-                    continue
-                if -2 <= xi <= npix + 1 and -2 <= yi <= npix + 1:
-                    sources.append({"x": round(float(xi), 2), "y": round(float(yi), 2),
-                                    "mag": None if not np.isfinite(mag) else round(float(mag), 2)})
-        layers.append({"id": cat.id, "name": cat.name, "owner": cat.owner, "colour": cat.colour,
-                       "note": cat.note, "n": len(sources), "sources": sources,
-                       "band": str(df["band"].iloc[0]) if len(df) and "band" in df else None})
+        for k, (xi, yi, mag) in enumerate(zip(x, y, df["mag"].to_numpy(float) if len(df) else [])):
+            if not (np.isfinite(xi) and np.isfinite(yi)):
+                continue
+            if -2 <= xi <= npix + 1 and -2 <= yi <= npix + 1:
+                s = {"x": round(float(xi), 2), "y": round(float(yi), 2),
+                     "mag": None if not np.isfinite(mag) else round(float(mag), 2)}
+                if has_pm and (abs(vx[k]) > 1e-4 or abs(vy[k]) > 1e-4):
+                    s["vx"], s["vy"] = round(float(vx[k]), 4), round(float(vy[k]), 4)
+                sources.append(s)
+        layer = {"id": cat.id, "name": cat.name, "owner": cat.owner, "colour": cat.colour,
+                 "note": cat.note, "n": len(sources), "sources": sources,
+                 "band": str(df["band"].iloc[0]) if len(df) and "band" in df else None,
+                 "epoch_mjd": mid if has_pm else CATALOG_EPOCH_MJD.get(cid),
+                 "moves": bool(has_pm)}
+        layers.append(layer)
     return {"layers": layers, "radius_deg": radius,
-            "note": ("Catalogued sources from other missions, placed on this image's own grid. "
-                     "A dot with no marker is not in these catalogues — which may just mean it "
-                     "is too faint for them, or that it moved.")}
+            "note": ("Catalogued sources from other missions, placed on this image's own grid. Gaia "
+                     "markers follow Gaia's own proper motions to each frame's date; AllWISE (2010) and "
+                     "2MASS (1997-2001) markers stay where those surveys saw them. A dot with no marker "
+                     "is not in these catalogues — too faint for them, or it has moved since.")}
+
+
+#: Mean observing epoch of catalogues that have no usable proper motions.
+CATALOG_EPOCH_MJD = {"allwise": 55400.0, "twomass": 51300.0}
 
 
 def write_overlay(meta: dict, path, cat_ids=None) -> dict:

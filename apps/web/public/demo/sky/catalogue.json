@@ -1,25 +1,69 @@
 {
- "generated_at": "2026-11-14T14:02:19+00:00",
+ "generated_at": "2026-11-14T16:08:00+00:00",
  "targets": [
   {
    "slug": "barnards-star",
    "name": "Barnard's Star",
-   "ra_deg": 269.45207696,
-   "dec_deg": 4.69336497,
+   "ra_deg": 269.4462939093549,
+   "dec_deg": 4.767881317726505,
    "note": "The fastest-moving star on the sky: 10.3 arcsec per year, about 1.7 SPHEREx pixels per year. Six light years away. The classic proper-motion target.",
-   "look_for": "Watch the bright star at the centre creep against the fixed background. It shifts about one SPHEREx pixel per year \u2014 the fastest motion of any star in the sky.",
+   "look_for": "Watch the bright star at the centre creep upwards (north) against the fixed background: 10.4 arcsec a year, about 1.7 SPHEREx pixels \u2014 the fastest motion of any star in the sky.",
    "kind": "moving star",
-   "featured": true
+   "featured": true,
+   "catalog_ra_deg": 269.45207696,
+   "catalog_dec_deg": 4.69336497,
+   "epoch_note": "Centred on Gaia DR3's position carried forward to 2025-09-07. Its J2000 position is 4.4 arcmin south, outside this view.",
+   "aliases": [
+    "barnard",
+    "barnards star",
+    "barnard's star",
+    "barnard star",
+    "gj 699",
+    "gl 699",
+    "hip 87937",
+    "v2500 oph"
+   ],
+   "astrometry": {
+    "ra_deg": 269.448503,
+    "dec_deg": 4.73942,
+    "epoch_mjd": 57388.5,
+    "pmra_mas": -801.550978,
+    "pmdec_mas": 10362.394207,
+    "source": "Gaia DR3 4472832130942575872 (epoch J2016.0)",
+    "view_epoch_mjd": 61000.0
+   }
   },
   {
    "slug": "epsilon-indi-b",
    "name": "Epsilon Indi Ba/Bb",
-   "ra_deg": 331.043833,
-   "dec_deg": -56.782694,
+   "ra_deg": 331.0964234413997,
+   "dec_deg": -56.80058739212098,
    "note": "A pair of brown dwarfs (T1 + T6) orbiting the nearby star Epsilon Indi A, about 400 arcsec away from it. Cold, methane-rich, and bright in the near infrared.",
-   "look_for": "Two failed stars too small to burn, orbiting each other. They are cold and methane-rich, so they are far brighter in infrared than in visible light \u2014 click the centre to see that in the spectrum.",
+   "look_for": "Two failed stars too small to burn, orbiting each other \u2014 the dot at the centre, drifting down and to the left (south-east) at 4.7 arcsec a year. They give off most of their light in the infrared: click the dot for its spectrum.",
    "kind": "brown dwarf pair",
-   "featured": true
+   "featured": true,
+   "catalog_ra_deg": 331.043833,
+   "catalog_dec_deg": -56.782694,
+   "epoch_note": "Centred on Gaia DR3's position for Epsilon Indi Ba carried forward to 2025-09-07, about 2 arcmin from its 2MASS-era (1999) position.",
+   "aliases": [
+    "eps ind b",
+    "epsilon indi b",
+    "eps ind ba",
+    "epsilon indi ba",
+    "eps indi b",
+    "epsilon ind b",
+    "eps ind bab",
+    "2mass j22041052-5646577"
+   ],
+   "astrometry": {
+    "ra_deg": 331.076453,
+    "dec_deg": -56.793812,
+    "epoch_mjd": 57388.5,
+    "pmra_mas": 3981.976663,
+    "pmdec_mas": -2466.831815,
+    "source": "Gaia DR3 6412596012146801152 (epoch J2016.0)",
+    "view_epoch_mjd": 61000.0
+   }
   },
   {
    "slug": "wise-0855",
@@ -27,9 +71,21 @@
    "ra_deg": 133.795129,
    "dec_deg": -7.245147,
    "note": "The coldest known brown dwarf, 250 K, 7.5 light years away. Moves about 8 arcsec per year. Water-ice clouds. Position as given in the challenge brief.",
-   "look_for": "The coldest object of its kind ever found \u2014 about -23 C, cold enough for water-ice clouds. It is 7.5 light years away and drifts roughly one SPHEREx pixel every nine months, so watch the centre across the full time-lapse.",
+   "look_for": "The coldest brown dwarf known, about -23 C. The brief's position is from 2010; by 2025 it has moved 2 arcmin west (right of centre), to within 8 arcsec of a brighter star that SPHEREx's 6-arcsec pixels cannot cleanly separate from it.",
    "kind": "coldest brown dwarf",
-   "featured": true
+   "featured": true,
+   "catalog_ra_deg": 133.795129,
+   "catalog_dec_deg": -7.245147,
+   "epoch_note": "The position given in the challenge brief, used verbatim. It is from 2010-era WISE data and WISE 0855 is too cold for Gaia, so it is not carried forward.",
+   "aliases": [
+    "wise 0855",
+    "wise0855",
+    "wise j0855",
+    "wise 0855-0714",
+    "wise j0855-0714",
+    "wise j085510.83-071442.5",
+    "w0855"
+   ]
   },
   {
    "slug": "rw-aurigae",
@@ -39,7 +95,16 @@
    "note": "A young binary T Tauri star that dims by magnitudes for months at a time when its tidally disrupted disc passes in front of it. Brightness, not position, is the story.",
    "look_for": "This one does not move \u2014 it blinks. A newborn star whose dusty disc has been torn by a passing companion; when a streamer of that dust drifts across our line of sight the star fades for months. Watch its brightness, not its position.",
    "kind": "young star with a torn disc",
-   "featured": true
+   "featured": true,
+   "catalog_ra_deg": 76.95652603,
+   "catalog_dec_deg": 30.40143817,
+   "epoch_note": "",
+   "aliases": [
+    "rw aur",
+    "rw aurigae",
+    "rw aur a",
+    "hd 240764"
+   ]
   },
   {
    "slug": "r-draconis",
@@ -49,7 +114,15 @@
    "note": "A Mira variable: a pulsating red giant that swings about 8 magnitudes over a 245-day period. Enormous in the near infrared.",
    "look_for": "A dying red giant that swells and shrinks over about 245 days, changing brightness by a factor of a thousand. It is so bright here that its core saturates the detector \u2014 click slightly off-centre for a spectrum.",
    "kind": "pulsating giant",
-   "featured": true
+   "featured": true,
+   "catalog_ra_deg": 248.16761083,
+   "catalog_dec_deg": 66.75497942,
+   "epoch_note": "",
+   "aliases": [
+    "r dra",
+    "r draconis",
+    "hip 80488"
+   ]
   },
   {
    "slug": "proxima-centauri",
@@ -59,7 +132,17 @@
    "note": "The nearest star. 3.85 arcsec per year of proper motion plus a large parallax wobble.",
    "look_for": "The closest star to the Sun, with a known planet in its habitable zone. It both drifts and wobbles, because it is near enough that Earth's own orbit shifts its apparent position.",
    "kind": "nearest star",
-   "featured": false
+   "featured": false,
+   "catalog_ra_deg": 217.42895,
+   "catalog_dec_deg": -62.67948,
+   "epoch_note": "",
+   "aliases": [
+    "proxima",
+    "proxima cen",
+    "proxima centauri",
+    "alpha cen c",
+    "gj 551"
+   ]
   },
   {
    "slug": "luhman-16",
@@ -69,17 +152,44 @@
    "note": "The nearest brown dwarf binary, 6.5 light years away, moving 2.8 arcsec per year.",
    "look_for": "The nearest pair of brown dwarfs, 6.5 light years away, with weather: one of them has clouds that change its brightness as it rotates.",
    "kind": "brown dwarf pair",
-   "featured": false
+   "featured": false,
+   "catalog_ra_deg": 162.32883,
+   "catalog_dec_deg": -53.31944,
+   "epoch_note": "",
+   "aliases": [
+    "luhman 16",
+    "luhman16",
+    "wise 1049-5319",
+    "wise j1049-5319"
+   ]
   },
   {
    "slug": "teegardens-star",
    "name": "Teegarden's Star",
-   "ra_deg": 43.25371,
-   "dec_deg": 16.88128,
+   "ra_deg": 43.279483551826004,
+   "dec_deg": 16.853921713312257,
    "note": "A nearby red dwarf with two temperate planets and 5 arcsec per year of proper motion.",
    "look_for": "A small, cool red dwarf 12 light years away with two planets that could hold liquid water. It moves noticeably against the background.",
    "kind": "moving star",
-   "featured": false
+   "featured": false,
+   "catalog_ra_deg": 43.25371,
+   "catalog_dec_deg": 16.88128,
+   "epoch_note": "Centred on Gaia DR3's position carried forward to 2025-09-07.",
+   "aliases": [
+    "teegarden",
+    "teegardens star",
+    "teegarden's star",
+    "2mass j02530084+1652532"
+   ],
+   "astrometry": {
+    "ra_deg": 43.269642,
+    "dec_deg": 16.864374,
+    "epoch_mjd": 57388.5,
+    "pmra_mas": 3429.082827,
+    "pmdec_mas": -3805.541123,
+    "source": "Gaia DR3 35227046884571776 (epoch J2016.0)",
+    "view_epoch_mjd": 61000.0
+   }
   }
  ]
 }

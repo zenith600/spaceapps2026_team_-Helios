@@ -9560,10 +9560,10 @@
   "This is a display of public NASA data, not a detection claim."
  ],
  "classify": {
-  "odd_threshold": 69.633,
+  "odd_threshold": 34.733,
   "odd_percentile": 95.0,
   "n_sampled": 150,
-  "field_median_chi2_per_dof": 34.795,
+  "field_median_chi2_per_dof": 21.7,
   "note": "A point is 'odd one out' when its best template fits worse than 95% of randomly sampled points in this same field."
  },
  "cube_u16": {

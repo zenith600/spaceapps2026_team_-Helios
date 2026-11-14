@@ -7,7 +7,7 @@
 // this browser (or on request through the API) are the ones with live parameters.
 //
 // The order is fixed by data dependencies, not by preference: nothing here is reorderable.
-import { CHANGE_DEFAULTS, type ChangeParams, type SkyBundle } from "../sky";
+import { CHANGE_DEFAULTS, type ChangeParams, type Motion, type SkyBundle } from "../sky";
 
 export type NodeState = "baked" | "ready" | "not-run" | "running" | "unavailable" | "on-demand";
 export type Where = "IRSA" | "server · build" | "browser" | "server · on request";
@@ -31,6 +31,7 @@ export type PipelineContext = {
   change: { state: "idle" | "running" | "ready" | "error"; params: ChangeParams };
   aperture: number;
   pixelPicked: boolean;
+  motion?: Motion | null;
 };
 
 const fx = (v: number, d = 3) => (Number.isFinite(v) ? v.toFixed(d) : "—");
@@ -126,6 +127,21 @@ export function buildPipeline(b: SkyBundle, ctx: PipelineContext): PipelineNode[
     ] : [{ k: "format", v: ctx.demo ? "not exported" : "cube.npz (server)" }],
     output: "per-exposure flux + variance at every pixel",
     note: hasCube ? undefined : "This view was exported without its pixel cube: spectra and change detection need it.",
+  });
+
+  const mo = ctx.motion;
+  add({
+    id: "motion", label: "Proper-motion fit", where: "server · build", inputs: ["cube"],
+    state: !hasCube ? "unavailable" : mo?.available ? "baked" : mo ? "unavailable" : "not-run", editable: false,
+    params: mo?.available && mo.pm ? [
+      { k: "visits used", v: String(mo.visits?.length ?? 0) },
+      { k: "baseline", v: `${mo.baseline_days} d` },
+      { k: "position model", v: "2-D Gaussian + background, 7×7 px" },
+      { k: "result", v: `${mo.pm.total_arcsec_yr.toFixed(3)} ± ${mo.pm.err_total.toFixed(3)} ″/yr` },
+      { k: "Gaia DR3", v: mo.comparison ? `${mo.comparison.total_arcsec_yr.toFixed(3)} ″/yr (${mo.comparison.n_sigma}σ)` : "no match" },
+    ] : [{ k: "status", v: mo?.reason ?? "not measured for this view" }],
+    output: "measured track + proper motion", layer: "motion",
+    note: mo?.caveat,
   });
 
   const ch = ctx.change;

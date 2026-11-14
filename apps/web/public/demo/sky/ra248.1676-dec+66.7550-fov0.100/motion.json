@@ -1,0 +1,24 @@
+{
+ "slug": "ra248.1676-dec+66.7550-fov0.100",
+ "available": false,
+ "prior": {
+  "x": 29.0,
+  "y": 29.0,
+  "note": "the view centre"
+ },
+ "min_wave_um": null,
+ "pixel_arcsec": 6.15,
+ "reference": null,
+ "method": "The challenge's movers shift 1-2 SPHEREx pixels over the survey so far -- real, but easy to miss by eye. This turns \"watch closely\" into a number with an error bar that can be checked against Gaia:",
+ "located": {
+  "x": 27.0,
+  "y": 27.0,
+  "snr": 213.5
+ },
+ "visits": [],
+ "reason": "the source is found, but no single visit gives a usable position \u2014 usually because its core saturates the detector and those pixels are flagged",
+ "target": {
+  "name": "R Draconis",
+  "epoch_note": ""
+ }
+}

@@ -2,36 +2,58 @@
 
 NASA Space Apps 2026 entry.
 
-**Type a position, watch that patch of sky change.** The Sky Viewer at `/sky` is the
-answer to the challenge objective: enter Right Ascension and declination (or a name),
-and every SPHEREx visit to that patch plays back as a little video, so anything that
-moves or varies stands out against everything that does not.
+**Type a position, watch that patch of sky change.** The Sky Viewer at `/sky` — the site's
+front door — is the answer to the challenge objective: enter Right Ascension and declination
+(or a name), and every SPHEREx visit to that patch plays back as a little video, so anything
+that moves or varies stands out against everything that does not.
 
-Behind it sits the second act — *everyone else looked at the pictures, we searched where
-the pictures can't see* — stacking SPHEREx exposures along gravity-predicted Planet Nine
-motions, checking each candidate's spectrum, and letting the public vet the results.
+**And it measures the motion, not just shows it.** A fast star moves only 1–2 SPHEREx pixels
+over the survey so far — real, but easy to miss by eye. For each view the tool fits the
+source's position at every visit, fits a straight line through time, draws the path on the
+player, and checks the answer against Gaia DR3:
 
-Everything simulated is labelled **Simulated**; nothing here is a discovery.
+| Target | Measured by this tool from SPHEREx | Gaia DR3 |
+| --- | --- | --- |
+| Barnard's Star | **10.39 ± 0.54″/yr**, PA 357° | 10.39″/yr, PA 356° (0.1σ) |
+| Epsilon Indi Ba | **4.49 ± 0.30″/yr**, PA 124° | 4.68″/yr, PA 122° (0.5σ) |
+| RW Aurigae (control: should not move) | 0.45 ± 0.31″/yr — no detectable motion | 0.03″/yr |
+
+Two interfaces over the same data and the same URL: **Simple** (the default — one page, plain
+words, works on a phone) and **Pro** (`?ui=pro`, a desktop analysis workstation with layers,
+a timeline, measurement tools, a processing graph and live cache/performance panels).
+
+A second, separate project lives under **Planet X · experimental** (`/hunt`, `/lab`,
+`/classify`, `/proof`): a shift-and-stack search for Planet Nine that currently runs on a
+synthetic SAMPLE bundle. Every page there says so in a banner; nothing here is a discovery.
 
 ```
 /sky?q=Barnard%27s+Star
 /sky?ra=133.79513&dec=-7.24515&fov=0.1&mode=visits
+/sky?q=Barnard%27s+Star&ui=pro          # the same view in the Pro workstation
 ```
+
+**Fast movers are viewed where they are now.** Catalogue positions are usually J2000; Barnard's
+Star has moved 4.4 arcmin since then — out of a 0.1° view. Built-in movers carry their Gaia
+DR3 astrometry and are centred on it carried forward to 2025-09-07, and Gaia markers on every
+view follow Gaia's own proper motions frame by frame. WISE 0855 keeps the brief's position
+verbatim (it is too cold for Gaia); by 2025 it lies about 2 arcmin west of it, within 8 arcsec
+of a brighter background star.
 
 The five targets named in the challenge brief are pre-built from real IRSA data and open
 instantly, with no API and no network:
 
 | Target | frames | visits | baseline | bands |
 | --- | --- | --- | --- | --- |
-| Barnard's Star | 42 | 16 | 403 d | 39 / 102 |
-| Epsilon Indi Ba/Bb | 55 | 19 | 526 d | 49 / 102 |
+| Barnard's Star | 40 | 17 | 403 d | 36 / 102 |
+| Epsilon Indi Ba/Bb | 51 | 19 | 526 d | 43 / 102 |
 | WISE 0855−0714 | 44 | 11 | 374 d | 41 / 102 |
 | RW Aurigae | 42 | 7 | 380 d | 42 / 102 |
 | R Draconis | 93 | 31 | 426 d | 82 / 102 |
 
 Any other coordinate is fetched live from IRSA when the API is running.
 
-**What you can do with a view:** play it as a time-lapse, see it in false colour (102 infrared
+**What you can do with a view:** play it as a time-lapse with the source's measured path drawn on
+it, read its proper motion next to Gaia's, see it in false colour (102 infrared
 bands mapped to RGB), coadd per detector for depth, step through raw exposures with NASA's
 quality flags, subtract any visit from any other, mark catalogued sources from Gaia DR3 /
 AllWISE / 2MASS to see which dots are *not* already known, ask "find what changed" for a
@@ -43,6 +65,9 @@ Docs: [docs/SKY.md](docs/SKY.md) (how the viewer works) · [docs/ARCHITECTURE.md
 [docs/PLAN.md](docs/PLAN.md) · [docs/STATUS.md](docs/STATUS.md) (what works, what is faked, what is blocked).
 
 ## One-command local run (DEMO_MODE, no network needed)
+
+The baked targets below were rebuilt on 2026-11-14 after the epoch fix: Barnard's Star and
+Epsilon Indi B have new, correctly centred views.
 
 ```bash
 docker compose up --build

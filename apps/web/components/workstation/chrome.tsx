@@ -6,6 +6,7 @@ import {
   Pentagon, Pipette, Radar, Redo2, Route, Ruler, Settings, Square, Type, Undo2, X, ZoomIn, ZoomOut, Compass,
 } from "lucide-react";
 import { MODES } from "@/components/SkyPlayer";
+import { UiModeToggle } from "@/components/UiModeToggle";
 import { DEMO } from "@/lib/api";
 import { formatDec, formatRa } from "@/lib/sky";
 import { ZOOMS } from "@/lib/useSkySession";
@@ -17,11 +18,11 @@ import { type Tool, useCursor, usePB, useView, useWS } from "./context";
 import { IconBtn, Menu, MenuItem, MenuLabel, MenuSep, Select, STATE_STYLE, StateChip, type TaskState, TextBtn } from "./ui";
 
 const MODULES = [
-  { href: "/sky", label: "Sky Workstation" },
-  { href: "/", label: "The Hunt" },
-  { href: "/lab", label: "Candidate Lab" },
-  { href: "/classify", label: "Classify" },
-  { href: "/proof", label: "Proof" },
+  { href: "/sky", label: "Sky Viewer" },
+  { href: "/hunt", label: "Planet X · The Hunt (experimental)" },
+  { href: "/lab", label: "Planet X · Candidate Lab (experimental)" },
+  { href: "/classify", label: "Planet X · Classify (experimental)" },
+  { href: "/proof", label: "Planet X · Proof (experimental)" },
 ];
 
 /** Most urgent first, so the top bar shows what the user most needs to know. */
@@ -56,7 +57,7 @@ export function TopBar({ canUndo, canRedo }: { canUndo: boolean; canRedo: boolea
         <span className="text-[12.5px] font-semibold tracking-tight">Deep Field</span>
       </Link>
 
-      <Menu trigger={(o) => <MenuButton open={o}>Modules</MenuButton>}>
+      <Menu width={300} trigger={(o) => <MenuButton open={o}>Modules</MenuButton>}>
         {(close) => MODULES.map((m) => (
           <Link key={m.href} href={m.href} onClick={close}
             className="flex items-center gap-2 px-2.5 py-1 text-[11.5px] text-ws-fg hover:bg-ws-selbg">
@@ -100,8 +101,8 @@ export function TopBar({ canUndo, canRedo }: { canUndo: boolean; canRedo: boolea
           options={WORKSPACES.map((w) => ({ value: w.id, label: w.label }))} onChange={ws.setWorkspace} />
         <SettingsMenu />
         <IconBtn icon={Keyboard} label="Keyboard shortcuts" shortcut="?" onClick={() => ws.setShowHelp(true)} />
-        <button onClick={() => s.setUrl({ ui: "simple" })} title="The original single-page viewer"
-          className="ml-1 h-6 rounded-[3px] border border-ws-line px-2 text-[11px] text-ws-muted hover:text-ws-fg">Simple view</button>
+        <UiModeToggle value="pro" tone="workstation" className="ml-1"
+          onPick={(m) => { if (m === "simple") s.setUrl({ ui: undefined }); }} />
       </div>
     </header>
   );

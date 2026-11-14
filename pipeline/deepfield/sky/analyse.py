@@ -159,7 +159,8 @@ TEMPLATE_LABELS = {
     "asteroid": ("reflected sunlight",
                  "A flat, slightly red reflection spectrum, like rock or ice lit by the Sun."),
     "star": ("star-like",
-             "A smooth thermal glow with no absorption dips, like an ordinary star."),
+             "A smooth thermal glow, like a star. A brown dwarf can land here too: these simple "
+             "shapes cannot tell a warm brown dwarf from a cool star."),
     "none": ("not enough data", "Too few bands measured here to tell."),
 }
 
@@ -193,6 +194,32 @@ def fit_temperature(wave_um, flux, err) -> dict:
     if T is None:
         return {"temperature_k": None, "chi2_per_dof": None}
     return {"temperature_k": round(float(T)), "chi2_per_dof": round(chi2 / max(len(w) - 2, 1), 2)}
+
+
+#: The stellar hypothesis is a blackbody at any temperature in this range, not one fixed
+#: shape. With a single 4500 K template, a cool M dwarf (~3100 K) fitted the "reflected
+#: sunlight" shape -- a red-tilted 5772 K blackbody -- better, and was labelled an asteroid.
+STAR_T_RANGE_K = (2300.0, 12000.0)
+STAR_T_STEPS = 120
+
+
+def star_chi2(wave_um, flux, err) -> dict:
+    """Best blackbody over the stellar temperature range: {chi2, temperature_k}."""
+    w, f, e = np.asarray(wave_um, float), np.asarray(flux, float), np.asarray(err, float)
+    ok = np.isfinite(f) & np.isfinite(e) & (e > 0) & np.isfinite(w)
+    best = (np.inf, None)
+    if ok.sum() < 2:
+        return {"chi2": np.inf, "temperature_k": None}
+    w, f, e = w[ok], f[ok], e[ok]
+    wt = 1.0 / e ** 2
+    for T in np.geomspace(*STAR_T_RANGE_K, STAR_T_STEPS):
+        t = planck_nu(w, T)
+        t = t / max(float(np.max(t)), 1e-300)
+        s = max(float((wt * t * f).sum() / max(float((wt * t * t).sum()), 1e-30)), 0.0)
+        chi2 = float((((f - s * t) / e) ** 2).sum())
+        if chi2 < best[0]:
+            best = (chi2, T)
+    return {"chi2": best[0], "temperature_k": None if best[1] is None else round(float(best[1]))}
 
 
 #: Percentile of a field's own best-fit chi2/dof above which a point is "odd one out".
@@ -262,6 +289,16 @@ def classify_point(points: list[dict], odd_threshold: float | None = None) -> di
 
     fit = fit_templates(w, f, e)
     temp = fit_temperature(w, f, e)
+    # Replace the fixed-temperature star with the best stellar blackbody, then re-rank.
+    star = star_chi2(w, f, e)
+    if np.isfinite(star["chi2"]) and fit.get("chi2"):
+        fit["chi2"]["star"] = star["chi2"]
+        kinds = ("planet", "asteroid", "star")
+        c = np.array([fit["chi2"][k] for k in kinds])
+        like = np.exp(-0.5 * (c - c.min()))
+        p = like / like.sum()
+        fit["methane_score"] = float(p[0])
+        fit["best"] = kinds[int(np.argmax(p))]
     best = fit.get("best", "none")
     label, meaning = TEMPLATE_LABELS.get(best, TEMPLATE_LABELS["none"])
     chi2 = fit.get("chi2", {})
@@ -300,10 +337,12 @@ def classify_point(points: list[dict], odd_threshold: float | None = None) -> di
         "ranking": [{"template": k, "label": TEMPLATE_LABELS[k][0],
                      "chi2_per_dof": round(float(v) / dof, 2)} for k, v in ranked],
         "temperature": temp,
-        "method": ("Weighted least-squares fit of three fixed template shapes, plus a single "
-                   "blackbody colour temperature. No trained model, no third-party weights — "
-                   "the templates are simple physical models written out in "
-                   "pipeline/deepfield/spectral/templates.py."),
+        "star_temperature_k": star["temperature_k"],
+        "method": ("Weighted least-squares fit of three shapes — reflected sunlight with methane "
+                   "absorption, plain reflected sunlight, and a stellar blackbody whose temperature "
+                   "is fitted between 2,300 and 12,000 K — plus a free blackbody colour temperature. "
+                   "No trained model, no third-party weights: the shapes are simple physical models "
+                   "in pipeline/deepfield/spectral/templates.py and sky/analyse.py."),
         "caveat": ("A shape match is a hint, not an identification: these templates are "
                    "illustrative, and a handful of bands rarely pins down what something is."),
     }

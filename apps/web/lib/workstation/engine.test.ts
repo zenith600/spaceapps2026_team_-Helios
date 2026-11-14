@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { MODES, fracToPixel, toPlayFrames } from "../../components/SkyPlayer";
-import { decodeSpectrum, mjdLabel, pixelToSky, type SkyBundle } from "../sky";
+import { catalogAt, decodeSpectrum, mjdLabel, motionAt, pixelToSky, type SkyBundle } from "../sky";
 import { formatArcsec, measure, separationArcsec } from "./measure";
 
 const demoDir = resolve(__dirname, "../../public/demo/sky/ra133.7951-dec-7.2451-fov0.100");
@@ -65,6 +65,32 @@ describe("fracToPixel (click -> pixel, moved out of SkyPlayer)", () => {
   it("flips y: the top of the image is the last row of the array", () => {
     expect(fracToPixel(0, 0, 59)).toEqual({ x: 0, y: 58 });
     expect(fracToPixel(0, 0.99, 59)).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe("moving catalogue markers and motion tracks", () => {
+  const layer = {
+    id: "gaia", name: "Gaia DR3", owner: "ESA", colour: "#fff", note: "", n: 2, band: "G",
+    epoch_mjd: 61000, moves: true,
+    sources: [{ x: 10, y: 10, mag: 8, vx: 0, vy: 1.7 }, { x: 20, y: 20, mag: 15 }],
+  };
+  it("moves only sources with a proper motion, by their velocity times the elapsed years", () => {
+    const later = catalogAt(layer, 61000 + 365.25);
+    expect(later.sources[0]).toMatchObject({ x: 10, y: 11.7 });
+    expect(later.sources[1]).toEqual(layer.sources[1]);
+    expect(catalogAt(layer, 61000).sources[0].y).toBe(10);
+  });
+  it("leaves catalogues without motions, or with no date, untouched", () => {
+    expect(catalogAt({ ...layer, moves: false }, 62000)).toEqual({ ...layer, moves: false });
+    expect(catalogAt(layer, undefined)).toBe(layer);
+  });
+  it("puts a measured source where its fit says on any date", () => {
+    const m = { slug: "s", available: true, prior: { x: 0, y: 0, note: "" }, pixel_arcsec: 6.15, min_wave_um: null,
+      t_ref_mjd: 61000, fit: { x0: 30, y0: 29, vx_px_per_yr: -0.1, vy_px_per_yr: 1.7, ex0: 0, ey0: 0, evx: 0, evy: 0, chi2_x: 0, chi2_y: 0, dof: 3 } };
+    expect(motionAt(m, 61000)).toEqual({ x: 30, y: 29 });
+    const p = motionAt(m, 61000 + 365.25 / 2)!;
+    expect(p.x).toBeCloseTo(29.95); expect(p.y).toBeCloseTo(29.85);
+    expect(motionAt({ ...m, available: false }, 61000)).toBeNull();
   });
 });
 

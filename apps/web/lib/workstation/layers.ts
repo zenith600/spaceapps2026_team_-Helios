@@ -8,7 +8,7 @@
 // A layer is a *reference* to something the bundle (or a derived result) already holds.
 // The tree is derived from the data every render; only the user's config is stored, so a
 // layer that appears later (catalogue overlays arrive asynchronously) never breaks undo.
-import type { Overlay, SkyBundle } from "../sky";
+import type { Motion, Overlay, SkyBundle } from "../sky";
 import type { FrameMode } from "../../components/SkyPlayer";
 
 export type BlendMode = "normal" | "screen" | "lighten" | "difference";
@@ -20,7 +20,7 @@ export const BLEND_MODES: { id: BlendMode; label: string; note: string }[] = [
   { id: "difference", label: "Difference", note: "Display-level |A − B|. A quick visual check only: it subtracts stretched 8-bit display values, not calibrated flux. For a real flux subtraction use Compare." },
 ];
 
-export type LayerKind = "group" | "frames" | "stack" | "static" | "flags" | "change" | "catalog" | "probe" | "measure";
+export type LayerKind = "group" | "frames" | "stack" | "static" | "flags" | "change" | "motion" | "catalog" | "probe" | "measure";
 
 export type LayerConfig = {
   visible: boolean;
@@ -85,7 +85,8 @@ const ROOT = "root";
 const ORDER_ROOT = ["g-annot", "g-analysis", "g-catalogs", "g-compare", "g-obs"];
 
 /** Build the layer tree for a bundle. Pure: the same inputs give the same tree. */
-export function buildLayerTree(bundle: SkyBundle, overlay: Overlay | null, mode: FrameMode): LayerTree {
+export function buildLayerTree(bundle: SkyBundle, overlay: Overlay | null, mode: FrameMode,
+                               motion: Motion | null = null): LayerTree {
   const nodes: Record<string, LayerNode> = {};
   const ds = bundle.slug;
   const add = (n: Omit<LayerNode, "defaults"> & { defaults?: Partial<LayerConfig> }) => {
@@ -146,7 +147,19 @@ export function buildLayerTree(bundle: SkyBundle, overlay: Overlay | null, mode:
   }
 
   // ---- Analysis ------------------------------------------------------------------
-  group("g-analysis", "Analysis", ["change", "flags"], true, "Results computed from the pixel cube or shipped with the bundle.");
+  group("g-analysis", "Analysis", ["motion", "change", "flags"], true, "Results computed from the pixel cube or shipped with the bundle.");
+  const measured = Boolean(motion?.available);
+  add({
+    id: "motion", kind: "motion",
+    defaultName: measured && motion?.pm ? `Motion track · ${motion.pm.total_arcsec_yr.toFixed(2)}″/yr` : "Motion track",
+    typeLabel: "Proper-motion measurement",
+    parent: "g-analysis", canOpacity: true, canBlend: false, canAdjust: false, canReorder: true, canClear: false,
+    available: measured,
+    unavailableReason: motion ? `Not measured: ${motion.reason ?? "no measurement"}` : "No motion measurement for this view.",
+    source: { dataset: ds, files: ["motion.json"],
+      note: "One fitted position per visit from the pixel cube, and a straight line through them; compared with Gaia DR3 where a source matches." },
+    temporal: "all-exposures", defaults: { visible: true },
+  });
   add({
     id: "change", kind: "change", defaultName: "Change detection · χ² peaks", typeLabel: "Flicker / motion detection",
     parent: "g-analysis", canOpacity: true, canBlend: false, canAdjust: false, canReorder: true, canClear: true,

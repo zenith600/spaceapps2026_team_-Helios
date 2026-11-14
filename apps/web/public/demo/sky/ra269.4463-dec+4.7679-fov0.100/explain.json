@@ -1,0 +1,23 @@
+{
+ "text": "This 6-arcminute patch of sky has 17 visits over 1.1 years, 40 images, and 36 infrared colours measured between 0.74 and 5.00 microns. In a time-lapse, watch for any changes in brightness or colour of stars, though no known solar-system objects appear.",
+ "generator": "llm:openai/gpt-oss-20b",
+ "facts": {
+  "right_ascension_deg": 269.4463,
+  "declination_deg": 4.7679,
+  "field_width_arcmin": 6.0,
+  "number_of_visits": 17,
+  "images_used": 40,
+  "years_covered": 1.1,
+  "infrared_colours_measured": 36,
+  "infrared_colours_possible": 102,
+  "wavelength_range_microns": [
+   0.7386,
+   5.0054
+  ],
+  "pixel_size_arcsec": 6.15,
+  "known_solar_system_objects_in_field": []
+ },
+ "generated_at": "2026-11-14T15:52:19+00:00",
+ "is_machine_written": true,
+ "disclaimer": "Written automatically from measured survey statistics. Not a discovery claim."
+}

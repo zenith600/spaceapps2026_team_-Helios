@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowDown, ArrowUp, ChevronDown, ChevronRight, CircleDot, Eye, EyeOff, Flag, Folder, FolderOpen, Image as ImageIcon,
-  Lock, LockOpen, Pipette, Radar, Ruler, SquareStack, Layers, Trash, LoaderCircle,
+  Lock, LockOpen, Pipette, Radar, Route, Ruler, SquareStack, Layers, Trash, LoaderCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BLEND_MODES, type LayerKind, type ResolvedLayer, canMove } from "@/lib/workstation/layers";
@@ -11,7 +11,7 @@ import { Empty, IconBtn, Select, Slider } from "../ui";
 
 const KIND_ICON: Record<LayerKind, typeof Eye> = {
   group: Folder, frames: ImageIcon, stack: SquareStack, static: Layers, flags: Flag, change: Radar,
-  catalog: CircleDot, probe: Pipette, measure: Ruler,
+  motion: Route, catalog: CircleDot, probe: Pipette, measure: Ruler,
 };
 
 export function LayersPanel() {
@@ -137,6 +137,10 @@ function layerBadge(l: ResolvedLayer, ws: ReturnType<typeof useWS>) {
     if (c.state === "ready") return <span className={cn(cls, "bg-sim/15 text-sim")}>{c.report?.peaks.length ?? 0} peaks</span>;
     if (c.state === "error") return <span className={cn(cls, "text-ws-err")}>error</span>;
     return <span className={cn(cls, "text-ws-dim")}>not run</span>;
+  }
+  if (n.kind === "motion") {
+    const c = ws.session.motion?.comparison;
+    return c ? <span className={cn(cls, c.agrees ? "bg-sim/15 text-sim" : "text-ws-warn")}>Gaia {c.agrees ? "✓" : "≠"}</span> : null;
   }
   if (n.kind === "catalog") {
     const c = ws.session.overlay?.layers.find((x) => `cat:${x.id}` === n.id);

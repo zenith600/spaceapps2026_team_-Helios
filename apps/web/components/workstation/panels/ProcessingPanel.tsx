@@ -24,8 +24,8 @@ export function ProcessingPanel() {
   const [focus, setFocus] = useState<string | null>(null);
   const nodes = useMemo(() => (b ? buildPipeline(b, {
     demo: DEMO, change: { state: ws.change.state === "cancelled" ? "idle" : ws.change.state, params: ws.doc.change },
-    aperture: ws.doc.radius, pixelPicked: Boolean(ws.doc.pixel),
-  }) : []), [b, ws.change.state, ws.doc.change, ws.doc.radius, ws.doc.pixel]);
+    aperture: ws.doc.radius, pixelPicked: Boolean(ws.doc.pixel), motion: ws.session.motion,
+  }) : []), [b, ws.change.state, ws.doc.change, ws.doc.radius, ws.doc.pixel, ws.session.motion]);
   const affected = useMemo(() => (focus ? new Set(downstreamOf(nodes, focus)) : new Set<string>()), [nodes, focus]);
   const upstream = useMemo(() => new Set(focus ? nodes.find((n) => n.id === focus)?.inputs ?? [] : []), [nodes, focus]);
 

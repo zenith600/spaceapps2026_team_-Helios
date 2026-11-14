@@ -14,6 +14,8 @@ export type SkyTarget = {
   query: string; name: string; ra_deg: number; dec_deg: number;
   resolver: "builtin" | "coords" | "sesame"; note: string; slug: string;
   look_for?: string; kind?: string;
+  /** For fast movers: the catalogue position before it was carried to the survey epoch. */
+  catalog_ra_deg?: number | null; catalog_dec_deg?: number | null; epoch_note?: string;
 };
 
 export type FlagSummary = Record<string, number>;
@@ -147,14 +149,72 @@ export type Classification = {
   unexplained?: boolean; best_chi2_per_dof?: number | null; anomaly_note?: string | null;
   ranking?: { template: string; label: string; chi2_per_dof: number }[];
   temperature?: { temperature_k: number | null; chi2_per_dof: number | null };
+  star_temperature_k?: number | null;
   method?: string; caveat?: string;
 };
 
 export type OverlayLayer = {
   id: string; name: string; owner: string; colour: string; note: string; n: number;
-  band: string | null; sources: { x: number; y: number; mag: number | null }[];
+  band: string | null;
+  /** `vx/vy` (pixels per year) are present for sources with a proper motion (Gaia). */
+  sources: { x: number; y: number; mag: number | null; vx?: number; vy?: number }[];
+  /** Epoch of the x/y positions; Gaia's are carried to the survey mid-epoch. */
+  epoch_mjd?: number | null;
+  moves?: boolean;
 };
 export type Overlay = { layers: OverlayLayer[]; radius_deg: number; note: string };
+
+/**
+ * A catalogue layer as it stood on `mjd`: sources with a proper motion are moved along it, so
+ * a Gaia ring follows a fast star from frame to frame. Others are returned unchanged.
+ */
+export function catalogAt(layer: OverlayLayer, mjd: number | undefined): OverlayLayer {
+  if (!layer.moves || layer.epoch_mjd == null || mjd === undefined) return layer;
+  const dt = (mjd - layer.epoch_mjd) / 365.25;
+  return {
+    ...layer,
+    sources: layer.sources.map((s) => (s.vx || s.vy ? { ...s, x: s.x + (s.vx ?? 0) * dt, y: s.y + (s.vy ?? 0) * dt } : s)),
+  };
+}
+
+export type MotionVisit = {
+  visit: number; mjd: number; n_exposures: number; x: number; y: number; ex: number; ey: number;
+  snr: number; sigma_px: number;
+};
+export type Motion = {
+  slug: string; available: boolean; reason?: string;
+  prior: { x: number; y: number; note: string };
+  located?: { x: number; y: number; snr: number };
+  visits?: MotionVisit[];
+  t_ref_mjd?: number;
+  fit?: { x0: number; y0: number; vx_px_per_yr: number; vy_px_per_yr: number; ex0: number; ey0: number;
+          evx: number; evy: number; chi2_x: number; chi2_y: number; dof: number };
+  pm?: { pmra_arcsec_yr: number; pmdec_arcsec_yr: number; err_pmra: number; err_pmdec: number;
+         total_arcsec_yr: number; err_total: number; pa_deg: number };
+  baseline_days?: number; shift_px?: number; pixel_arcsec: number; min_wave_um: number | null;
+  reference?: { pmra_mas: number; pmdec_mas: number; g_mag?: number; parallax_mas?: number | null;
+                separation_px?: number; source: string } | null;
+  comparison?: { total_arcsec_yr: number; pmra_arcsec_yr: number; pmdec_arcsec_yr: number; pa_deg: number;
+                 diff_pmra: number; diff_pmdec: number; n_sigma: number; agrees: boolean };
+  target?: { name: string | null; epoch_note: string };
+  method?: string; caveat?: string;
+};
+
+/** The fitted position of a measured source on a given date (pixel coordinates, y up). */
+export function motionAt(m: Motion, mjd: number): { x: number; y: number } | null {
+  if (!m.available || !m.fit || m.t_ref_mjd === undefined) return null;
+  const t = (mjd - m.t_ref_mjd) / 365.25;
+  return { x: m.fit.x0 + m.fit.vx_px_per_yr * t, y: m.fit.y0 + m.fit.vy_px_per_yr * t };
+}
+
+export async function getMotion(bundle: SkyBundle, at?: { x: number; y: number }): Promise<Motion> {
+  if (DEMO) {
+    if (at) throw new Error("measuring a chosen pixel needs the API");
+    return getJson<Motion>(`/demo/sky/${bundle.slug}/motion.json`);
+  }
+  const q = at ? `?x=${at.x}&y=${at.y}` : "";
+  return getJson<Motion>(`${API_URL}/sky/motion/${bundle.slug}${q}`);
+}
 
 export type Explanation = {
   text: string; generator: string; generated_at: string;
@@ -195,6 +255,8 @@ async function getJson<T>(url: string): Promise<T> {
 type CatalogueEntry = {
   slug: string; name: string; ra_deg: number; dec_deg: number;
   note: string; look_for?: string; kind?: string; featured: boolean;
+  catalog_ra_deg?: number; catalog_dec_deg?: number; epoch_note?: string;
+  aliases?: string[];
 };
 let catalogueCache: CatalogueEntry[] | null = null;
 
@@ -241,10 +303,12 @@ export async function resolveTarget(query: string): Promise<SkyTarget> {
   if (!q) throw new Error("type a name or coordinates");
 
   const cat = await getCatalogue();
-  const hit = cat.find((c) => normalise(c.name) === normalise(q) || normalise(c.slug) === normalise(q));
+  const want = normalise(q);
+  const hit = cat.find((c) => [c.name, c.slug, ...(c.aliases ?? [])].some((a) => normalise(a) === want));
   if (hit) {
     return { query: q, name: hit.name, ra_deg: hit.ra_deg, dec_deg: hit.dec_deg, resolver: "builtin",
-             note: hit.note, slug: hit.slug, look_for: hit.look_for, kind: hit.kind };
+             note: hit.note, slug: hit.slug, look_for: hit.look_for, kind: hit.kind,
+             catalog_ra_deg: hit.catalog_ra_deg, catalog_dec_deg: hit.catalog_dec_deg, epoch_note: hit.epoch_note };
   }
 
   const coords = parseCoords(q);
