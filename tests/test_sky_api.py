@@ -373,6 +373,7 @@ def test_spectrum_reports_sky_coordinates_of_the_pixel(client, fake_bundle):
 def test_freshness_flags_new_data(client, fake_bundle, monkeypatch):
     slug, _ = fake_bundle
     import deepfield_api.sky as API_SKY
+    API_SKY._FRESH.pop(slug, None)
     monkeypatch.setattr(API_SKY.SVC.REL, "coverage_snapshot",
                         lambda *a, **k: {"spherex_dr1": {"n": 140, "latest_mjd": 61300.0}})
     r = client.get(f"/sky/bundle/{slug}/freshness")
@@ -381,3 +382,86 @@ def test_freshness_flags_new_data(client, fake_bundle, monkeypatch):
     assert body["new_exposures"] == 40
     assert body["stale"] is True
     assert body["slug"] == slug
+
+
+# ---------------------------------------------------------------------------
+# The background refresher
+# ---------------------------------------------------------------------------
+
+def test_freshness_is_cached_so_pollers_do_not_hammer_irsa(client, fake_bundle, monkeypatch):
+    """Many clients polling must not become many SIA2 queries against someone else's archive."""
+    slug, _ = fake_bundle
+    import deepfield_api.sky as API_SKY
+    API_SKY._FRESH.pop(slug, None)
+    calls = []
+    monkeypatch.setattr(API_SKY.SVC.REL, "coverage_snapshot",
+                        lambda *a, **k: (calls.append(1), {"spherex_dr1": {"n": 140, "latest_mjd": 61300.0}})[1])
+
+    first = client.get(f"/sky/bundle/{slug}/freshness").json()
+    assert first["cached"] is False and len(calls) == 1
+    for _ in range(5):
+        again = client.get(f"/sky/bundle/{slug}/freshness").json()
+        assert again["cached"] is True
+    assert len(calls) == 1, "a cached answer still queried IRSA"
+
+    forced = client.get(f"/sky/bundle/{slug}/freshness", params={"force": True}).json()
+    assert forced["cached"] is False and len(calls) == 2
+
+
+def test_sweep_records_new_releases_and_stale_views(fake_bundle, monkeypatch):
+    """A whole new collection appearing must be noticed, not just new exposures."""
+    slug, _ = fake_bundle
+    import deepfield_api.sky as API_SKY
+    API_SKY._FRESH.pop(slug, None)
+    monkeypatch.setattr(API_SKY.REL, "discover", lambda **kw: {
+        "all": ["spherex_dr1", "spherex_dr2"] if kw.get("force") else ["spherex_dr1"],
+        "searchable": ["spherex_dr1"], "discovered_at": "", "source": "test", "stale_cache": False})
+    monkeypatch.setattr(API_SKY.SVC.REL, "coverage_snapshot",
+                        lambda *a, **k: {"spherex_dr1": {"n": 400, "latest_mjd": 61400.0}})
+
+    state = API_SKY.refresh_sweep()
+    assert state["new_releases"] == ["spherex_dr2"]
+    assert slug in state["stale"]
+    # The sweep covers every built view, which here includes the five baked targets.
+    assert state["n_checked"] >= 1
+    assert API_SKY._FRESH[slug]["new_exposures"] == 300
+
+
+def test_sweep_survives_one_bad_bundle(fake_bundle, monkeypatch):
+    slug, _ = fake_bundle
+    import deepfield_api.sky as API_SKY
+    monkeypatch.setattr(API_SKY.SVC, "bundle_freshness",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("IRSA down")))
+    state = API_SKY.refresh_sweep()
+    assert state["n_checked"] == 0 and state["n_stale"] == 0
+
+
+def test_auto_rebuild_is_off_by_default():
+    """Spending bandwidth and disk without being asked should take a deliberate switch."""
+    import deepfield_api.sky as API_SKY
+    assert API_SKY.AUTO_REBUILD is False
+
+
+def test_refresher_can_be_disabled(monkeypatch):
+    import deepfield_api.sky as API_SKY
+    monkeypatch.setattr(API_SKY, "REFRESH_MINUTES", 0.0)
+    assert API_SKY.start_refresher() is False
+
+
+def test_releases_route_reports_the_refresher(client):
+    import deepfield_api.sky as API_SKY
+    body = client.get("/sky/releases").json()
+    assert "searchable" in body and "refresher" in body
+    assert body["refresher"]["interval_minutes"] == API_SKY.REFRESH_MINUTES
+
+
+# ---------------------------------------------------------------------------
+# Cross-language agreement
+# ---------------------------------------------------------------------------
+
+def test_slug_format_matches_the_typescript_port():
+    """lib/sky.ts computes slugs independently; if the formats drift, DEMO mode and the
+    API address different bundles for the same request. The TS side asserts these exact
+    strings in apps/web/lib/sky.test.ts."""
+    assert SVC.SkyRequest(133.795129, -7.245147, 0.1).slug == "ra133.7951-dec-7.2451-fov0.100"
+    assert SVC.SkyRequest(269.45207696, 4.69336497, 0.1).slug == "ra269.4521-dec+4.6934-fov0.100"

@@ -1,0 +1,91 @@
+# New SPHEREx data is arriving fast, and the brief asks for a tool that is easy to keep
+# up to date. This is how the *shipped demo* keeps up without anyone remembering to do
+# it: on a schedule, ask IRSA what it now has at the five challenge targets, rebuild any
+# view where new exposures (or a whole new release) have landed, and open a pull request
+# with the result. A human still approves the merge; nothing publishes itself.
+#
+# The live API refreshes continuously on its own (SKY_REFRESH_MINUTES); this job only
+# keeps the committed, API-free demo bundle current.
+name: sky-refresh
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"          # 05:17 UTC every Monday
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild every target even if nothing new has landed"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sky-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - run: pip install -r pipeline/requirements.txt
+
+      - name: What does IRSA publish today?
+        env: { PYTHONPATH: "pipeline" }
+        run: python -m deepfield.cli sky releases --force | tee releases.json
+
+      - name: Is anything stale?
+        id: check
+        env: { PYTHONPATH: "pipeline" }
+        run: |
+          python -m deepfield.cli sky fresh | tee freshness.txt
+          # data/sky is gitignored, so on a clean runner there is nothing built yet and
+          # the rebuild below has to run regardless. The report is for the PR body.
+
+      - name: Rebuild what changed
+        env:
+          PYTHONPATH: "pipeline"
+          SKY_FETCH_WORKERS: "4"            # be a polite client of someone else's archive
+        run: |
+          python -m deepfield.cli sky bake ${{ inputs.force && '--force' || '--refresh' }} \
+            | tee bake.txt
+
+      - name: Regenerate the cross-language spectrum fixture
+        env: { PYTHONPATH: "pipeline" }
+        run: python scripts/make_spectrum_fixture.py
+
+      - name: Check the allowlist still holds
+        run: python scripts/check_manifest_domains.py
+
+      - name: Anything to commit?
+        id: diff
+        run: |
+          if git diff --quiet -- apps/web/public/demo/sky apps/web/lib/__fixtures__; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No new SPHEREx data at the baked targets."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- apps/web/public/demo/sky apps/web/lib/__fixtures__
+          fi
+
+      - name: Open a pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: auto/sky-refresh
+          delete-branch: true
+          title: "data: refresh the baked Sky Viewer targets"
+          commit-message: "data: refresh the baked Sky Viewer targets from the latest IRSA release"
+          add-paths: |
+            apps/web/public/demo/sky
+            apps/web/lib/__fixtures__
+          body-path: bake.txt
+          labels: data, automated

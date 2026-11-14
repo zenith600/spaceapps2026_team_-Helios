@@ -41,6 +41,11 @@ router = APIRouter(prefix="/sky", tags=["sky"])
 ALLOW_LIVE = os.environ.get("SKY_ALLOW_LIVE", "1") == "1"
 MAX_ACTIVE_JOBS = int(os.environ.get("SKY_MAX_ACTIVE_JOBS", "2"))
 FRESHNESS_TTL_HOURS = float(os.environ.get("SKY_FRESHNESS_TTL_HOURS", "0.25"))
+#: How often the background refresher re-asks IRSA what it has. 0 turns it off.
+REFRESH_MINUTES = float(os.environ.get("SKY_REFRESH_MINUTES", "30"))
+#: Rebuild a view by itself when new exposures land. Off by default: it spends
+#: bandwidth and disk without anyone asking.
+AUTO_REBUILD = os.environ.get("SKY_AUTO_REBUILD", "0") == "1"
 
 
 def _now_iso() -> str:
@@ -101,6 +106,86 @@ class Job:
 _JOBS: dict[str, Job] = {}
 _JOBS_LOCK = threading.Lock()
 
+# ---------------------------------------------------------------------------
+# Background refresher: "new SPHEREx data is arriving fast", so keep asking.
+# ---------------------------------------------------------------------------
+_FRESH: dict[str, dict] = {}
+_REFRESH_STATE: dict = {"last_sweep": None, "last_error": None, "running": False}
+_STOP = threading.Event()
+
+
+def refresh_sweep() -> dict:
+    """Re-ask IRSA what it has for every built view, and note what is new.
+
+    Also re-runs release discovery, so a brand new collection (spherex_dr2, say) starts
+    being searched without a redeploy -- the whole point of treating the release list as
+    data rather than code.
+    """
+    before = set(REL.discover(allow_network=False)["all"])
+    disc = REL.discover(force=True)
+    new_releases = sorted(set(disc["all"]) - before)
+    checked, stale = 0, []
+    for slug in _built_slugs():
+        if _STOP.is_set():
+            break
+        try:
+            out = SVC.bundle_freshness(SVC.SKY_DIR / slug if (SVC.SKY_DIR / slug / "sky.json").exists()
+                                       else BAKE.WEB_SKY_DIR / slug, max_age_hours=0.0)
+        except Exception as exc:
+            log.warning("freshness sweep failed for %s: %s", slug, exc)
+            continue
+        checked += 1
+        _FRESH[slug] = {**out, "cached": True}
+        if out["stale"]:
+            stale.append(slug)
+            if AUTO_REBUILD and ALLOW_LIVE:
+                _auto_rebuild(slug)
+    state = {"last_sweep": _now_iso(), "n_checked": checked, "n_stale": len(stale),
+             "stale": stale, "new_releases": new_releases, "collections": disc["all"]}
+    _REFRESH_STATE.update(state)
+    if new_releases:
+        log.info("new SPHEREx collections published: %s", ", ".join(new_releases))
+    return state
+
+
+def _auto_rebuild(slug: str) -> None:
+    meta = SVC.load_bundle(bundle_dir(slug))
+    req = SVC.SkyRequest(meta["ra_deg"], meta["dec_deg"], meta["fov_deg"],
+                         label=meta.get("target", {}).get("name", ""))
+    with _JOBS_LOCK:
+        if any(j.slug == req.slug and j.state in ("queued", "running") for j in _JOBS.values()):
+            return
+        job = Job(uuid.uuid4().hex[:12], req)
+        _JOBS[job.id] = job
+    log.info("auto-rebuilding %s after new data", slug)
+    threading.Thread(target=_run_job, args=(job,), daemon=True, name=f"sky-auto-{job.id}").start()
+
+
+def _refresher() -> None:
+    _REFRESH_STATE["running"] = True
+    # A first sweep on startup would make every cold start hit IRSA several times, so
+    # wait one interval and let the on-demand path fill the cache meanwhile.
+    while not _STOP.wait(REFRESH_MINUTES * 60):
+        try:
+            refresh_sweep()
+        except Exception as exc:
+            log.exception("refresh sweep failed")
+            _REFRESH_STATE["last_error"] = f"{type(exc).__name__}: {exc}"
+    _REFRESH_STATE["running"] = False
+
+
+def start_refresher() -> bool:
+    """Called from the app lifespan. Returns whether the thread was started."""
+    if REFRESH_MINUTES <= 0 or _REFRESH_STATE["running"]:
+        return False
+    _STOP.clear()
+    threading.Thread(target=_refresher, daemon=True, name="sky-refresher").start()
+    return True
+
+
+def stop_refresher() -> None:
+    _STOP.set()
+
 
 def _run_job(job: Job) -> None:
     def progress(done, total, msg):
@@ -147,7 +232,18 @@ def sky_resolve(q: str = Query(..., min_length=1), network: bool = True):
 
 @router.get("/releases")
 def sky_releases(force: bool = False):
-    return REL.discover(force=force)
+    return {**REL.discover(force=force),
+            "searchable_pattern": REL.SEARCHABLE_RE.pattern,
+            "refresher": {"interval_minutes": REFRESH_MINUTES,
+                          "running": _REFRESH_STATE.get("running", False),
+                          "last_sweep": _REFRESH_STATE.get("last_sweep"),
+                          "new_releases_last_sweep": _REFRESH_STATE.get("new_releases", [])}}
+
+
+@router.post("/refresh")
+def sky_refresh_now():
+    """Run a refresh sweep immediately. Useful from a cron job or after a release."""
+    return refresh_sweep()
 
 
 @router.get("/epochs")
@@ -235,19 +331,40 @@ def sky_bundle(slug: str):
 
 
 @router.get("/bundle/{slug}/freshness")
-def sky_freshness(slug: str):
+def sky_freshness(slug: str, force: bool = False):
     """Has new SPHEREx data landed at this position since the view was built?
 
     This is the live-refresh hook: the web app polls it and offers a Rebuild when the
     answer is yes. It also reports collections that did not exist at build time, so a
     whole new data release shows up here.
+
+    Answers come from the background refresher's cache. Every check is a SIA2 query per
+    collection against IRSA, so serving a cached answer to many pollers -- rather than
+    one upstream query per poll -- is the difference between a feature and an abuse of
+    someone else's service.
     """
+    d = bundle_dir(slug)
+    cached = _FRESH.get(slug)
+    if cached is not None and not force:
+        return cached
     try:
-        return SVC.bundle_freshness(bundle_dir(slug), max_age_hours=FRESHNESS_TTL_HOURS)
+        out = SVC.bundle_freshness(d, max_age_hours=FRESHNESS_TTL_HOURS)
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(502, f"freshness check failed: {type(exc).__name__}: {exc}") from exc
+    out["cached"] = False
+    _FRESH[slug] = {**out, "cached": True}
+    return out
+
+
+@router.get("/freshness")
+def sky_freshness_all():
+    """Every built view and whether new data has landed for it. Served from cache."""
+    return {"refresher": {"interval_minutes": REFRESH_MINUTES, "auto_rebuild": AUTO_REBUILD,
+                          "last_sweep": _REFRESH_STATE.get("last_sweep"),
+                          "last_error": _REFRESH_STATE.get("last_error")},
+            "bundles": {s: _FRESH.get(s) for s in _built_slugs()}}
 
 
 @router.get("/spectrum/{slug}")

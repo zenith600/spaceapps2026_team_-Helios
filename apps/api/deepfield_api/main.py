@@ -23,7 +23,12 @@ from contextlib import asynccontextmanager
 async def _lifespan(app_: FastAPI):
     root = get_bundle().root
     app_.mount("/files", StaticFiles(directory=str(root)), name="files")
-    yield
+    from deepfield_api import sky as _sky
+    _sky.start_refresher()
+    try:
+        yield
+    finally:
+        _sky.stop_refresher()
 
 
 app = FastAPI(title="Deep Field API", version="0.1.0", lifespan=_lifespan,
