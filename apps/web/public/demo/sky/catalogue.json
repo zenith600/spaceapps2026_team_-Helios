@@ -1,0 +1,69 @@
+{
+ "generated_at": "2026-11-14T08:59:29+00:00",
+ "targets": [
+  {
+   "slug": "barnards-star",
+   "name": "Barnard's Star",
+   "ra_deg": 269.45207696,
+   "dec_deg": 4.69336497,
+   "note": "The fastest-moving star on the sky: 10.3 arcsec per year, about 1.7 SPHEREx pixels per year. Six light years away. The classic proper-motion target.",
+   "featured": true
+  },
+  {
+   "slug": "epsilon-indi-b",
+   "name": "Epsilon Indi Ba/Bb",
+   "ra_deg": 331.043833,
+   "dec_deg": -56.782694,
+   "note": "A pair of brown dwarfs (T1 + T6) orbiting the nearby star Epsilon Indi A, about 400 arcsec away from it. Cold, methane-rich, and bright in the near infrared.",
+   "featured": true
+  },
+  {
+   "slug": "wise-0855",
+   "name": "WISE 0855-0714",
+   "ra_deg": 133.795129,
+   "dec_deg": -7.245147,
+   "note": "The coldest known brown dwarf, 250 K, 7.5 light years away. Moves about 8 arcsec per year. Water-ice clouds. Position as given in the challenge brief.",
+   "featured": true
+  },
+  {
+   "slug": "rw-aurigae",
+   "name": "RW Aurigae",
+   "ra_deg": 76.95652603,
+   "dec_deg": 30.40143817,
+   "note": "A young binary T Tauri star that dims by magnitudes for months at a time when its tidally disrupted disc passes in front of it. Brightness, not position, is the story.",
+   "featured": true
+  },
+  {
+   "slug": "r-draconis",
+   "name": "R Draconis",
+   "ra_deg": 248.16761083,
+   "dec_deg": 66.75497942,
+   "note": "A Mira variable: a pulsating red giant that swings about 8 magnitudes over a 245-day period. Enormous in the near infrared.",
+   "featured": true
+  },
+  {
+   "slug": "proxima-centauri",
+   "name": "Proxima Centauri",
+   "ra_deg": 217.42895,
+   "dec_deg": -62.67948,
+   "note": "The nearest star. 3.85 arcsec per year of proper motion plus a large parallax wobble.",
+   "featured": false
+  },
+  {
+   "slug": "luhman-16",
+   "name": "Luhman 16 AB",
+   "ra_deg": 162.32883,
+   "dec_deg": -53.31944,
+   "note": "The nearest brown dwarf binary, 6.5 light years away, moving 2.8 arcsec per year.",
+   "featured": false
+  },
+  {
+   "slug": "teegardens-star",
+   "name": "Teegarden's Star",
+   "ra_deg": 43.25371,
+   "dec_deg": 16.88128,
+   "note": "A nearby red dwarf with two temperate planets and 5 arcsec per year of proper motion.",
+   "featured": false
+  }
+ ]
+}

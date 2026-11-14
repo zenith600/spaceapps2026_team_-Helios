@@ -6,6 +6,7 @@ import { DEMO } from "@/lib/api";
 
 const items = [
   { href: "/", label: "The Hunt" },
+  { href: "/sky", label: "Sky Viewer" },
   { href: "/lab", label: "Candidate Lab" },
   { href: "/classify", label: "Classify" },
   { href: "/proof", label: "Proof" },
