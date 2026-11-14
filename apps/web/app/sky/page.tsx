@@ -5,14 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SourceTag } from "@/components/Tags";
+import { AladinPanel } from "@/components/AladinPanel";
 import { FrameMode, MODES, SkyPlayer } from "@/components/SkyPlayer";
 import { SkySpectrum } from "@/components/SkySpectrum";
 import { TargetGallery } from "@/components/TargetGallery";
+import { VisitCompare } from "@/components/VisitCompare";
 import { DEMO } from "@/lib/api";
 import {
-  DEFAULT_FOV, FOV_MAX, FOV_MIN, type Epochs, type Freshness, type Job, type SkyBundle,
-  type SkyIndexEntry, type SkyTarget, formatDec, formatRa, getEpochs, getFreshness, getSkyBundle,
-  getSkyIndex, getSkyJob, mjdLabel, resolveTarget, skySlug, startSkyJob,
+  DEFAULT_FOV, FOV_MAX, FOV_MIN, type ChangeReport, type Epochs, type Explanation, type Freshness,
+  type Job, type Overlay, type SkyBundle, type SkyIndexEntry, type SkyTarget,
+  formatDec, formatRa, getChangeMap, getEpochs, getExplanation, getFreshness, getOverlay,
+  getSkyBundle, getSkyIndex, getSkyJob, mjdLabel, resolveTarget, skySlug, startSkyJob,
 } from "@/lib/sky";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +76,12 @@ function SkyViewer() {
   const [radius, setRadius] = useState(1);
   const [showFlags, setShowFlags] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [overlay, setOverlay] = useState<Overlay | null>(null);
+  const [activeLayers, setActiveLayers] = useState<string[]>([]);
+  const [change, setChange] = useState<ChangeReport | null>(null);
+  const [changeBusy, setChangeBusy] = useState(false);
+  const [showChange, setShowChange] = useState(false);
+  const [explain, setExplain] = useState<Explanation | null>(null);
 
   useEffect(() => { getSkyIndex().then((j) => setIndex(j.targets)); }, []);
 
@@ -127,6 +136,28 @@ function SkyViewer() {
     })();
     return () => { cancelled = true; };
   }, [qParam, raParam, decParam, fov]);
+
+  // ---- extras that attach to a loaded bundle -----------------------------
+  useEffect(() => {
+    if (!bundle) { setOverlay(null); setChange(null); setExplain(null); setShowChange(false); return; }
+    let cancelled = false;
+    setOverlay(null); setChange(null); setExplain(null); setShowChange(false); setActiveLayers([]);
+    getOverlay(bundle).then((o) => { if (!cancelled) setOverlay(o); }).catch(() => {});
+    getExplanation(bundle).then((e) => { if (!cancelled) setExplain(e); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [bundle]);
+
+  const findChanges = async () => {
+    if (!bundle || changeBusy) return;
+    if (change) { setShowChange((v) => !v); return; }
+    setChangeBusy(true);
+    try {
+      const c = await getChangeMap(bundle);
+      setChange(c); setShowChange(true);
+    } catch (e) {
+      setError(String((e as Error).message || e));
+    } finally { setChangeBusy(false); }
+  };
 
   // ---- live refresh ------------------------------------------------------
   useEffect(() => {
@@ -226,6 +257,21 @@ function SkyViewer() {
               <span className="font-semibold text-accent">What to look for: </span>
               <span className="text-fg">{lookFor}</span>
             </p>
+          ) : explain ? (
+            // No hand-written guidance for this position, so describe it from its own
+            // measurements. Always labelled, because it is written by a machine.
+            <div className="max-w-3xl">
+              <p className="text-sm">
+                <span className="font-semibold text-accent">About this field: </span>
+                <span className="text-fg">{explain.text}</span>
+              </p>
+              <p className="mt-0.5 text-[10px] text-muted">
+                {explain.generator.startsWith("llm:")
+                  ? `Written automatically by ${explain.generator.slice(4)} from measured survey statistics.`
+                  : "Generated from measured survey statistics."}{" "}
+                {explain.disclaimer}
+              </p>
+            </div>
           ) : null}
           <details className="text-xs text-muted">
             <summary className="cursor-pointer select-none hover:text-fg">Exact position</summary>
@@ -323,9 +369,64 @@ function SkyViewer() {
               <ModeTabs bundle={bundle} mode={modeParam} onPick={(m) => setUrl({ mode: m })} />
 
               <SkyPlayer bundle={bundle} mode={modeParam} marker={pixel} onPickPixel={setPixel}
-                showFlags={showFlags} onToggleFlags={setShowFlags} hasPicked={pixel !== null} />
+                showFlags={showFlags} onToggleFlags={setShowFlags} hasPicked={pixel !== null}
+                catalogOverlay={overlay} activeLayers={activeLayers}
+                changePeaks={showChange ? change?.peaks ?? null : null} />
 
               <ZoomRow fov={fov} onPick={(f) => setUrl({ fov: f })} />
+
+              {/* Catalogue overlays: which dots are already known? */}
+              {overlay?.layers.length ? (
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="text-muted">Mark known sources:</span>
+                  {overlay.layers.map((l) => (
+                    <button key={l.id} disabled={l.n === 0} title={`${l.note} (${l.n} in this field)`}
+                      onClick={() => setActiveLayers((a) =>
+                        a.includes(l.id) ? a.filter((x) => x !== l.id) : [...a, l.id])}
+                      className={cn("flex items-center gap-1 rounded-full border px-2.5 py-0.5 disabled:opacity-30",
+                        activeLayers.includes(l.id) ? "border-accent/60 bg-accent/10 text-fg" : "border-line text-muted hover:text-fg")}>
+                      <span className="inline-block h-2 w-2 rounded-full border"
+                        style={{ borderColor: l.colour, background: activeLayers.includes(l.id) ? l.colour : "transparent" }} />
+                      {l.name} <span className="mono opacity-60">{l.n}</span>
+                    </button>
+                  ))}
+                  {activeLayers.length ? (
+                    <span className="text-muted/80">· a dot with no ring is not in these catalogues</span>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {/* Find what changed */}
+              <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                <Button size="sm" variant={showChange ? "default" : "outline"} onClick={findChanges}
+                  disabled={changeBusy}>
+                  {changeBusy ? "Scanning…" : showChange ? "Hide what changed" : "Find what changed"}
+                </Button>
+                {change && showChange ? (
+                  <span className="text-muted">
+                    <span className="mono text-sim">{change.peaks.length}</span> spots where the brightness
+                    does not stay constant{change.peaks[0] ? `, strongest χ²/dof ${change.peaks[0].chi2_per_dof}` : ""}.
+                    Click one below.
+                  </span>
+                ) : (
+                  <span className="text-muted">Scores every pixel against “nothing happened here”.</span>
+                )}
+              </div>
+              {change && showChange && change.peaks.length ? (
+                <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-panel p-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {change.peaks.map((p, k) => (
+                      <button key={k} onClick={() => setPixel({ x: p.x, y: p.y })}
+                        className={cn("rounded border px-2 py-0.5 text-[10px] mono",
+                          pixel?.x === p.x && pixel?.y === p.y
+                            ? "border-accent/60 bg-accent/10 text-accent" : "border-line text-muted hover:text-fg")}>
+                        ({p.x},{p.y}) χ² {p.chi2_per_dof}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted">{change.caveat}</p>
+                </div>
+              ) : null}
 
               {showFlags && modeParam === "epochs" ? (
                 <div className="flex flex-wrap items-center gap-3 rounded border border-line bg-panel px-2 py-1.5 text-[10px]">
@@ -390,6 +491,19 @@ function SkyViewer() {
                   <div className="mt-3"><SourceTag source={bundle.source} /></div>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardHeader><CardTitle>Compare any two dates</CardTitle></CardHeader>
+                <CardContent><VisitCompare bundle={bundle} /></CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle>Where this is on the sky</CardTitle></CardHeader>
+                <CardContent>
+                  <AladinPanel ra={bundle.ra_deg} dec={bundle.dec_deg} fovDeg={bundle.fov_deg}
+                    name={target?.name ?? "this field"} />
+                </CardContent>
+              </Card>
             </section>
           </div>
         </>
@@ -406,15 +520,17 @@ function SearchBar({ query, setQuery, onSubmit, error, compact }: {
 }) {
   return (
     <div className={cn("flex flex-col gap-2", !compact && "mx-auto w-full max-w-2xl")}>
-      <form onSubmit={(e) => { e.preventDefault(); onSubmit(query.trim()); }} className="flex gap-2">
+      <form onSubmit={(e) => { e.preventDefault(); onSubmit(query.trim()); }}
+        className="flex flex-col gap-2 sm:flex-row">
         <input
           value={query} onChange={(e) => setQuery(e.target.value)}
           aria-label="Object name or sky coordinates"
-          placeholder="Type a name, like Barnard's Star — or coordinates"
-          className={cn("w-full rounded-lg border border-line bg-panel px-4 outline-none placeholder:text-muted/70 focus:border-accent/60",
+          // The long placeholder is truncated on a phone, so keep the essential half first.
+          placeholder="A name like Barnard's Star, or coordinates"
+          className={cn("w-full min-w-0 rounded-lg border border-line bg-panel px-4 outline-none placeholder:text-muted/70 focus:border-accent/60",
             compact ? "h-10 text-sm" : "h-12 text-base")}
         />
-        <Button type="submit" size={compact ? "default" : "lg"}>Show me</Button>
+        <Button type="submit" size={compact ? "default" : "lg"} className="shrink-0">Show me</Button>
       </form>
       {!compact ? (
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">

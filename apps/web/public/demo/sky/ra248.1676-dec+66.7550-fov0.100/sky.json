@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "slug": "ra248.1676-dec+66.7550-fov0.100",
- "generated_at": "2026-11-14T09:52:04+00:00",
+ "generated_at": "2026-11-14T13:22:25+00:00",
  "source": "NASA SPHEREx DR1 Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
  "is_simulated": false,
  "target": {
@@ -11,7 +11,9 @@
   "dec_deg": 66.75497942,
   "resolver": "builtin",
   "note": "A Mira variable: a pulsating red giant that swings about 8 magnitudes over a 245-day period. Enormous in the near infrared.",
-  "slug": "r-draconis"
+  "slug": "r-draconis",
+  "look_for": "A dying red giant that swells and shrinks over about 245 days, changing brightness by a factor of a thousand. It is so bright here that its core saturates the detector \u2014 click slightly off-centre for a spectrum.",
+  "kind": "pulsating giant"
  },
  "ra_deg": 248.16761083,
  "dec_deg": 66.75497942,
@@ -84,7 +86,7 @@
     "earliest_mjd": 61176.363744
    }
   },
-  "searched_at": "2026-11-14T09:51:50+00:00",
+  "searched_at": "2026-11-14T13:22:20+00:00",
   "n_exposures": 578,
   "n_visits": 31,
   "mjd_min": 60811.955829,
@@ -586,7 +588,7 @@
     "earliest_mjd": 61176.363744
    }
   },
-  "built_at": "2026-11-14T09:52:04+00:00"
+  "built_at": "2026-11-14T13:22:25+00:00"
  },
  "frames": {
   "epochs": [
@@ -691,31 +693,6 @@
     "png": "frames/e004.png",
     "flag_png": "flags/e004.png",
     "obs_id": "2025W21_1B_0329_2",
-    "detector": 3,
-    "mjd": 60815.694838874,
-    "wave_um": 1.8552,
-    "bandwidth_um": 0.0458,
-    "visit": 1,
-    "collection": "spherex_dr1",
-    "good_fraction": 0.9423,
-    "psf_fwhm_arcsec": 7.45,
-    "flags": {
-     "SOURCE": 1.0,
-     "BLOOM": 0.03735,
-     "TRANSIENT": 0.0339,
-     "SUR_ERROR": 0.03103,
-     "HALO": 0.01063,
-     "OVERFLOW": 0.00804,
-     "PERSIST": 0.00747,
-     "NONFUNC": 0.0023,
-     "COLD": 0.00029
-    }
-   },
-   {
-    "id": "e005",
-    "png": "frames/e005.png",
-    "flag_png": "flags/e005.png",
-    "obs_id": "2025W21_1B_0329_2",
     "detector": 6,
     "mjd": 60815.694838874,
     "wave_um": 4.5991,
@@ -733,6 +710,31 @@
      "OVERFLOW": 0.00316,
      "NONFUNC": 0.00287,
      "PERSIST": 0.00057,
+     "COLD": 0.00029
+    }
+   },
+   {
+    "id": "e005",
+    "png": "frames/e005.png",
+    "flag_png": "flags/e005.png",
+    "obs_id": "2025W21_1B_0329_2",
+    "detector": 3,
+    "mjd": 60815.694838874,
+    "wave_um": 1.8552,
+    "bandwidth_um": 0.0458,
+    "visit": 1,
+    "collection": "spherex_dr1",
+    "good_fraction": 0.9423,
+    "psf_fwhm_arcsec": 7.45,
+    "flags": {
+     "SOURCE": 1.0,
+     "BLOOM": 0.03735,
+     "TRANSIENT": 0.0339,
+     "SUR_ERROR": 0.03103,
+     "HALO": 0.01063,
+     "OVERFLOW": 0.00804,
+     "PERSIST": 0.00747,
+     "NONFUNC": 0.0023,
      "COLD": 0.00029
     }
    },
@@ -5041,7 +5043,713 @@
      "COLD": 0.00287
     }
    }
+  ],
+  "colour": [
+   {
+    "id": "c0",
+    "png": "colour/v0.png",
+    "visit": 0,
+    "n": 3,
+    "mjd": 60811.95898240834,
+    "label": "2025W20",
+    "bands": [
+     [
+      1.656,
+      1.656
+     ],
+     [
+      1.732,
+      1.732
+     ],
+     [
+      4.533,
+      4.533
+     ]
+    ]
+   },
+   {
+    "id": "c1",
+    "png": "colour/v1.png",
+    "visit": 1,
+    "n": 3,
+    "mjd": 60815.69434145134,
+    "label": "2025W21",
+    "bands": [
+     [
+      1.813,
+      1.813
+     ],
+     [
+      1.855,
+      1.855
+     ],
+     [
+      4.599,
+      4.599
+     ]
+    ]
+   },
+   {
+    "id": "c2",
+    "png": "colour/v2.png",
+    "visit": 2,
+    "n": 3,
+    "mjd": 60828.12935463834,
+    "label": "2025W23",
+    "bands": [
+     [
+      2.146,
+      2.146
+     ],
+     [
+      2.247,
+      2.247
+     ],
+     [
+      4.923,
+      4.923
+     ]
+    ]
+   },
+   {
+    "id": "c3",
+    "png": "colour/v3.png",
+    "visit": 3,
+    "n": 3,
+    "mjd": 60834.94780385533,
+    "label": "2025W23",
+    "bands": [
+     [
+      1.473,
+      1.473
+     ],
+     [
+      1.628,
+      1.628
+     ],
+     [
+      4.707,
+      4.707
+     ]
+    ]
+   },
+   {
+    "id": "c4",
+    "png": "colour/v4.png",
+    "visit": 4,
+    "n": 3,
+    "mjd": 60841.44901915233,
+    "label": "2025W24",
+    "bands": [
+     [
+      1.279,
+      1.279
+     ],
+     [
+      1.34,
+      1.34
+     ],
+     [
+      4.144,
+      4.144
+     ]
+    ]
+   },
+   {
+    "id": "c5",
+    "png": "colour/v5.png",
+    "visit": 5,
+    "n": 3,
+    "mjd": 60848.33220990834,
+    "label": "2025W25",
+    "bands": [
+     [
+      1.091,
+      1.091
+     ],
+     [
+      1.553,
+      1.553
+     ],
+     [
+      3.866,
+      3.866
+     ]
+    ]
+   },
+   {
+    "id": "c6",
+    "png": "colour/v6.png",
+    "visit": 6,
+    "n": 3,
+    "mjd": 60852.566082636,
+    "label": "2025W26",
+    "bands": [
+     [
+      1.316,
+      1.316
+     ],
+     [
+      1.48,
+      1.48
+     ],
+     [
+      4.436,
+      4.436
+     ]
+    ]
+   },
+   {
+    "id": "c7",
+    "png": "colour/v7.png",
+    "visit": 7,
+    "n": 3,
+    "mjd": 60860.016627971665,
+    "label": "2025W27",
+    "bands": [
+     [
+      1.109,
+      1.109
+     ],
+     [
+      3.244,
+      3.244
+     ],
+     [
+      4.0,
+      4.0
+     ]
+    ]
+   },
+   {
+    "id": "c8",
+    "png": "colour/v8.png",
+    "visit": 8,
+    "n": 3,
+    "mjd": 60870.729691259,
+    "label": "2025W29",
+    "bands": [
+     [
+      0.745,
+      0.745
+     ],
+     [
+      0.762,
+      0.762
+     ],
+     [
+      2.545,
+      2.545
+     ]
+    ]
+   },
+   {
+    "id": "c9",
+    "png": "colour/v9.png",
+    "visit": 9,
+    "n": 3,
+    "mjd": 60875.57400055233,
+    "label": "2025W29",
+    "bands": [
+     [
+      0.817,
+      0.817
+     ],
+     [
+      0.856,
+      0.856
+     ],
+     [
+      3.659,
+      3.659
+     ]
+    ]
+   },
+   {
+    "id": "c10",
+    "png": "colour/v10.png",
+    "visit": 10,
+    "n": 3,
+    "mjd": 60966.680454472335,
+    "label": "2025W42",
+    "bands": [
+     [
+      0.781,
+      0.781
+     ],
+     [
+      0.899,
+      0.899
+     ],
+     [
+      3.71,
+      3.71
+     ]
+    ]
+   },
+   {
+    "id": "c11",
+    "png": "colour/v11.png",
+    "visit": 11,
+    "n": 3,
+    "mjd": 60973.35583789033,
+    "label": "2025W43",
+    "bands": [
+     [
+      0.828,
+      0.828
+     ],
+     [
+      1.11,
+      1.11
+     ],
+     [
+      2.798,
+      2.798
+     ]
+    ]
+   },
+   {
+    "id": "c12",
+    "png": "colour/v12.png",
+    "visit": 12,
+    "n": 3,
+    "mjd": 60983.81597703433,
+    "label": "2025W45",
+    "bands": [
+     [
+      0.739,
+      0.739
+     ],
+     [
+      0.808,
+      0.808
+     ],
+     [
+      3.219,
+      3.219
+     ]
+    ]
+   },
+   {
+    "id": "c13",
+    "png": "colour/v13.png",
+    "visit": 13,
+    "n": 3,
+    "mjd": 60987.530235228674,
+    "label": "2025W45",
+    "bands": [
+     [
+      0.98,
+      0.98
+     ],
+     [
+      1.051,
+      1.051
+     ],
+     [
+      3.777,
+      3.777
+     ]
+    ]
+   },
+   {
+    "id": "c14",
+    "png": "colour/v14.png",
+    "visit": 14,
+    "n": 3,
+    "mjd": 60993.776453365,
+    "label": "2025W46",
+    "bands": [
+     [
+      0.752,
+      0.752
+     ],
+     [
+      0.845,
+      0.845
+     ],
+     [
+      3.105,
+      3.105
+     ]
+    ]
+   },
+   {
+    "id": "c15",
+    "png": "colour/v15.png",
+    "visit": 15,
+    "n": 3,
+    "mjd": 60998.369098658,
+    "label": "2025W47",
+    "bands": [
+     [
+      1.41,
+      1.41
+     ],
+     [
+      1.479,
+      1.479
+     ],
+     [
+      2.714,
+      2.714
+     ]
+    ]
+   },
+   {
+    "id": "c16",
+    "png": "colour/v16.png",
+    "visit": 16,
+    "n": 3,
+    "mjd": 61009.91327647467,
+    "label": "2025W48",
+    "bands": [
+     [
+      1.189,
+      1.189
+     ],
+     [
+      1.551,
+      1.551
+     ],
+     [
+      4.177,
+      4.177
+     ]
+    ]
+   },
+   {
+    "id": "c17",
+    "png": "colour/v17.png",
+    "visit": 17,
+    "n": 3,
+    "mjd": 61021.65975507433,
+    "label": "2025W50",
+    "bands": [
+     [
+      1.242,
+      1.242
+     ],
+     [
+      1.406,
+      1.406
+     ],
+     [
+      4.17,
+      4.17
+     ]
+    ]
+   },
+   {
+    "id": "c18",
+    "png": "colour/v18.png",
+    "visit": 18,
+    "n": 3,
+    "mjd": 61035.445014923665,
+    "label": "2025W52",
+    "bands": [
+     [
+      1.758,
+      1.758
+     ],
+     [
+      4.405,
+      4.405
+     ],
+     [
+      4.623,
+      4.623
+     ]
+    ]
+   },
+   {
+    "id": "c19",
+    "png": "colour/v19.png",
+    "visit": 19,
+    "n": 3,
+    "mjd": 61040.30974193366,
+    "label": "2026W01",
+    "bands": [
+     [
+      1.895,
+      1.895
+     ],
+     [
+      2.174,
+      2.174
+     ],
+     [
+      2.416,
+      2.416
+     ]
+    ]
+   },
+   {
+    "id": "c20",
+    "png": "colour/v20.png",
+    "visit": 20,
+    "n": 3,
+    "mjd": 61043.569465846,
+    "label": "2026W01",
+    "bands": [
+     [
+      2.077,
+      2.077
+     ],
+     [
+      2.125,
+      2.125
+     ],
+     [
+      4.836,
+      4.836
+     ]
+    ]
+   },
+   {
+    "id": "c21",
+    "png": "colour/v21.png",
+    "visit": 21,
+    "n": 3,
+    "mjd": 61053.413302165,
+    "label": "2026W03",
+    "bands": [
+     [
+      1.638,
+      1.638
+     ],
+     [
+      1.709,
+      1.709
+     ],
+     [
+      4.514,
+      4.514
+     ]
+    ]
+   },
+   {
+    "id": "c22",
+    "png": "colour/v22.png",
+    "visit": 22,
+    "n": 3,
+    "mjd": 61153.261570170325,
+    "label": "2026W17",
+    "bands": [
+     [
+      1.898,
+      1.898
+     ],
+     [
+      2.127,
+      2.127
+     ],
+     [
+      4.98,
+      4.98
+     ]
+    ]
+   },
+   {
+    "id": "c23",
+    "png": "colour/v23.png",
+    "visit": 23,
+    "n": 3,
+    "mjd": 61166.254862366004,
+    "label": "2026W19",
+    "bands": [
+     [
+      1.656,
+      1.656
+     ],
+     [
+      1.693,
+      1.693
+     ],
+     [
+      4.469,
+      4.469
+     ]
+    ]
+   },
+   {
+    "id": "c24",
+    "png": "colour/v24.png",
+    "visit": 24,
+    "n": 3,
+    "mjd": 61171.50440201099,
+    "label": "2026W19",
+    "bands": [
+     [
+      1.813,
+      1.813
+     ],
+     [
+      2.032,
+      2.032
+     ],
+     [
+      4.907,
+      4.907
+     ]
+    ]
+   },
+   {
+    "id": "c25",
+    "png": "colour/v25.png",
+    "visit": 25,
+    "n": 3,
+    "mjd": 61176.365902289,
+    "label": "2026W20",
+    "bands": [
+     [
+      1.646,
+      1.646
+     ],
+     [
+      1.683,
+      1.683
+     ],
+     [
+      4.493,
+      4.493
+     ]
+    ]
+   },
+   {
+    "id": "c26",
+    "png": "colour/v26.png",
+    "visit": 26,
+    "n": 3,
+    "mjd": 61182.453278288005,
+    "label": "2026W21",
+    "bands": [
+     [
+      1.887,
+      1.887
+     ],
+     [
+      2.409,
+      2.409
+     ],
+     [
+      4.76,
+      4.76
+     ]
+    ]
+   },
+   {
+    "id": "c27",
+    "png": "colour/v27.png",
+    "visit": 27,
+    "n": 3,
+    "mjd": 61199.38017508567,
+    "label": "2026W23",
+    "bands": [
+     [
+      1.632,
+      1.632
+     ],
+     [
+      1.704,
+      1.704
+     ],
+     [
+      4.543,
+      4.543
+     ]
+    ]
+   },
+   {
+    "id": "c28",
+    "png": "colour/v28.png",
+    "visit": 28,
+    "n": 3,
+    "mjd": 61203.859581139,
+    "label": "2026W24",
+    "bands": [
+     [
+      1.825,
+      1.825
+     ],
+     [
+      1.912,
+      1.912
+     ],
+     [
+      4.678,
+      4.678
+     ]
+    ]
+   },
+   {
+    "id": "c29",
+    "png": "colour/v29.png",
+    "visit": 29,
+    "n": 3,
+    "mjd": 61213.095129514666,
+    "label": "2026W25",
+    "bands": [
+     [
+      1.263,
+      1.263
+     ],
+     [
+      1.638,
+      1.638
+     ],
+     [
+      3.945,
+      3.945
+     ]
+    ]
+   },
+   {
+    "id": "c30",
+    "png": "colour/v30.png",
+    "visit": 30,
+    "n": 3,
+    "mjd": 61232.600353773996,
+    "label": "2026W28",
+    "bands": [
+     [
+      0.898,
+      0.898
+     ],
+     [
+      1.008,
+      1.008
+     ],
+     [
+      3.841,
+      3.841
+     ]
+    ]
+   }
   ]
+ },
+ "colour": {
+  "available": true,
+  "png": "colour.png",
+  "channels": [
+   {
+    "colour": "red",
+    "role": "longest wavelengths",
+    "range_um": "2.71-4.98 um"
+   },
+   {
+    "colour": "green",
+    "role": "middle wavelengths",
+    "range_um": "1.63-2.54 um"
+   },
+   {
+    "colour": "blue",
+    "role": "shortest wavelengths",
+    "range_um": "0.74-1.55 um"
+   }
+  ],
+  "note": "False colour: SPHEREx's infrared bands mapped to red, green and blue. Red means a source is brighter at longer wavelengths \u2014 cooler, dustier or more absorbed. Blue means the opposite. These are not visible-light colours."
  },
  "difference": [
   {
@@ -8843,7 +9551,7 @@
  },
  "cube": "cube.npz",
  "skipped": [],
- "elapsed_s": 14.4,
+ "elapsed_s": 4.5,
  "limits": [
   "SPHEREx pixels are 6.15 arcsec; close pairs blend together.",
   "82 distinct bands measured here, out of 102 across the full survey. Each pixel sees one wavelength, set by its position on the filter.",
@@ -8897,16 +9605,16 @@
    {
     "plane": "flux",
     "i": 4,
-    "offset": -0.23332126438617706,
-    "scale": 0.0006282215552959843,
-    "n_valid": 3280
+    "offset": 0.3396071493625641,
+    "scale": 0.001179537179450635,
+    "n_valid": 3259
    },
    {
     "plane": "flux",
     "i": 5,
-    "offset": 0.3396071493625641,
-    "scale": 0.001179537179450635,
-    "n_valid": 3259
+    "offset": -0.23332126438617706,
+    "scale": 0.0006282215552959843,
+    "n_valid": 3280
    },
    {
     "plane": "flux",
@@ -9548,16 +10256,16 @@
    {
     "plane": "var",
     "i": 4,
-    "offset": 0.0003117506857961416,
-    "scale": 1.1839528233441588e-05,
-    "n_valid": 3280
+    "offset": 0.0019135865150019526,
+    "scale": 1.1276629926774324e-05,
+    "n_valid": 3259
    },
    {
     "plane": "var",
     "i": 5,
-    "offset": 0.0019135865150019526,
-    "scale": 1.1276629926774324e-05,
-    "n_valid": 3259
+    "offset": 0.0003117506857961416,
+    "scale": 1.1839528233441588e-05,
+    "n_valid": 3280
    },
    {
     "plane": "var",
@@ -10269,8 +10977,8 @@
    1.7321,
    4.5333,
    1.8125,
-   1.8552,
    4.5991,
+   1.8552,
    2.1456,
    2.2471,
    4.9229,
@@ -10364,8 +11072,8 @@
    0.042,
    0.0357,
    0.0446,
-   0.0458,
    0.0361,
+   0.0458,
    0.0546,
    0.0564,
    0.0368,
@@ -10459,8 +11167,8 @@
    3,
    6,
    3,
-   3,
    6,
+   3,
    3,
    3,
    6,

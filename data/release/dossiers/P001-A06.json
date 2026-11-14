@@ -1,0 +1,53 @@
+{
+ "candidate_id": "P001-A06",
+ "generated_at": "2026-11-14T13:21:11+00:00",
+ "generator": "offline-template",
+ "is_simulated": false,
+ "scout": {
+  "summary": "Stacked SNR 13.4 over 39 SPHEREx exposures in patch P001; best single-frame SNR 11.9.",
+  "facts": [
+   "patch P001 at RA 64.5936, Dec 13.2096 (SPHEREx DR1)",
+   "stacked SNR 13.4 over 39 exposures; best single-frame SNR 11.9",
+   "best trial: stationary (no parallax)",
+   "35 SPHEREx bands measured; methane score 0.00 (toy template fit)"
+  ]
+ },
+ "skeptic": {
+  "checks": [
+   {
+    "name": "known_object",
+    "result": "no JPL SBIdent match within 30 arcsec"
+   },
+   {
+    "name": "single_frame_visible",
+    "result": "yes: visible in a single frame (SNR 11.9), so a static residual is likely"
+   },
+   {
+    "name": "stationary",
+    "result": "best trial has no parallax: not a distant mover"
+   },
+   {
+    "name": "spectrum",
+    "result": "best of three toy templates: star; with 35 noisy points this is weak evidence"
+   },
+   {
+    "name": "noise",
+    "result": "above the 5-sigma threshold in the stack"
+   }
+  ],
+  "verdict": "Peak prefers the stationary trial: static sky residual or detector artifact."
+ },
+ "reporter": {
+  "headline": "Stationary residual, not a mover",
+  "dossier_md": "The stack is brightest with no parallax shift, so this is a residual of a static source (a star whose brightness changes between SPHEREx bands) or a detector artifact, not a distant moving object.",
+  "mpc_report": null
+ },
+ "verdict": "artifact",
+ "confidence": 0.8,
+ "sources": [
+  "NASA SPHEREx DR1 Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
+  "Caltech Planet Nine reference population v3",
+  "JPL SBIdent",
+  "JPL Horizons"
+ ]
+}

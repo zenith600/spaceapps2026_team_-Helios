@@ -1,0 +1,14 @@
+{
+ "n_singles": 12,
+ "size": 32,
+ "source": "NASA SPHEREx DR1 Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
+ "is_simulated": true,
+ "candidate_id": "P001-S02",
+ "patch_id": "P001",
+ "injected_mag": 20.216493405685313,
+ "trial": {
+  "distance_au": 1000.0,
+  "rate_ra": -1.0,
+  "rate_dec": -1.0
+ }
+}

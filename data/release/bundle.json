@@ -1,0 +1,52 @@
+{
+ "kind": "RELEASE",
+ "generated_at": "2026-11-14T13:21:11+00:00",
+ "n_patches": 1,
+ "mag50": {
+  "P001": NaN,
+  "ALL": NaN
+ },
+ "n_injected": 32,
+ "n_recovered": 0,
+ "n_off_field_excluded": 0,
+ "frac_excluded_prior": 0.7826,
+ "frac_excluded_deepfield": 0.0,
+ "n_excluded_deepfield": 0,
+ "ml": {
+  "trained": false,
+  "ranking_uses": "rule_score",
+  "skipped": "too few examples: 5 pos / 44 neg"
+ },
+ "dossiers": {
+  "claude": 0,
+  "offline": 8,
+  "model": null
+ },
+ "patches": [
+  {
+   "patch_id": "P001",
+   "ra_deg": 64.6875,
+   "dec_deg": 13.248015,
+   "n_exposures": 39,
+   "n_visits": null,
+   "mode": null,
+   "mjd_start": 60907.658609546,
+   "mjd_end": 60914.04688112,
+   "n_bands": 31,
+   "clean_snr_max": 33.33830642700195,
+   "median_pixel_sigma_mjysr": 0.02412954531610012,
+   "n_injected": 32,
+   "n_recovered": 0,
+   "observer": "JPL Horizons SPHEREx (-163182) heliocentric ICRF",
+   "known_bodies": "18 known bodies from JPL SBIdent",
+   "device": "cpu",
+   "elapsed_s": 20.732112646102905
+  }
+ ],
+ "sources": [
+  "NASA SPHEREx DR1 Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
+  "Caltech Planet Nine reference population v3 (Brown 2023, doi:10.22002/8fjad-x7y61)",
+  "JPL Horizons",
+  "JPL SBIdent"
+ ]
+}

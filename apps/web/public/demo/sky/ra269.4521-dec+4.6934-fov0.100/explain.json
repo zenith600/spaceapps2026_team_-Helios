@@ -1,0 +1,23 @@
+{
+ "text": "Over 1.1 years, 16 visits and 42 images were taken of this 6\u2011arcmin patch, covering wavelengths from 0.74 to 5.0 microns. In the time\u2011lapse, watch for any subtle changes or moving objects, though the field currently shows no known solar\u2011system bodies.",
+ "generator": "llm:openai/gpt-oss-20b",
+ "facts": {
+  "right_ascension_deg": 269.4521,
+  "declination_deg": 4.6934,
+  "field_width_arcmin": 6.0,
+  "number_of_visits": 16,
+  "images_used": 42,
+  "years_covered": 1.1,
+  "infrared_colours_measured": 39,
+  "infrared_colours_possible": 102,
+  "wavelength_range_microns": [
+   0.739,
+   4.9987
+  ],
+  "pixel_size_arcsec": 6.15,
+  "known_solar_system_objects_in_field": []
+ },
+ "generated_at": "2026-11-14T10:55:47+00:00",
+ "is_machine_written": true,
+ "disclaimer": "Written automatically from measured survey statistics. Not a discovery claim."
+}

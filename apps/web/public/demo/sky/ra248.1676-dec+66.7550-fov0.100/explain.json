@@ -1,0 +1,23 @@
+{
+ "text": "Over 1.2 years, 31 visits and 93 images were taken of this 6\u2011arcmin patch at right ascension 248.1676\u00b0, declination 66.755\u00b0. The time\u2011lapse shows no known solar\u2011system objects; look for any subtle brightness changes in the stars or galaxies.",
+ "generator": "llm:openai/gpt-oss-20b",
+ "facts": {
+  "right_ascension_deg": 248.1676,
+  "declination_deg": 66.755,
+  "field_width_arcmin": 6.0,
+  "number_of_visits": 31,
+  "images_used": 93,
+  "years_covered": 1.2,
+  "infrared_colours_measured": 82,
+  "infrared_colours_possible": 102,
+  "wavelength_range_microns": [
+   0.7388,
+   4.9795
+  ],
+  "pixel_size_arcsec": 6.15,
+  "known_solar_system_objects_in_field": []
+ },
+ "generated_at": "2026-11-14T13:29:21+00:00",
+ "is_machine_written": true,
+ "disclaimer": "Written automatically from measured survey statistics. Not a discovery claim."
+}

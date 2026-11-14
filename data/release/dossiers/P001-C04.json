@@ -1,0 +1,53 @@
+{
+ "candidate_id": "P001-C04",
+ "generated_at": "2026-11-14T13:21:11+00:00",
+ "generator": "offline-template",
+ "is_simulated": false,
+ "scout": {
+  "summary": "Stacked SNR 5.4 over 39 SPHEREx exposures in patch P001; best single-frame SNR 14.0.",
+  "facts": [
+   "patch P001 at RA 64.7498, Dec 13.2779 (SPHEREx DR1)",
+   "stacked SNR 5.4 over 39 exposures; best single-frame SNR 14.0",
+   "best trial distance 400 AU, extra rate (-1.0, -1.0) arcsec/day",
+   "25 SPHEREx bands measured; methane score 0.44 (toy template fit)"
+  ]
+ },
+ "skeptic": {
+  "checks": [
+   {
+    "name": "known_object",
+    "result": "no JPL SBIdent match within 30 arcsec"
+   },
+   {
+    "name": "single_frame_visible",
+    "result": "yes: visible in a single frame (SNR 14.0), so a static residual is likely"
+   },
+   {
+    "name": "stationary",
+    "result": "best trial requires parallax motion"
+   },
+   {
+    "name": "spectrum",
+    "result": "best of three toy templates: planet; with 25 noisy points this is weak evidence"
+   },
+   {
+    "name": "noise",
+    "result": "above the 5-sigma threshold in the stack"
+   }
+  ],
+  "verdict": "Survives the simple checks, but a single-visit stack at this SNR is not a detection; needs a second visit."
+ },
+ "reporter": {
+  "headline": "Stack peak at SNR 5.4 preferring 400 AU, unconfirmed",
+  "dossier_md": "A peak appears when SPHEREx frames are stacked along a trial motion for an object at about 400 AU. It is not visible in single frames. It has not been linked across visits, has no second-epoch confirmation, and the spectrum (25 bands) is too noisy to distinguish templates.\n\nThis is a candidate for follow-up, not a discovery.",
+  "mpc_report": null
+ },
+ "verdict": "candidate",
+ "confidence": 0.23939998944600424,
+ "sources": [
+  "NASA SPHEREx DR1 Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
+  "Caltech Planet Nine reference population v3",
+  "JPL SBIdent",
+  "JPL Horizons"
+ ]
+}

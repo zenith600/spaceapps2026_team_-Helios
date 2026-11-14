@@ -67,11 +67,27 @@ def planet_track(pop_row: pd.Series, ra_ref: float, dec_ref: float, mjds: np.nda
 
 def make_injections(pop: pd.DataFrame, prop: pd.DataFrame, n: int, rng: np.random.Generator, wcs_out, npix: int,
                     mjds: np.ndarray, observer_xyz: np.ndarray, mjd_ref: float, waves_um: np.ndarray,
-                    margin_px: int = 18, min_sep_px: float = 22.0, tag: str = "") -> list[Injection]:
+                    margin_px: int = 18, min_sep_px: float = 22.0, tag: str = "",
+                    vmag_ladder: tuple[float, float] | None = None) -> list[Injection]:
+    """Inject reference-population planets along their true apparent tracks.
+
+    `vmag_ladder` sets the injected brightness from an even ladder across the given range
+    instead of each planet's own catalogue magnitude. That matters for measuring anything:
+    every surviving reference planet is V 17.5-23, which is below SPHEREx's reach here, so
+    injecting them at their own brightness recovers none of them and the completeness curve
+    has no shape at all -- it cannot say where the limit is, only that we are under it.
+
+    A curve needs points either side of the 50% mark, so the ladder is deliberately run
+    brighter than any real survivor. The orbit, parallax track and spectrum shape all stay
+    those of a real reference planet; only the apparent magnitude is set by us, and both
+    values are recorded (`vmag` injected, `vmag_catalogue` the planet's own).
+    """
     chosen = pick_planets(pop, prop, n, rng)
+    ladder = (np.linspace(vmag_ladder[0], vmag_ladder[1], len(chosen))
+              if vmag_ladder else None)
     out: list[Injection] = []
     placed: list[tuple[float, float]] = []
-    for _, prow in chosen.iterrows():
+    for _i, (_, prow) in enumerate(chosen.iterrows()):
         full = pop.loc[pop["index"] == int(prow["index"])].iloc[0]
         in_field = False
         x = y = np.nan
@@ -95,14 +111,16 @@ def make_injections(pop: pd.DataFrame, prop: pd.DataFrame, n: int, rng: np.rando
         ra_ref, dec_ref = float(ra_ref[0]), float(dec_ref[0])
         if tra is None:
             tra, tdec, R = planet_track(full, ra_ref, dec_ref, mjds, observer_xyz, mjd_ref)
-        vm = float(prow["V_now"])
+        vm_cat = float(prow["V_now"])
+        vm = float(ladder[_i]) if ladder is not None else vm_cat
         out.append(Injection(
             injection_id=f"INJ{tag}{int(prow['index']):06d}", pop_index=int(prow["index"]), vmag=vm, distance_au=R,
             ra_ref=ra_ref, dec_ref=dec_ref, mjd_ref=mjd_ref, track_ra=tra, track_dec=tdec,
             flux_mjy=planet_flux_mjy(vm, waves_um), x_ref=x, y_ref=y,
             extra={"mass_earth": float(full["mass"]), "a_au": float(full["a"]), "e": float(full["e"]),
                    "inc_deg": float(full["inc"]), "albedo": float(full["albedo"]), "radius_earth": float(full["rad"]),
-                   "track_in_field": bool(in_field)},
+                   "track_in_field": bool(in_field), "vmag_catalogue": vm_cat,
+                   "vmag_is_scaled": ladder is not None},
         ))
     return out
 

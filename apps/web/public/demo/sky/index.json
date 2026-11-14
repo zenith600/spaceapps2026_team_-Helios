@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated_at": "2026-11-14T10:18:36+00:00",
+ "generated_at": "2026-11-14T13:29:22+00:00",
  "source": "NASA SPHEREx Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
  "collections_at_bake_time": [
   "spherex_dr1",
@@ -13,7 +13,7 @@
  "targets": [
   {
    "slug": "ra269.4521-dec+4.6934-fov0.100",
-   "status": "cached",
+   "status": "built",
    "query": "Barnard's Star",
    "name": "Barnard's Star",
    "note": "The fastest-moving star on the sky: 10.3 arcsec per year, about 1.7 SPHEREx pixels per year. Six light years away. The classic proper-motion target.",
@@ -29,11 +29,11 @@
    "baseline_days": 402.8,
    "mjd_min": 60902.865380749,
    "mjd_max": 61305.628686814,
-   "generated_at": "2026-11-14T09:51:42+00:00"
+   "generated_at": "2026-11-14T13:18:00+00:00"
   },
   {
    "slug": "ra331.0438-dec-56.7827-fov0.100",
-   "status": "cached",
+   "status": "built",
    "query": "Epsilon Indi Ba/Bb",
    "name": "Epsilon Indi Ba/Bb",
    "note": "A pair of brown dwarfs (T1 + T6) orbiting the nearby star Epsilon Indi A, about 400 arcsec away from it. Cold, methane-rich, and bright in the near infrared.",
@@ -49,11 +49,11 @@
    "baseline_days": 525.6,
    "mjd_min": 60789.85618796,
    "mjd_max": 61315.478741768,
-   "generated_at": "2026-11-14T09:51:45+00:00"
+   "generated_at": "2026-11-14T13:18:03+00:00"
   },
   {
    "slug": "ra133.7951-dec-7.2451-fov0.100",
-   "status": "cached",
+   "status": "built",
    "query": "WISE 0855-0714",
    "name": "WISE 0855-0714",
    "note": "The coldest known brown dwarf, 250 K, 7.5 light years away. Moves about 8 arcsec per year. Water-ice clouds. Position as given in the challenge brief.",
@@ -69,11 +69,11 @@
    "baseline_days": 373.6,
    "mjd_min": 60800.70069465,
    "mjd_max": 61174.287883944,
-   "generated_at": "2026-11-14T09:51:47+00:00"
+   "generated_at": "2026-11-14T13:18:05+00:00"
   },
   {
    "slug": "ra76.9565-dec+30.4014-fov0.100",
-   "status": "cached",
+   "status": "built",
    "query": "RW Aurigae",
    "name": "RW Aurigae",
    "note": "A young binary T Tauri star that dims by magnitudes for months at a time when its tidally disrupted disc passes in front of it. Brightness, not position, is the story.",
@@ -89,11 +89,11 @@
    "baseline_days": 380.5,
    "mjd_min": 60919.420312786,
    "mjd_max": 61299.896562983,
-   "generated_at": "2026-11-14T09:51:49+00:00"
+   "generated_at": "2026-11-14T13:19:03+00:00"
   },
   {
    "slug": "ra248.1676-dec+66.7550-fov0.100",
-   "status": "cached",
+   "status": "built",
    "query": "R Draconis",
    "name": "R Draconis",
    "note": "A Mira variable: a pulsating red giant that swings about 8 magnitudes over a 245-day period. Enormous in the near infrared.",
@@ -109,7 +109,7 @@
    "baseline_days": 425.9,
    "mjd_min": 60811.956495321,
    "mjd_max": 61237.873900124,
-   "generated_at": "2026-11-14T09:52:04+00:00"
+   "generated_at": "2026-11-14T13:22:25+00:00"
   }
  ],
  "note": "Pre-baked so the viewer opens instantly and works with no API and no network. Any other coordinate is fetched live from IRSA."

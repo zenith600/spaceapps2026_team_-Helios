@@ -379,6 +379,160 @@ def sky_spectrum(slug: str, x: float = Query(...), y: float = Query(...), r: int
         raise HTTPException(400, str(exc)) from exc
 
 
+# ---------------------------------------------------------------------------
+# Analysis: what changed, what is it, and arbitrary visit differences
+# ---------------------------------------------------------------------------
+
+def _load_cube(d: Path):
+    import numpy as np
+    if not (d / "cube.npz").exists():
+        raise HTTPException(404, "this bundle was exported without its pixel cube")
+    with np.load(d / "cube.npz", allow_pickle=True) as z:
+        return {k: z[k] for k in z.files}
+
+
+@router.get("/change/{slug}")
+def sky_change(slug: str, limit: int = Query(12, ge=1, le=50)):
+    """Where did anything move or vary in this field?
+
+    A per-pixel chi-squared against a constant-brightness model, computed from the stored
+    cube. No trained model: a pixel whose brightness is consistent across every visit
+    scores about 1, and anything that moved into or out of it, or pulsed, scores high.
+    """
+    from deepfield.sky.analyse import change_map, change_peaks
+    d = bundle_dir(slug)
+    z = _load_cube(d)
+    cm = change_map(z["flux"], z["var"], z["good"], z.get("visit"))
+    peaks = change_peaks(cm, max_peaks=limit)
+    return {
+        "slug": slug,
+        "threshold": cm["threshold"],
+        "median_chi2_per_dof": None if cm["median"] != cm["median"] else round(cm["median"], 3),
+        "n_significant_pixels": cm["n_significant"],
+        "peaks": peaks,
+        "method": ("chi-squared of each pixel's brightness against a single constant value, "
+                   "weighted by the measured noise. Transparent and untrained: it cannot "
+                   "invent a detection, only report where the data disagree with 'nothing "
+                   "happened here'."),
+        "caveat": ("Flags change of any kind — real movement, variability, a cosmic ray, or "
+                   "the edge of a saturated star. It is a place to look, not a discovery."),
+    }
+
+
+@router.get("/classify/{slug}")
+def sky_classify(slug: str, x: float = Query(...), y: float = Query(...), r: int = Query(1, ge=0, le=4)):
+    """What kind of object does the spectrum at this point look like?"""
+    from deepfield.sky.analyse import classify_point
+    d = bundle_dir(slug)
+    if not (d / "cube.npz").exists():
+        raise HTTPException(404, "this bundle was exported without its pixel cube")
+    try:
+        spec = SVC.spectrum_at(d, x, y, r)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {"slug": slug, "x": spec["x"], "y": spec["y"], **classify_point(spec["points"])}
+
+
+@router.get("/difference/{slug}")
+def sky_difference(slug: str, a: int = Query(..., ge=0), b: int = Query(..., ge=0)):
+    """Difference image between any two visits, rendered on demand.
+
+    Precomputing every pair would be N^2 images (961 for R Draconis), so the viewer asks
+    for the pair it wants. Computed from calibrated flux, not from the 8-bit display PNGs.
+    """
+    import io
+
+    import numpy as np
+    from fastapi.responses import Response
+
+    from deepfield.sky import render as RENDER
+    d = bundle_dir(slug)
+    z = _load_cube(d)
+    visits = np.asarray(z["visit"])
+    if a not in set(visits.tolist()) or b not in set(visits.tolist()):
+        raise HTTPException(404, f"visit {a} or {b} is not in this bundle")
+
+    def coadd(mask):
+        f, v, g = z["flux"][mask], z["var"][mask], z["good"][mask]
+        ok = g & np.isfinite(f) & np.isfinite(v) & (v > 0)
+        w = np.where(ok, 1.0 / np.where(v > 0, v, np.inf), 0.0)
+        s = w.sum(axis=0)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            return np.where(s > 0, (w * np.nan_to_num(f)).sum(axis=0) / np.where(s > 0, s, 1), np.nan)
+
+    diff = coadd(visits == b) - coadd(visits == a)
+    lo, hi = RENDER.robust_limits([diff], lo_pct=2.0, hi_pct=98.0)
+    lim = max(abs(lo), abs(hi)) or 1.0
+    buf = io.BytesIO()
+    from PIL import Image
+    img = RENDER.stretch(np.nan_to_num(diff, nan=0.0), -lim, lim, "linear")
+    img[~np.isfinite(diff)] = 0.0
+    Image.fromarray((255 * img).astype(np.uint8)[::-1], mode="L").save(buf, format="PNG")
+    return Response(buf.getvalue(), media_type="image/png",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+@router.get("/overlay/{slug}")
+def sky_overlay(slug: str, catalogs: str | None = None, refresh: bool = False):
+    """Catalogued sources from Gaia, AllWISE and 2MASS, in this image's pixel coordinates.
+
+    Served from the bundle when it was written at bake time. A dot in the time-lapse with
+    no marker on it is either too faint for those catalogues, or moving.
+    """
+    import json as _json
+
+    from deepfield.sky.catalogs import overlay_for_bundle
+    d = bundle_dir(slug)
+    cached = d / "overlay.json"
+    if cached.exists() and not refresh and not catalogs:
+        return _json.loads(cached.read_text())
+    ids = [c.strip() for c in catalogs.split(",")] if catalogs else None
+    out = overlay_for_bundle(SVC.load_bundle(d), ids)
+    if not catalogs:
+        try:
+            cached.write_text(_json.dumps(out))
+        except Exception:
+            pass
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Machine-written field description
+# ---------------------------------------------------------------------------
+
+@router.get("/explain/{slug}")
+def sky_explain(slug: str, refresh: bool = False):
+    """A plain-language caption for a field, written from measured facts.
+
+    Served from the bundle when it was written at bake time, so the five baked targets are
+    instant. For a live field the model call is slow (measured at 87 s), so the viewer
+    shows the measured facts immediately and swaps in the written version when it lands.
+    """
+    import json as _json
+
+    from deepfield.ai.explain import explain_field
+    d = bundle_dir(slug)
+    cached = d / "explain.json"
+    if cached.exists() and not refresh:
+        return _json.loads(cached.read_text())
+
+    meta = SVC.load_bundle(d)
+    known = []
+    try:
+        from deepfield.data.sbident import known_bodies
+        rows = known_bodies(meta["ra_deg"], meta["dec_deg"], meta["fov_deg"] * 0.75,
+                            0.5 * (meta["coverage"]["mjd_min"] + meta["coverage"]["mjd_max"]))
+        known = rows.to_dict("records") if hasattr(rows, "to_dict") else list(rows)
+    except Exception as exc:
+        log.info("SBIdent unavailable for %s: %s", slug, exc)
+    out = explain_field(meta, known_bodies=known)
+    try:
+        cached.write_text(_json.dumps(out, indent=1))
+    except Exception:
+        pass
+    return out
+
+
 @router.get("/files/{slug}/{path:path}")
 def sky_file(slug: str, path: str):
     root = bundle_dir(slug).resolve()

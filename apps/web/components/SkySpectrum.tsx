@@ -3,7 +3,10 @@ import { useEffect, useState } from "react";
 import { Plot, darkLayout } from "@/components/Plot";
 import { Button } from "@/components/ui/button";
 import { SourceTag } from "@/components/Tags";
-import { type SkyBundle, type Spectrum, formatDec, formatRa, getSpectrum, mjdLabel } from "@/lib/sky";
+import {
+  type Classification, type SkyBundle, type Spectrum,
+  formatDec, formatRa, getClassification, getSpectrum, mjdLabel,
+} from "@/lib/sky";
 import { cn } from "@/lib/utils";
 
 const DETECTOR_COLOURS = ["#f59e0b", "#60a5fa", "#22c55e", "#f472b6", "#e6e8ee", "#a78bfa"];
@@ -22,12 +25,13 @@ export function SkySpectrum({ bundle, pixel, radius, onRadius, onJump }: {
   onJump?: (p: { x: number; y: number }) => void;
 }) {
   const [spec, setSpec] = useState<Spectrum | null>(null);
+  const [cls, setCls] = useState<Classification | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [colourBy, setColourBy] = useState<"detector" | "visit">("detector");
 
   useEffect(() => {
-    if (!pixel) { setSpec(null); setError(null); return; }
+    if (!pixel) { setSpec(null); setCls(null); setError(null); return; }
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -35,6 +39,9 @@ export function SkySpectrum({ bundle, pixel, radius, onRadius, onJump }: {
       .then((s) => { if (!cancelled) setSpec(s); })
       .catch((e) => { if (!cancelled) { setSpec(null); setError(String(e.message || e)); } })
       .finally(() => { if (!cancelled) setLoading(false); });
+    getClassification(bundle, pixel.x, pixel.y, radius)
+      .then((c) => { if (!cancelled) setCls(c); })
+      .catch(() => { if (!cancelled) setCls(null); });
     return () => { cancelled = true; };
   }, [bundle, pixel, radius]);
 
@@ -144,6 +151,38 @@ export function SkySpectrum({ bundle, pixel, radius, onRadius, onJump }: {
             <span className="text-muted">from <span className="mono">{spec.n_points}</span> separate exposures</span>
             <SourceTag source={spec.source} />
           </div>
+          {/* What does that shape look like? Templates, not a trained model. */}
+          {cls?.available ? (
+            <div className="rounded-lg border border-line bg-panel p-2.5">
+              <div className="flex flex-wrap items-baseline gap-x-2">
+                <span className="text-xs text-muted">Shape looks</span>
+                <span className="text-sm font-semibold text-accent">{cls.label}</span>
+                {!cls.confident ? (
+                  <span className="text-[10px] text-muted">(close call — other shapes fit nearly as well)</span>
+                ) : null}
+              </div>
+              <p className="mt-1 text-[11px] text-muted">{cls.meaning}</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted">
+                {cls.temperature?.temperature_k ? (
+                  <span>colour temperature <span className="mono text-fg">{cls.temperature.temperature_k} K</span></span>
+                ) : null}
+                {cls.methane_score != null ? (
+                  <span>methane score <span className="mono text-fg">{cls.methane_score.toFixed(2)}</span></span>
+                ) : null}
+              </div>
+              <details className="mt-1.5 text-[10px] text-muted">
+                <summary className="cursor-pointer select-none hover:text-fg">How this is worked out</summary>
+                <p className="mt-1">{cls.method}</p>
+                <p className="mt-1">
+                  {cls.ranking?.map((r) => `${r.label}: χ²/dof ${r.chi2_per_dof}`).join(" · ")}
+                </p>
+                <p className="mt-1 text-accent/80">{cls.caveat}</p>
+              </details>
+            </div>
+          ) : cls && !cls.available ? (
+            <p className="text-[11px] text-muted">Shape not classified: {cls.reason}</p>
+          ) : null}
+
           <p className="text-[10px] text-muted">{spec.note}</p>
         </>
       ) : null}

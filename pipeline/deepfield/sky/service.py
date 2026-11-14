@@ -308,6 +308,71 @@ def coadd(frames: list[LoadedFrame]) -> tuple[np.ndarray, np.ndarray, int]:
     return out.astype(np.float32), out_var.astype(np.float32), len(frames)
 
 
+def _wavelength_thirds(frames: list[LoadedFrame]) -> tuple[list, list, list]:
+    """Split frames into short / middle / long wavelength groups of roughly equal size."""
+    ordered = sorted(frames, key=lambda f: f.cutout.wave_um)
+    waves = [f.cutout.wave_um for f in ordered]
+    if len(set(round(w, 2) for w in waves)) < 3:
+        return [], [], []
+    a, b = len(ordered) // 3, 2 * len(ordered) // 3
+    blue, green, red = ordered[:a], ordered[a:b], ordered[b:]
+    return (blue, green, red) if blue and green and red else ([], [], [])
+
+
+def build_colour(loaded: list[LoadedFrame], by_visit: dict[int, list[LoadedFrame]],
+                 out: Path, source: str) -> tuple[list[dict], dict]:
+    """False-colour frames: longest wavelengths to red, shortest to blue.
+
+    This is the most direct answer to "think creatively about how to display those 102
+    bands". A grey frame throws away the one thing SPHEREx is built to measure; mapping
+    wavelength to colour puts it back, and a cold methane-rich object looks visibly
+    different from a hot star without reading a single chart.
+    """
+    frames: list[dict] = []
+    groups = _wavelength_thirds(loaded)
+    if not groups[0]:
+        return frames, {"available": False,
+                        "reason": "this field has fewer than three distinct wavelengths"}
+
+    # One stretch per channel, measured over the whole set so visits stay comparable.
+    chans_all = [coadd(g)[0] for g in groups]
+    limits = [RENDER.robust_limits([c]) for c in chans_all]
+    waves = [[round(float(f.cutout.wave_um), 3) for f in g] for g in groups]
+    band_desc = [f"{min(w):.2f}-{max(w):.2f} um" for w in waves]
+
+    RENDER.write_rgb_png(chans_all[2], chans_all[1], chans_all[0], out / "colour.png",
+                         source=source, limits=[limits[2], limits[1], limits[0]],
+                         extra={"bands": " | ".join(band_desc)})
+
+    for v, fs in sorted(by_visit.items()):
+        g = _wavelength_thirds(fs)
+        if not g[0]:
+            continue
+        chans = [coadd(x)[0] for x in g]
+        png = out / "colour" / f"v{v}.png"
+        RENDER.write_rgb_png(chans[2], chans[1], chans[0], png, source=source,
+                             limits=[limits[2], limits[1], limits[0]])
+        mjds = [f.cutout.mjd for f in fs]
+        frames.append({"id": f"c{v}", "png": "colour/" + png.name, "visit": int(v),
+                       "n": len(fs), "mjd": float(np.mean(mjds)),
+                       "label": str(fs[0].cutout.obs_id).split("_")[0],
+                       "bands": [[round(float(min(w)), 3), round(float(max(w)), 3)] for w in
+                                 [[f.cutout.wave_um for f in x] for x in g]]})
+    meta = {
+        "available": True,
+        "png": "colour.png",
+        "channels": [
+            {"colour": "red", "role": "longest wavelengths", "range_um": band_desc[2]},
+            {"colour": "green", "role": "middle wavelengths", "range_um": band_desc[1]},
+            {"colour": "blue", "role": "shortest wavelengths", "range_um": band_desc[0]},
+        ],
+        "note": ("False colour: SPHEREx's infrared bands mapped to red, green and blue. "
+                 "Red means a source is brighter at longer wavelengths — cooler, dustier or "
+                 "more absorbed. Blue means the opposite. These are not visible-light colours."),
+    }
+    return frames, meta
+
+
 def _flag_union(frames: list[LoadedFrame]) -> np.ndarray:
     out = np.zeros_like(frames[0].flags)
     for f in frames:
@@ -440,6 +505,9 @@ def build_sky_bundle(req: SkyRequest, out_root: Path | None = None, *, progress=
                                 "mjd": float(np.mean([fr.cutout.mjd for fr in by_visit[v]])),
                                 "label": f"visit {v} - visit {visit_frames[0]['visit']}"})
 
+    # --- false-colour composites -------------------------------------------
+    colour_frames, colour_meta = build_colour(loaded, by_visit, out, source)
+
     # --- stack and static ---------------------------------------------------
     RENDER.write_png(stack_img, out / "stack.png", source=source, vmin=vmin, vmax=vmax)
     RENDER.write_png(static_img, out / "static.png", source=source, vmin=vmin, vmax=vmax)
@@ -502,7 +570,9 @@ def build_sky_bundle(req: SkyRequest, out_root: Path | None = None, *, progress=
         "search": search_meta,
         "visits": visit_table(df),
         "freshness": {"built_from": search_meta["per_collection"], "built_at": _now_iso()},
-        "frames": {"epochs": epoch_frames, "detectors": det_frames, "visits": visit_frames},
+        "frames": {"epochs": epoch_frames, "detectors": det_frames, "visits": visit_frames,
+                   "colour": colour_frames},
+        "colour": colour_meta,
         "difference": diff_frames,
         "stack": {"png": "stack.png", "n": int(n_stack),
                   "note": "inverse-variance weighted mean of every exposure used"},
