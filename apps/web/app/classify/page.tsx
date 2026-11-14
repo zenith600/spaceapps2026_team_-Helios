@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { SourceTag } from "@/components/Tags";
 import { getTask, postVote } from "@/lib/api";
 import type { Answer, Task, VoteResult } from "@/lib/types";
-import { pct } from "@/lib/utils";
+import { fmt, pct } from "@/lib/utils";
 
 export default function Classify() {
   const [task, setTask] = useState<Task | null>(null);
@@ -40,7 +40,9 @@ export default function Classify() {
             <p className="text-sm">{task.prompt} <span className="text-muted">Tap the spot if you see it.</span></p>
             <BlinkViewer stamps={task.stamps} isSimulated={false} compact onClick={setClick} />
             <div className="mono text-[11px] text-muted">
-              {task.candidate.n_epochs} epochs · stack SNR {task.candidate.snr_stack.toFixed(1)} · trial {task.candidate.best_distance_au.toFixed(0)} AU
+              {task.candidate.n_epochs} epochs · stack SNR {fmt(task.candidate.snr_stack, 1)} · {task.candidate.best_distance_au == null
+                ? "best trial: not moving"
+                : `trial ${fmt(task.candidate.best_distance_au, 0)} AU`}
               {click ? ` · marked (${click.x.toFixed(2)}, ${click.y.toFixed(2)})` : ""}
             </div>
             <div className="grid grid-cols-3 gap-2">

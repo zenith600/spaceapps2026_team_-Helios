@@ -28,10 +28,10 @@ export type Stamps = { singles: string[]; stack: string | null; static: string |
 export type Candidate = {
   candidate_id: string; patch_id: string; ra_deg: number; dec_deg: number;
   is_simulated: boolean; injection_id: string | null; injected_mag: number | null; injected_distance_au: number | null;
-  snr_stack: number; snr_single_max: number; best_distance_au: number;
+  snr_stack: number; snr_single_max: number; best_distance_au: number | null;  // null = best trial is stationary
   best_rate_ra_arcsec_day: number; best_rate_dec_arcsec_day: number;
   flux_mjysr: number; n_epochs: number; n_bands: number;
-  methane_score: number; template_best: string; ml_score: number | null; rule_score: number;
+  methane_score: number | null; template_best: string; ml_score: number | null; rule_score: number;
   crowd_p_real: number; n_votes: number; status: string; known_object: string | null;
   stamp_dir: string; dossier_path: string; source: string; created_mjd: number;
   stamps: Stamps; dossier_url: string;
