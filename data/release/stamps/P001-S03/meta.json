@@ -5,10 +5,10 @@
  "is_simulated": true,
  "candidate_id": "P001-S03",
  "patch_id": "P001",
- "injected_mag": 20.36110399493192,
+ "injected_mag": 16.0,
  "trial": {
-  "distance_au": 400.0,
-  "rate_ra": 1.0,
-  "rate_dec": -1.0
+  "distance_au": 538.8072138849653,
+  "rate_ra": 0.0,
+  "rate_dec": 0.0
  }
 }

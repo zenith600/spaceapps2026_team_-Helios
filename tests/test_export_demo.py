@@ -108,6 +108,35 @@ def test_api_serves_every_stamp_the_candidates_reference(client):
     assert checked > 0
 
 
+def test_stamp_tensors_are_exported_in_the_shape_the_model_expects(tmp_path):
+    """The browser classifier needs the same normalised float stamps training used.
+    Display PNGs are 8-bit and stretched, so scoring them would mean scoring a picture."""
+    import numpy as np
+    out = tmp_path / "demo"
+    info = export(SAMPLES, out)
+    assert info["browser_model"]["tensors"] > 0
+    rows = json.loads((out / "candidates.json").read_text())["candidates"]
+    with_tensor = [c for c in rows if c.get("tensor")]
+    assert with_tensor, "candidates.json must advertise each tensor's path"
+    for c in with_tensor[:3]:
+        raw = (out / c["tensor"]).read_bytes()
+        arr = np.frombuffer(raw, dtype=np.float32)
+        assert arr.size == 3 * 32 * 32, f"{c['candidate_id']}: wrong tensor size"
+        assert np.isfinite(arr).all()
+
+
+def test_tensors_match_what_training_feeds_the_network(tmp_path):
+    """Exactly the normalisation `load_stamp_set` applies -- not an approximation of it."""
+    import numpy as np
+    from deepfield.ml.model import load_stamp_set
+    out = tmp_path / "demo"
+    export(SAMPLES, out)
+    c = next(c for c in json.loads((out / "candidates.json").read_text())["candidates"] if c.get("tensor"))
+    shipped = np.frombuffer((out / c["tensor"]).read_bytes(), dtype=np.float32).reshape(3, 32, 32)
+    expected = load_stamp_set(SAMPLES / "stamps" / c["candidate_id"]).astype(np.float32)
+    assert np.array_equal(shipped, expected)
+
+
 def test_api_serves_the_dossiers_it_advertises(client):
     rows = client.get("/candidates").json()["candidates"]
     for c in rows[:3]:

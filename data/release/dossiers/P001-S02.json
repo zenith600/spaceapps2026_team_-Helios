@@ -1,16 +1,16 @@
 {
  "candidate_id": "P001-S02",
- "generated_at": "2026-11-14T13:21:11+00:00",
+ "generated_at": "2026-11-14T13:46:37+00:00",
  "generator": "offline-template",
  "is_simulated": true,
  "scout": {
-  "summary": "SIMULATED injection. Stacked SNR 0.3 over 39 SPHEREx exposures in patch P001; best single-frame SNR 19.5.",
+  "summary": "SIMULATED injection. Stacked SNR 3.2 over 60 SPHEREx exposures in patch P001; best single-frame SNR 35.5.",
   "facts": [
-   "SIMULATED injection of reference planet INJ001R0074500: V=20.2 at 456 AU",
-   "patch P001 at RA 64.7195, Dec 13.3031 (SPHEREx DR1)",
-   "stacked SNR 0.3 over 39 exposures; best single-frame SNR 19.5",
-   "best trial distance 1000 AU, extra rate (-1.0, -1.0) arcsec/day",
-   "25 SPHEREx bands measured; methane score 0.37 (toy template fit)"
+   "SIMULATED injection of reference planet INJ001R0055970: V=13.0 at 225 AU",
+   "patch P001 at RA 64.6679, Dec 13.1364 (SPHEREx DR1)",
+   "stacked SNR 3.2 over 60 exposures; best single-frame SNR 35.5",
+   "best trial: stationary (no parallax)",
+   "45 SPHEREx bands measured; methane score 1.00 (toy template fit)"
   ]
  },
  "skeptic": {
@@ -21,15 +21,15 @@
    },
    {
     "name": "single_frame_visible",
-    "result": "yes: visible in a single frame (SNR 19.5), so a static residual is likely"
+    "result": "yes: visible in a single frame (SNR 35.5), so a static residual is likely"
    },
    {
     "name": "stationary",
-    "result": "best trial requires parallax motion"
+    "result": "best trial has no parallax: not a distant mover"
    },
    {
     "name": "spectrum",
-    "result": "best of three toy templates: planet; with 25 noisy points this is weak evidence"
+    "result": "best of three toy templates: planet; with 45 noisy points this is weak evidence"
    },
    {
     "name": "noise",
@@ -39,8 +39,8 @@
   "verdict": "Injected planet that the search did NOT recover: below our completeness limit."
  },
  "reporter": {
-  "headline": "Simulated Planet Nine at V 20.2: not recovered",
-  "dossier_md": "This is a synthetic planet from the Caltech reference population, injected into real SPHEREx frames along its true parallax track at 456 AU. It is invisible in any single frame (best single-frame SNR 19.5) and reaches SNR 0.3 when the frames are shifted along the correct trial motion and stacked.\n\nThe search did not reach it. Failures like this one set the completeness limit shown on the Proof page. \n\nNothing about this object is real. It exists to calibrate the search and to train the classifier and the crowd.",
+  "headline": "Simulated Planet Nine at V 13.0: not recovered",
+  "dossier_md": "This is a synthetic planet from the Caltech reference population, injected into real SPHEREx frames along its true parallax track at 225 AU. It is invisible in any single frame (best single-frame SNR 35.5) and reaches SNR 3.2 when the frames are shifted along the correct trial motion and stacked.\n\nThe search did not reach it. Failures like this one set the completeness limit shown on the Proof page. \n\nNothing about this object is real. It exists to calibrate the search and to train the classifier and the crowd.",
   "mpc_report": null
  },
  "verdict": "simulated",

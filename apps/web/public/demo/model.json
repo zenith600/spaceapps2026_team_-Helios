@@ -1,0 +1,16 @@
+{
+ "n_positive": 59,
+ "n_negative": 89,
+ "val_auc": 0.7055555555555556,
+ "val_acc": 0.6551724137931034,
+ "n_train": 119,
+ "n_val": 29,
+ "trained_at": "2026-11-14T13:46:35+00:00",
+ "architecture": "StampNet (3 conv + 2 fc)",
+ "training_data": "Deep Field injections into SPHEREx DR1 frames (positives); clean-stack peaks and random positions (negatives)",
+ "input": "stamps float32 [n,3,32,32]",
+ "output": "prob float32 [n,1]",
+ "trained_from_scratch": true,
+ "pretrained_weights": null,
+ "onnx_roundtrip_max_abs_diff": 6.088521331548691e-08
+}
