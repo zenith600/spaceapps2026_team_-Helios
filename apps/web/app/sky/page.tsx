@@ -9,9 +9,9 @@ import { FrameMode, SkyPlayer } from "@/components/SkyPlayer";
 import { SkySpectrum } from "@/components/SkySpectrum";
 import { DEMO } from "@/lib/api";
 import {
-  DEFAULT_FOV, FOV_MAX, FOV_MIN, type Freshness, type Job, type SkyBundle, type SkyIndexEntry, type SkyTarget,
-  formatDec, formatRa, getFreshness, getSkyBundle, getSkyIndex, getSkyJob, mjdLabel, resolveTarget,
-  skySlug, startSkyJob,
+  DEFAULT_FOV, FOV_MAX, FOV_MIN, type Epochs, type Freshness, type Job, type SkyBundle, type SkyIndexEntry,
+  type SkyTarget, formatDec, formatRa, getEpochs, getFreshness, getSkyBundle, getSkyIndex, getSkyJob,
+  mjdLabel, resolveTarget, skySlug, startSkyJob,
 } from "@/lib/sky";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +50,7 @@ function SkyViewer() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [job, setJob] = useState<Job | null>(null);
+  const [epochs, setEpochs] = useState<Epochs | null>(null);
   const [fresh, setFresh] = useState<Freshness | null>(null);
   const [pixel, setPixel] = useState<{ x: number; y: number } | null>(null);
   const [radius, setRadius] = useState(1);
@@ -72,7 +73,7 @@ function SkyViewer() {
     if (!q) { setBundle(null); setTarget(null); setStatus(null); return; }
 
     (async () => {
-      setError(null); setStatus("resolving…"); setPixel(null); setFresh(null);
+      setError(null); setStatus("resolving…"); setPixel(null); setFresh(null); setEpochs(null); setJob(null);
       try {
         const t = await resolveTarget(q);
         if (cancelled) return;
@@ -89,6 +90,21 @@ function SkyViewer() {
           setStatus(DEMO
             ? "not pre-built"
             : "no view built for this position and field of view yet");
+          // With an API we can say what is actually there before anyone commits to a
+          // download: how many exposures, over how long, and what it will cost.
+          if (!DEMO) {
+            setStatus("asking IRSA what it has here…");
+            try {
+              const e = await getEpochs(t.ra_deg, t.dec_deg, fov);
+              if (!cancelled) {
+                setEpochs(e);
+                setStatus(e.n_exposures === 0 ? (e.message || "no SPHEREx coverage here yet")
+                                              : "not built yet");
+              }
+            } catch {
+              if (!cancelled) setStatus("no view built for this position and field of view yet");
+            }
+          }
         }
       } catch (e) {
         if (!cancelled) { setError(String((e as Error).message || e)); setBundle(null); setTarget(null); setStatus(null); }
@@ -232,6 +248,31 @@ function SkyViewer() {
                 any other coordinate needs the API running (<span className="mono">NEXT_PUBLIC_DEMO_MODE=0</span>),
                 which fetches it live from IRSA.
               </p>
+            ) : epochs && epochs.n_exposures > 0 ? (
+              <div className="flex flex-col gap-2">
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-4">
+                  <Stat k="exposures here" v={String(epochs.n_exposures)} />
+                  <Stat k="visits" v={String(epochs.n_visits ?? 0)} />
+                  <Stat k="time baseline" v={`${Math.round(epochs.baseline_days ?? 0)} days`} accent />
+                  <Stat k="detectors" v={(epochs.detectors ?? []).join(", ")} />
+                </dl>
+                {epochs.estimate ? (
+                  <p className="text-muted">
+                    Building this view fetches <span className="mono text-fg">{epochs.estimate.n_frames}</span> of
+                    them — about <span className="mono text-fg">{epochs.estimate.download_mb} MB</span> and{" "}
+                    <span className="mono text-fg">{epochs.estimate.seconds}s</span> from IRSA. Cutouts are cached,
+                    so it is instant next time.
+                  </p>
+                ) : null}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" onClick={() => build()}>build it from IRSA</Button>
+                  <span className="text-muted mono text-[10px]">
+                    searching {epochs.search.collections_searched.join(", ")}
+                  </span>
+                </div>
+              </div>
+            ) : epochs && epochs.n_exposures === 0 ? (
+              <p className="text-muted">{epochs.message}</p>
             ) : (
               <div className="flex flex-wrap items-center gap-2">
                 <Button size="sm" onClick={() => build()}>build it from IRSA</Button>

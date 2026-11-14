@@ -96,7 +96,30 @@ def test_selection_keeps_every_visit():
     df = _fake_exposures(n_visits=11, per_visit=30)
     sel = SVC.select_exposures(df, max_frames=12, per_visit=16)
     assert sel["visit"].nunique() == 11, "a whole visit was dropped to meet the frame budget"
-    assert len(sel) <= 12
+
+
+def test_a_visit_never_collapses_to_a_single_arbitrary_detector():
+    """R Draconis has 31 visits; a flat budget of 48 gave each one exposure, which means
+    one detector, which means one wavelength picked at random. Blinking that shows band
+    changes masquerading as variability -- on a Mira variable, the worst possible place
+    for that artefact."""
+    df = _fake_exposures(n_visits=31, per_visit=18)
+    sel = SVC.select_exposures(df, max_frames=48, per_visit=16)
+    per_visit = sel.groupby("visit").size()
+    assert per_visit.min() >= SVC.MIN_PER_VISIT
+    assert sel["visit"].nunique() == 31
+
+
+def test_selection_respects_the_hard_cap():
+    df = _fake_exposures(n_visits=80, per_visit=20)
+    sel = SVC.select_exposures(df, max_frames=48, per_visit=16, hard_cap=100)
+    assert len(sel) <= 100
+
+
+def test_selection_does_not_invent_exposures_a_visit_does_not_have():
+    df = _fake_exposures(n_visits=5, per_visit=1)
+    sel = SVC.select_exposures(df, max_frames=48, per_visit=16)
+    assert len(sel) == 5
 
 
 def test_selection_spreads_within_a_visit():

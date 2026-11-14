@@ -104,7 +104,10 @@ export function SkyPlayer({
     const fx = (e.clientX - r.left) / r.width;
     const fy = (e.clientY - r.top) / r.height;
     // The PNG is written top-down from a bottom-up array, so y flips back here.
-    onPickPixel({ x: Math.floor(fx * npix), y: Math.floor((1 - fy) * npix) });
+    // Both are clamped: a click exactly on the top or right edge gives fy = 0 or
+    // fx = 1, and floor() of that lands one past the last index.
+    const clamp = (v: number) => Math.max(0, Math.min(npix - 1, Math.floor(v)));
+    onPickPixel({ x: clamp(fx * npix), y: clamp((1 - fy) * npix) });
   };
 
   if (n === 0) {

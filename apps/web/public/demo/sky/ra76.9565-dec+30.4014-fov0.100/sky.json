@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "slug": "ra76.9565-dec+30.4014-fov0.100",
- "generated_at": "2026-11-14T08:54:18+00:00",
+ "generated_at": "2026-11-14T09:12:18+00:00",
  "source": "NASA SPHEREx DR1 Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
  "is_simulated": false,
  "target": {
@@ -84,7 +84,7 @@
     "earliest_mjd": 61285.097169
    }
   },
-  "searched_at": "2026-11-14T08:53:06+00:00",
+  "searched_at": "2026-11-14T09:12:17+00:00",
   "n_exposures": 342,
   "n_visits": 7,
   "mjd_min": 60919.419647,
@@ -228,7 +228,7 @@
     "earliest_mjd": 61285.097169
    }
   },
-  "built_at": "2026-11-14T08:54:18+00:00"
+  "built_at": "2026-11-14T09:12:18+00:00"
  },
  "frames": {
   "epochs": [
@@ -2041,7 +2041,7 @@
  ],
  "cube": "cube.npz",
  "skipped": [],
- "elapsed_s": 75.8,
+ "elapsed_s": 1.5,
  "limits": [
   "SPHEREx pixels are 6.15 arcsec; close pairs blend together.",
   "42 distinct bands measured here, out of 102 across the full survey. Each pixel sees one wavelength, set by its position on the filter.",

@@ -16,11 +16,11 @@ run against the live service and the numbers quoted are from that run.
 | --- | --- |
 | Enter RA/Dec | **Real.** `/sky` takes decimal degrees, sexagesimal in four spellings, or a name. |
 | Series of images as a video | **Real.** Blink player: play/pause, 0.8–10 fps, scrub, step, keyboard. |
-| Test on Barnard's Star | **Real.** 40 frames, 16 visits, 403-day baseline, 37/102 bands. |
-| Test on Epsilon Indi B | **Real.** 37 frames, 19 visits, 526-day baseline, 33/102 bands. |
+| Test on Barnard's Star | **Real.** 42 frames, 16 visits, 403-day baseline, 39/102 bands. |
+| Test on Epsilon Indi B | **Real.** 55 frames, 19 visits, 526-day baseline, 49/102 bands. |
 | Test on WISE 0855 | **Real.** 44 frames, 11 visits, 374-day baseline, 41/102 bands. |
 | Test on RW Aurigae | **Real.** 42 frames, 7 visits, 380-day baseline, 42/102 bands. |
-| Test on R Draconis | **Real.** 31 frames, 31 visits, 416-day baseline, 23/102 bands. |
+| Test on R Draconis | **Real.** 91 frames, 31 visits, 426-day baseline, 81/102 bands. |
 
 ### Optional considerations from the brief
 
@@ -41,7 +41,7 @@ run against the live service and the numbers quoted are from that run.
 | Thing | Evidence |
 | --- | --- |
 | SPHEREx SIA2 search | 2026-11-14: WISE 0855 returns 282 DR1 exposures, 11 visits, MJD 60800.70–61174.29 (374 days). |
-| SPHEREx cutouts | 194 cutouts fetched for the five baked targets. MEF decoded: IMAGE, FLAGS, VARIANCE, ZODI, EPSF, WCS-WAVE. |
+| SPHEREx cutouts | 274 cutouts fetched for the five baked targets. MEF decoded: IMAGE, FLAGS, VARIANCE, ZODI, EPSF, WCS-WAVE. |
 | Release discovery | IRSA ObsTAP returns `spherex_dr1, spherex_dr1_cal, spherex_dr1_cube, spherex_dr1_deep, spherex_qr3, spherex_qr3_deep`. The viewer searches the two image releases. |
 | Freshness checks | Uncached 4.8 s against IRSA, cached 0.002 s. Correctly reports 282 now vs 282 at build time → not stale. |
 | On-the-fly spectra | WISE 0855 centre pixel: 9 points over 7 distinct bands, 0.749–2.365 µm, each from a different exposure, visit and detector. |

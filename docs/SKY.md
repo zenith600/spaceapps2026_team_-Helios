@@ -54,6 +54,22 @@ the wavelength of what you are looking at:
 Band coverage is reported honestly: a point gets ~10–30 distinct bands per visit, not
 102. The UI says **"N of 102 bands measured"** and never implies full coverage.
 
+### Why each visit gets at least three exposures
+
+Dividing a flat frame budget by the number of visits starves the targets SPHEREx
+revisits most. R Draconis sits near the north ecliptic pole: 578 exposures across 31
+visits. A budget of 48 gave each visit exactly one exposure — and one exposure is one
+detector, which is one wavelength, chosen arbitrarily by whichever frame happened to be
+picked. Blinking that movie shows the brightness jumping between *bands*, which on a
+Mira variable is precisely the instrumental artefact a user would read as the
+astrophysics.
+
+So `select_exposures` guarantees `SKY_MIN_PER_VISIT` (3) exposures per visit wherever
+they exist and lets the total grow to `SKY_HARD_FRAME_CAP` (120) rather than letting the
+per-visit share collapse. The cost is more download on heavily-revisited fields; the
+benefit is that every visit coadd averages several bands, so visit-to-visit changes are
+comparable.
+
 ## 3. Data flow
 
 ```

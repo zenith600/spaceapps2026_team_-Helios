@@ -23,11 +23,11 @@ instantly, with no API and no network:
 
 | Target | frames | visits | baseline | bands |
 | --- | --- | --- | --- | --- |
-| Barnard's Star | 40 | 16 | 403 d | 37 / 102 |
-| Epsilon Indi Ba/Bb | 37 | 19 | 526 d | 33 / 102 |
+| Barnard's Star | 42 | 16 | 403 d | 39 / 102 |
+| Epsilon Indi Ba/Bb | 55 | 19 | 526 d | 49 / 102 |
 | WISE 0855−0714 | 44 | 11 | 374 d | 41 / 102 |
 | RW Aurigae | 42 | 7 | 380 d | 42 / 102 |
-| R Draconis | 31 | 31 | 416 d | 23 / 102 |
+| R Draconis | 91 | 31 | 426 d | 81 / 102 |
 
 Any other coordinate is fetched live from IRSA when the API is running.
 

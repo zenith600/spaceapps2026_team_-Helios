@@ -40,6 +40,11 @@ SKY_DIR = Path(os.environ.get("SKY_DIR", REPO_ROOT / "data" / "sky"))
 FETCH_WORKERS = int(os.environ.get("SKY_FETCH_WORKERS", "6"))
 VISIT_GAP_DAYS = float(os.environ.get("SKY_VISIT_GAP_DAYS", "2.0"))
 MIN_GOOD_FRACTION = float(os.environ.get("SKY_MIN_GOOD_FRACTION", "0.25"))
+#: Exposures a visit should get even when there are many visits, so a visit coadd is
+#: never one arbitrary detector (see select_exposures).
+MIN_PER_VISIT = int(os.environ.get("SKY_MIN_PER_VISIT", "3"))
+#: Ceiling on frames for one view, whatever the visit count implies.
+HARD_FRAME_CAP = int(os.environ.get("SKY_HARD_FRAME_CAP", "120"))
 
 FOV_MIN, FOV_MAX = 0.02, 0.5
 
@@ -172,18 +177,28 @@ def visit_table(df: pd.DataFrame) -> list[dict]:
     return sorted(out, key=lambda r: r["mjd_start"])
 
 
-def select_exposures(df: pd.DataFrame, max_frames: int, per_visit: int) -> pd.DataFrame:
+def select_exposures(df: pd.DataFrame, max_frames: int, per_visit: int,
+                     min_per_visit: int = MIN_PER_VISIT, hard_cap: int = HARD_FRAME_CAP) -> pd.DataFrame:
     """Keep every visit (motion needs the time baseline), capping exposures within each.
 
     Visits are what carry the signal the challenge is about, so we never drop a whole
     visit to satisfy `max_frames`; we thin inside visits instead, spreading the picks
     evenly in time and across detectors.
+
+    `min_per_visit` matters more than it looks. Dividing a flat budget by the number of
+    visits starves targets that SPHEREx revisits often: R Draconis has 578 exposures
+    over 31 visits, and a budget of 48 gives each visit a single exposure -- which means
+    a single detector, so a single wavelength, chosen arbitrarily. Blinking that movie
+    shows brightness jumping between *bands*, which on a Mira variable is exactly the
+    instrumental artefact that would be mistaken for the astrophysics. So each visit
+    gets at least a few exposures whenever they exist, and the total is allowed to grow
+    up to `hard_cap` rather than the per-visit share collapsing to one.
     """
     if len(df) == 0:
         return df
     visits = sorted(df["visit"].unique())
-    budget = max(1, max_frames // max(len(visits), 1))
-    cap = max(1, min(per_visit, budget))
+    share = max_frames // max(len(visits), 1)
+    cap = int(np.clip(share, min_per_visit, per_visit))
     parts = []
     for v in visits:
         g = df[df.visit == v].sort_values(["t_min", "detector"])
@@ -192,7 +207,8 @@ def select_exposures(df: pd.DataFrame, max_frames: int, per_visit: int) -> pd.Da
             g = g.iloc[idx]
         parts.append(g)
     out = pd.concat(parts).sort_values("t_min").reset_index(drop=True)
-    return out.head(max_frames) if len(out) > max_frames else out
+    budget = max(max_frames, min(hard_cap, cap * len(visits)))
+    return out.head(budget) if len(out) > budget else out
 
 
 # ---------------------------------------------------------------------------
