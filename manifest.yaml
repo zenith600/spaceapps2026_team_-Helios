@@ -130,8 +130,12 @@ datasets:
     owner: Centre de Donnees astronomiques de Strasbourg (CNRS)
     country: France
     licence: GPL-3.0 (Aladin Lite); HiPS imagery under its own survey terms
-    access: ["https://aladin.cds.unistra.fr/AladinLite/api/v3/"]
-    domains: [aladin.cds.unistra.fr, alasky.cds.unistra.fr, alaskybis.cds.unistra.fr]
+    # The library itself is bundled from npm (aladin-lite 3.8.2, pinned), not fetched from CDS:
+    # the hosted path https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js was
+    # retired (404, checked 2026-11-14) and took the panel down with it. Only the HiPS sky
+    # imagery is still streamed from CDS at runtime, from the domains below.
+    access: ["npm:aladin-lite@3.8.2", "https://alasky.cds.unistra.fr/"]
+    domains: [aladin.cds.unistra.fr, alasky.cds.unistra.fr, alaskybis.cds.unistra.fr, alasky.unistra.fr]
     optional: true
     used_for: >
       optional "where is this on the sky" context panel, loaded in the browser only when

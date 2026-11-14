@@ -5,36 +5,42 @@ import { Button } from "@/components/ui/button";
 /**
  * "Where is this on the sky?" — CDS's Aladin Lite, which the brief recommends by name.
  *
- * Loaded only when the user asks for it, for two reasons. It pulls a script and sky
- * imagery from CDS servers, which have been intermittently unreachable all week; and
- * nobody should pay for a third-party atlas on a page they came to for the time-lapse.
- * If CDS is down the panel says so and the rest of the viewer is untouched.
+ * The library is bundled from npm (aladin-lite, pinned like every other dependency), not
+ * fetched from CDS at runtime. The first version loaded
+ * https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js, and CDS has since
+ * retired that whole path (404) — so the panel failed while reporting "could not reach
+ * CDS", although CDS itself was up. Bundling removes that dependency; only the sky
+ * *imagery* still streams from CDS's HiPS servers.
+ *
+ * It is still loaded lazily, on click: it is ~2 MB including its WebAssembly core, and
+ * nobody should pay for an atlas on a page they came to for the time-lapse.
  */
-const ALADIN_JS = "https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js";
+type AladinLib = { init: Promise<void>; aladin: (el: HTMLElement, opts: object) => unknown };
 
-declare global {
-  interface Window { A?: { init: Promise<void>; aladin: (el: HTMLElement, opts: object) => unknown } }
+let loader: Promise<AladinLib> | null = null;
+
+function loadAladin(): Promise<AladinLib> {
+  if (!loader) {
+    // Dynamic import: the module touches `document` at import time, so it must never be
+    // evaluated during server rendering.
+    loader = import("aladin-lite").then(async (m) => {
+      const A = (m.default ?? m) as AladinLib;
+      await A.init;
+      return A;
+    });
+    loader.catch(() => { loader = null; });      // allow a retry after a failure
+  }
+  return loader;
 }
 
-let loader: Promise<void> | null = null;
-
-function loadAladin(timeoutMs = 15000): Promise<void> {
-  if (window.A?.init) return window.A.init;
-  if (loader) return loader;
-  loader = new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("timed out")), timeoutMs);
-    const s = document.createElement("script");
-    s.src = ALADIN_JS;
-    s.async = true;
-    s.onload = () => {
-      clearTimeout(timer);
-      if (window.A?.init) window.A.init.then(() => resolve()).catch(reject);
-      else reject(new Error("script loaded but Aladin did not initialise"));
-    };
-    s.onerror = () => { clearTimeout(timer); reject(new Error("could not reach CDS")); };
-    document.head.appendChild(s);
-  });
-  return loader;
+/** Say what actually went wrong, instead of blaming the network for everything. */
+function explain(e: unknown): string {
+  const msg = String((e as Error)?.message ?? e);
+  if (/webgl2/i.test(msg)) return "your browser does not support WebGL2, which the atlas needs";
+  if (/Loading chunk|Failed to fetch dynamically imported module|import/i.test(msg)) {
+    return "the atlas code failed to load — try reloading the page";
+  }
+  return msg;
 }
 
 export function AladinPanel({ ra, dec, fovDeg, name }: {
@@ -48,9 +54,9 @@ export function AladinPanel({ ra, dec, fovDeg, name }: {
     if (state !== "loading" || !box.current) return;
     let cancelled = false;
     loadAladin()
-      .then(() => {
+      .then((A) => {
         if (cancelled || !box.current) return;
-        window.A!.aladin(box.current, {
+        A.aladin(box.current, {
           survey: "P/DSS2/color",
           fov: Math.max(fovDeg * 6, 0.3),
           target: `${ra} ${dec}`,
@@ -66,7 +72,7 @@ export function AladinPanel({ ra, dec, fovDeg, name }: {
       })
       .catch((e) => {
         if (cancelled) return;
-        setMessage(String(e.message || e));
+        setMessage(explain(e));
         setState("error");
       });
     return () => { cancelled = true; };
@@ -83,7 +89,7 @@ export function AladinPanel({ ra, dec, fovDeg, name }: {
           Show sky context
         </Button>
         <p className="mt-1.5 text-[10px] text-muted/80">
-          Loads Aladin Lite from CDS Strasbourg — a few hundred KB, only when you ask.
+          Aladin Lite by CDS Strasbourg. Loads only when you ask; imagery streams from CDS.
         </p>
       </div>
     );
@@ -93,7 +99,7 @@ export function AladinPanel({ ra, dec, fovDeg, name }: {
     return (
       <div className="rounded-lg border border-line bg-panel p-3 text-xs">
         <p className="text-muted">Sky atlas unavailable ({message}). Everything else still works.</p>
-        <Button size="sm" variant="ghost" className="mt-2" onClick={() => { loader = null; setState("loading"); }}>
+        <Button size="sm" variant="ghost" className="mt-2" onClick={() => setState("loading")}>
           Try again
         </Button>
       </div>
