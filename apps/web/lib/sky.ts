@@ -73,6 +73,11 @@ export type SkyBundle = {
   limits: string[];
   cube_u16?: CubeU16;
   file_base?: string;
+  // Written by the build pipeline; optional because older bundles predate them.
+  is_simulated?: boolean;
+  elapsed_s?: number;
+  wcs?: { ctype: string[]; crval: number[]; crpix: number[]; cdelt: number[] };
+  freshness?: { built_at: string; built_from: Record<string, { n: number; latest_mjd: number | null; earliest_mjd: number | null }> };
 };
 
 export type SkyIndexEntry = {
@@ -297,16 +302,66 @@ export async function getFreshness(slug: string): Promise<Freshness> {
 // ---------------------------------------------------------------------------
 const cubeCache = new Map<string, Promise<Uint16Array>>();
 
+/**
+ * Read-only bookkeeping about `cubeCache`, so the workstation's Cache panel can show
+ * what is actually held in memory. It observes the cache; it never decides what is cached.
+ */
+export type CubeCacheEntry = {
+  slug: string; url: string; state: "loading" | "ready" | "error";
+  bytes: number; started_ms: number; load_ms: number | null; error: string | null;
+};
+const cubeMeta = new Map<string, CubeCacheEntry>();
+const cubeData = new Map<string, Uint16Array>();
+
 async function loadCube(slug: string, cube: CubeU16): Promise<Uint16Array> {
   let p = cubeCache.get(slug);
   if (!p) {
-    p = fetch(skyFileUrl(slug, cube.file)).then(async (r) => {
+    const url = skyFileUrl(slug, cube.file);
+    const t0 = typeof performance !== "undefined" ? performance.now() : 0;
+    const meta: CubeCacheEntry = { slug, url, state: "loading", bytes: 0, started_ms: Date.now(), load_ms: null, error: null };
+    cubeMeta.set(slug, meta);
+    p = fetch(url).then(async (r) => {
       if (!r.ok) throw new Error(`cube: ${r.status}`);
       return new Uint16Array(await r.arrayBuffer());
+    });
+    p.then((d) => {
+      Object.assign(meta, { state: "ready", bytes: d.byteLength,
+        load_ms: typeof performance !== "undefined" ? Math.round(performance.now() - t0) : null });
+      if (cubeCache.get(slug) === p) cubeData.set(slug, d);
+    }, (e) => {
+      Object.assign(meta, { state: "error", error: String((e as Error)?.message ?? e) });
+      // A failed download must not stick: drop it so the next request retries.
+      if (cubeCache.get(slug) === p) cubeCache.delete(slug);
     });
     cubeCache.set(slug, p);
   }
   return p;
+}
+
+/** The pixel cube for a bundle, through the same cache spectra use. */
+export function getCube(bundle: SkyBundle): Promise<Uint16Array> {
+  if (!bundle.cube_u16) return Promise.reject(new Error("this view was exported without its pixel cube"));
+  return loadCube(bundle.slug, bundle.cube_u16);
+}
+
+/** The cube if it is already in memory, without triggering a download. */
+export function peekCube(slug: string): Uint16Array | null {
+  return cubeData.get(slug) ?? null;
+}
+
+export function cubeCacheEntries(): CubeCacheEntry[] {
+  return Array.from(cubeMeta.values()).map((m) => ({ ...m }));
+}
+
+/**
+ * Drop one decoded cube from memory. Safe: the cube is a derived export of the bundle and
+ * is re-downloaded (usually from the HTTP cache) the next time a spectrum needs it. Source
+ * observations are never held here.
+ */
+export function evictCube(slug: string): boolean {
+  cubeData.delete(slug);
+  cubeMeta.delete(slug);
+  return cubeCache.delete(slug);
 }
 
 /**
@@ -589,10 +644,18 @@ export function changeMap(bundle: SkyBundle, data: Uint16Array,
   };
 }
 
-export async function getChangeMap(bundle: SkyBundle): Promise<ChangeReport> {
+export type ChangeParams = { deg: number; floor: number; threshold: number };
+/** The defaults `changeMap` itself uses, and the ones the API route applies server side. */
+export const CHANGE_DEFAULTS: ChangeParams = { deg: 2, floor: 0.05, threshold: 5.0 };
+
+/**
+ * `opts` only reaches the in-browser computation. The API route has no parameters, so in
+ * API mode the server defaults always apply -- callers must not present them as editable.
+ */
+export async function getChangeMap(bundle: SkyBundle, opts?: Partial<ChangeParams>): Promise<ChangeReport> {
   if (!DEMO) return getJson<ChangeReport>(`${API_URL}/sky/change/${bundle.slug}`);
   if (!bundle.cube_u16) throw new Error("this view was exported without its pixel cube");
-  return changeMap(bundle, await loadCube(bundle.slug, bundle.cube_u16));
+  return changeMap(bundle, await loadCube(bundle.slug, bundle.cube_u16), opts);
 }
 
 export async function getClassification(bundle: SkyBundle, x: number, y: number, r = 1): Promise<Classification> {
@@ -685,6 +748,49 @@ export async function differenceImage(bundle: SkyBundle, a: number, b: number): 
 // ---------------------------------------------------------------------------
 // Small helpers shared by the viewer
 // ---------------------------------------------------------------------------
+/**
+ * Pixel -> sky on the bundle's tangent plane. The same expression `decodeSpectrum` uses to
+ * label a clicked pixel (lib/sky.pixel.test.ts holds the two together), so the cursor
+ * readout and the spectrum header always agree.
+ */
+export function pixelToSky(bundle: Pick<SkyBundle, "npix" | "pixel_arcsec" | "ra_deg" | "dec_deg">,
+                           x: number, y: number): { ra_deg: number; dec_deg: number } {
+  const half = (bundle.npix - 1) / 2;
+  const scale = bundle.pixel_arcsec / 3600;
+  const dec = bundle.dec_deg + (y - half) * scale;
+  const ra = bundle.ra_deg - ((x - half) * scale) / Math.cos((bundle.dec_deg * Math.PI) / 180);
+  return { ra_deg: ra, dec_deg: dec };
+}
+
+// ---------------------------------------------------------------------------
+// Server state (API mode only). Read-only views of what the API already tracks.
+// ---------------------------------------------------------------------------
+export type ServerJob = Job & { started_at?: string; finished_at?: string | null };
+
+export async function getSkyJobs(): Promise<{ jobs: ServerJob[] }> {
+  return getJson(`${API_URL}/sky/jobs`);
+}
+
+export type FreshnessAll = {
+  refresher: { interval_minutes: number; auto_rebuild: boolean; last_sweep: string | null; last_error: string | null };
+  bundles: Record<string, Freshness | null>;
+};
+export async function getSkyFreshnessAll(): Promise<FreshnessAll> {
+  return getJson(`${API_URL}/sky/freshness`);
+}
+
+export type ServerCacheSection = { name: string; files: number; bytes: number; newest: string | null };
+export type ServerCache = {
+  cache_dir: string; generated_at: string; total_bytes: number; sections: ServerCacheSection[];
+  bundles: { slug: string; location: "built" | "baked"; files: number; bytes: number; has_cube: boolean }[];
+  memory: { jobs: Record<string, number>; freshness_entries: number; max_active_jobs: number;
+            refresher: { running: boolean; last_sweep: string | null; interval_minutes: number } };
+  controls: { clear: boolean; cancel_jobs: boolean; note: string };
+};
+export async function getServerCache(): Promise<ServerCache> {
+  return getJson(`${API_URL}/sky/cache`);
+}
+
 export function mjdToDate(mjd: number): Date {
   return new Date((mjd - 40587) * 86400000);   // MJD 40587 is 1970-01-01
 }

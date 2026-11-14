@@ -12,8 +12,34 @@
   --color-danger: #ef4444;
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Analysis workstation (/sky on desktop): graphite chrome around a near-black canvas. */
+  --color-ws-bg: #1b1c1f;
+  --color-ws-panel: #232428;
+  --color-ws-raised: #2b2c31;
+  --color-ws-hover: #34353b;
+  --color-ws-canvas: #0d0d0f;
+  --color-ws-line: #36373d;
+  --color-ws-edge: #121316;
+  --color-ws-fg: #d4d5da;
+  --color-ws-muted: #8d8f98;
+  --color-ws-dim: #5f616a;
+  --color-ws-sel: #3b82f6;
+  --color-ws-selbg: #1e3356;
+  --color-ws-ok: #4ade80;
+  --color-ws-warn: #fbbf24;
+  --color-ws-err: #f87171;
 }
 
 html, body { background: var(--color-bg); color: var(--color-fg); font-family: var(--font-sans); }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 a { color: inherit; }
+
+/* Workstation scrollbars: thin, quiet, on the graphite chrome. */
+.ws-scroll { scrollbar-width: thin; scrollbar-color: #45464d transparent; }
+.ws-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.ws-scroll::-webkit-scrollbar-thumb { background: #45464d; border-radius: 4px; border: 2px solid transparent; background-clip: padding-box; }
+.ws-range { accent-color: var(--color-ws-sel); height: 4px; }
+/* Tab strips scroll sideways (wheel or trackpad) without a scrollbar eating their height. */
+.ws-noscrollbar { scrollbar-width: none; }
+.ws-noscrollbar::-webkit-scrollbar { display: none; }

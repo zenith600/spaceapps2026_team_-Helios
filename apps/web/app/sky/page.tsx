@@ -1,6 +1,6 @@
 "use client";
-import { Suspense, useCallback, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState, useSyncExternalStore } from "react";
+import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,23 +10,38 @@ import { FrameMode, MODES, SkyPlayer } from "@/components/SkyPlayer";
 import { SkySpectrum } from "@/components/SkySpectrum";
 import { TargetGallery } from "@/components/TargetGallery";
 import { VisitCompare } from "@/components/VisitCompare";
-import { DEMO } from "@/lib/api";
+import { Workstation } from "@/components/workstation/Workstation";
 import {
-  DEFAULT_FOV, FOV_MAX, FOV_MIN, type ChangeReport, type Epochs, type Explanation, type Freshness,
-  type Job, type Overlay, type SkyBundle, type SkyIndexEntry, type SkyTarget,
-  formatDec, formatRa, getChangeMap, getEpochs, getExplanation, getFreshness, getOverlay,
-  getSkyBundle, getSkyIndex, getSkyJob, mjdLabel, resolveTarget, skySlug, startSkyJob,
+  type ChangeReport, type SkyBundle,
+  formatDec, formatRa, getChangeMap, mjdLabel,
 } from "@/lib/sky";
+import { ZOOMS, useSkySession } from "@/lib/useSkySession";
 import { cn } from "@/lib/utils";
 
-/** Zoom levels in plain words. Degrees stay visible, but nobody has to think in them. */
-const ZOOMS: { fov: number; label: string; hint: string }[] = [
-  { fov: 0.05, label: "Close in", hint: "3 arcmin" },
-  { fov: 0.1, label: "Normal", hint: "6 arcmin" },
-  { fov: 0.2, label: "Wide", hint: "12 arcmin" },
-  { fov: 0.35, label: "Wider", hint: "21 arcmin" },
-  { fov: 0.5, label: "Widest", hint: "30 arcmin" },
-];
+/** The workstation needs a desktop-sized window; below this the Simple view is used. */
+const WORKSTATION_MIN_WIDTH = 1024;
+const WIDE_QUERY = `(min-width: ${WORKSTATION_MIN_WIDTH}px)`;
+
+function subscribeWide(cb: () => void) {
+  const mq = window.matchMedia(WIDE_QUERY);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
+
+/**
+ * Which interface to show. `?ui=simple` forces the original single-page viewer and
+ * `?ui=pro` forces the workstation; otherwise the window width decides. Both read and
+ * write the same URL parameters, so a link works in either.
+ */
+function SkyRoute() {
+  const params = useSearchParams();
+  const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE_QUERY).matches, () => null);
+  const ui = params.get("ui");
+  if (ui === "simple") return <SkyViewer />;
+  if (ui === "pro") return <Workstation />;
+  if (wide === null) return <LoadingBlock label="Loading the viewer…" />;
+  return wide ? <Workstation /> : <SkyViewer />;
+}
 
 const EXAMPLES = [
   { label: "Barnard's Star", q: "Barnard's Star" },
@@ -37,7 +52,7 @@ const EXAMPLES = [
 export default function SkyPage() {
   return (
     <Suspense fallback={<LoadingBlock label="Loading the viewer…" />}>
-      <SkyViewer />
+      <SkyRoute />
     </Suspense>
   );
 }
@@ -52,100 +67,23 @@ function LoadingBlock({ label }: { label: string }) {
 }
 
 function SkyViewer() {
-  const router = useRouter();
-  const params = useSearchParams();
+  const {
+    qParam, raParam, decParam, fov, modeParam, setUrl, show, clear, query, setQuery,
+    index, target, bundle, status, busy, error, setError, job, epochs, fresh, overlay, explain, build,
+  } = useSkySession();
 
-  const qParam = params.get("q") || params.get("target") || "";
-  const raParam = params.get("ra");
-  const decParam = params.get("dec");
-  const fovParam = Number(params.get("fov") || DEFAULT_FOV);
-  const modeParam = (params.get("mode") || "visits") as FrameMode;
-  const fov = Number.isFinite(fovParam) ? Math.min(FOV_MAX, Math.max(FOV_MIN, fovParam)) : DEFAULT_FOV;
-
-  const [query, setQuery] = useState(qParam || (raParam && decParam ? `${raParam} ${decParam}` : ""));
-  const [index, setIndex] = useState<SkyIndexEntry[]>([]);
-  const [target, setTarget] = useState<SkyTarget | null>(null);
-  const [bundle, setBundle] = useState<SkyBundle | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [job, setJob] = useState<Job | null>(null);
-  const [epochs, setEpochs] = useState<Epochs | null>(null);
-  const [fresh, setFresh] = useState<Freshness | null>(null);
   const [pixel, setPixel] = useState<{ x: number; y: number } | null>(null);
   const [radius, setRadius] = useState(1);
   const [showFlags, setShowFlags] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const [overlay, setOverlay] = useState<Overlay | null>(null);
   const [activeLayers, setActiveLayers] = useState<string[]>([]);
   const [change, setChange] = useState<ChangeReport | null>(null);
   const [changeBusy, setChangeBusy] = useState(false);
   const [showChange, setShowChange] = useState(false);
-  const [explain, setExplain] = useState<Explanation | null>(null);
 
-  useEffect(() => { getSkyIndex().then((j) => setIndex(j.targets)); }, []);
-
-  const setUrl = useCallback((next: Record<string, string | number | undefined>) => {
-    const sp = new URLSearchParams(params.toString());
-    for (const [k, v] of Object.entries(next)) {
-      if (v === undefined || v === "") sp.delete(k); else sp.set(k, String(v));
-    }
-    router.replace(`/sky?${sp.toString()}`, { scroll: false });
-  }, [params, router]);
-
-  const show = (q: string) => { setQuery(q); setUrl({ q, ra: undefined, dec: undefined }); };
-  const clear = () => { setQuery(""); router.replace("/sky", { scroll: false }); };
-
-  // ---- load whatever the URL asks for ------------------------------------
-  useEffect(() => {
-    let cancelled = false;
-    const q = qParam || (raParam && decParam ? `${raParam} ${decParam}` : "");
-    if (!q) { setBundle(null); setTarget(null); setStatus(null); setBusy(false); return; }
-
-    (async () => {
-      setError(null); setBusy(true); setStatus("Finding that position…");
-      setPixel(null); setFresh(null); setEpochs(null); setJob(null);
-      try {
-        const t = await resolveTarget(q);
-        if (cancelled) return;
-        setTarget(t);
-        setStatus("Loading images…");
-        try {
-          const b = await getSkyBundle(skySlug(t.ra_deg, t.dec_deg, fov));
-          if (cancelled) return;
-          setBundle(b); setStatus(null); setBusy(false);
-        } catch {
-          if (cancelled) return;
-          setBundle(null);
-          if (DEMO) { setStatus("not-prebuilt"); setBusy(false); return; }
-          setStatus("Asking NASA what it has here…");
-          try {
-            const e = await getEpochs(t.ra_deg, t.dec_deg, fov);
-            if (!cancelled) { setEpochs(e); setStatus(e.n_exposures === 0 ? "no-coverage" : "not-built"); }
-          } catch {
-            if (!cancelled) setStatus("not-built");
-          }
-          if (!cancelled) setBusy(false);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setError(String((e as Error).message || e));
-          setBundle(null); setTarget(null); setStatus(null); setBusy(false);
-        }
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [qParam, raParam, decParam, fov]);
-
-  // ---- extras that attach to a loaded bundle -----------------------------
-  useEffect(() => {
-    if (!bundle) { setOverlay(null); setChange(null); setExplain(null); setShowChange(false); return; }
-    let cancelled = false;
-    setOverlay(null); setChange(null); setExplain(null); setShowChange(false); setActiveLayers([]);
-    getOverlay(bundle).then((o) => { if (!cancelled) setOverlay(o); }).catch(() => {});
-    getExplanation(bundle).then((e) => { if (!cancelled) setExplain(e); }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [bundle]);
+  // A new position clears the picked pixel; a new bundle clears what was computed on the old one.
+  useEffect(() => { setPixel(null); }, [qParam, raParam, decParam, fov]);
+  useEffect(() => { setChange(null); setShowChange(false); if (bundle) setActiveLayers([]); }, [bundle]);
 
   const findChanges = async () => {
     if (!bundle || changeBusy) return;
@@ -157,40 +95,6 @@ function SkyViewer() {
     } catch (e) {
       setError(String((e as Error).message || e));
     } finally { setChangeBusy(false); }
-  };
-
-  // ---- live refresh ------------------------------------------------------
-  useEffect(() => {
-    if (!bundle || DEMO) return;
-    let cancelled = false;
-    const check = () => getFreshness(bundle.slug).then((f) => { if (!cancelled) setFresh(f); }).catch(() => {});
-    check();
-    const id = setInterval(check, 60_000);
-    return () => { cancelled = true; clearInterval(id); };
-  }, [bundle]);
-
-  // ---- live build job ----------------------------------------------------
-  useEffect(() => {
-    if (!job?.job_id || job.state === "done" || job.state === "error") return;
-    const id = setInterval(async () => {
-      try {
-        const j = await getSkyJob(job.job_id!);
-        setJob(j);
-        if (j.state === "done") { setBundle(await getSkyBundle(j.slug)); setStatus(null); }
-        else if (j.state === "error") { setError(j.error || "build failed"); }
-      } catch { /* keep polling */ }
-    }, 1500);
-    return () => clearInterval(id);
-  }, [job]);
-
-  const build = async (force = false) => {
-    if (!target) return;
-    setError(null);
-    try {
-      const j = await startSkyJob(target.ra_deg, target.dec_deg, fov, { label: target.name });
-      setJob(j);
-      if (j.state === "done" && !force) { setBundle(await getSkyBundle(j.slug)); setStatus(null); }
-    } catch (e) { setError(String((e as Error).message || e)); }
   };
 
   const entry = index.find((t) => t.name === target?.name);
@@ -216,6 +120,7 @@ function SkyViewer() {
         </section>
 
         <SearchBar query={query} setQuery={setQuery} onSubmit={show} error={error} />
+        <div className="-mt-4 flex justify-center"><WorkstationLink onOpen={() => setUrl({ ui: undefined })} /></div>
 
         <section>
           <h2 className="mb-1 text-sm font-semibold">Start with one of these</h2>
@@ -233,9 +138,12 @@ function SkyViewer() {
   // =======================================================================
   return (
     <div className="flex flex-col gap-4">
-      <button onClick={clear} className="self-start text-xs text-muted hover:text-fg">
-        ← all targets
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={clear} className="text-xs text-muted hover:text-fg">
+          ← all targets
+        </button>
+        <WorkstationLink onOpen={() => setUrl({ ui: undefined })} />
+      </div>
 
       <SearchBar query={query} setQuery={setQuery} onSubmit={show} error={error} compact />
 
@@ -513,6 +421,16 @@ function SkyViewer() {
 }
 
 // ---------------------------------------------------------------------------
+
+/** Desktop only: the workstation needs the room. */
+function WorkstationLink({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button onClick={onOpen}
+      className="hidden rounded border border-line px-2 py-0.5 text-[11px] text-muted hover:border-accent/60 hover:text-fg lg:inline">
+      Open in the analysis workstation →
+    </button>
+  );
+}
 
 function SearchBar({ query, setQuery, onSubmit, error, compact }: {
   query: string; setQuery: (v: string) => void; onSubmit: (q: string) => void;

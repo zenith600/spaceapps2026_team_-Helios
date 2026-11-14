@@ -14,6 +14,7 @@ Routes
   GET  /sky/bundle/{slug}           the built sky.json
   GET  /sky/bundle/{slug}/freshness has new data landed since it was built?
   GET  /sky/spectrum/{slug}?x=&y=   on-the-fly spectrum at one pixel
+  GET  /sky/cache                   read-only: disk cache, built views, job counts
   files are served from /sky/files/{slug}/...
 """
 from __future__ import annotations
@@ -542,6 +543,105 @@ def sky_explain(slug: str, refresh: bool = False):
     except Exception:
         pass
     return out
+
+
+# ---------------------------------------------------------------------------
+# Cache inspection (read-only)
+# ---------------------------------------------------------------------------
+
+_CACHE_SUMMARY: dict = {"at": 0.0, "value": None}
+CACHE_SUMMARY_TTL_S = 10.0
+
+
+def _dir_stats(root: Path) -> tuple[int, int, float]:
+    """(files, bytes, newest mtime) under a directory, without following links."""
+    files = size = 0
+    newest = 0.0
+    stack = [root]
+    while stack:
+        d = stack.pop()
+        try:
+            with os.scandir(d) as it:
+                for e in it:
+                    try:
+                        if e.is_dir(follow_symlinks=False):
+                            stack.append(Path(e.path))
+                        elif e.is_file(follow_symlinks=False):
+                            st = e.stat(follow_symlinks=False)
+                            files += 1
+                            size += st.st_size
+                            newest = max(newest, st.st_mtime)
+                    except OSError:
+                        continue
+        except OSError:
+            continue
+    return files, size, newest
+
+
+def cache_summary() -> dict:
+    """What this server holds: the on-disk fetch cache, built views, and in-memory state.
+
+    Read-only by design. The disk cache holds downloaded Level 2 cutouts and query results
+    that builds reuse; clearing it from a public endpoint would let any visitor force
+    every view to be re-downloaded from IRSA, so no clear control is offered here.
+    """
+    import time
+
+    from deepfield.config import CACHE_DIR
+
+    now = time.time()
+    if _CACHE_SUMMARY["value"] is not None and now - _CACHE_SUMMARY["at"] < CACHE_SUMMARY_TTL_S:
+        return _CACHE_SUMMARY["value"]
+
+    def iso(ts: float) -> str | None:
+        return datetime.fromtimestamp(ts, timezone.utc).isoformat(timespec="seconds") if ts else None
+
+    sections = []
+    root = Path(CACHE_DIR)
+    if root.exists():
+        for p in sorted(root.iterdir()):
+            if p.is_dir():
+                n, size, newest = _dir_stats(p)
+                sections.append({"name": p.name, "files": n, "bytes": size, "newest": iso(newest)})
+            elif p.is_file():
+                st = p.stat()
+                sections.append({"name": p.name, "files": 1, "bytes": st.st_size, "newest": iso(st.st_mtime)})
+
+    bundles = []
+    for slug in _built_slugs():
+        built = SVC.SKY_DIR / slug
+        d = built if (built / "sky.json").exists() else BAKE.WEB_SKY_DIR / slug
+        n, size, _ = _dir_stats(d)
+        bundles.append({"slug": slug, "location": "built" if d == built else "baked", "files": n, "bytes": size,
+                        "has_cube": (d / "cube.npz").exists() or (d / "cube.u16").exists()})
+
+    with _JOBS_LOCK:
+        states: dict[str, int] = {}
+        for j in _JOBS.values():
+            states[j.state] = states.get(j.state, 0) + 1
+
+    out = {
+        "cache_dir": str(root),
+        "generated_at": _now_iso(),
+        "total_bytes": sum(s["bytes"] for s in sections),
+        "sections": sections,
+        "bundles": bundles,
+        "memory": {"jobs": states, "freshness_entries": len(_FRESH), "max_active_jobs": MAX_ACTIVE_JOBS,
+                   "refresher": {"running": bool(_REFRESH_STATE.get("running")),
+                                 "last_sweep": _REFRESH_STATE.get("last_sweep"),
+                                 "interval_minutes": REFRESH_MINUTES}},
+        "controls": {"clear": False, "cancel_jobs": False,
+                     "note": "Read-only. Clearing the server's fetch cache or cancelling builds is not exposed by this API: "
+                             "the cache is shared by every visitor and a build cannot be interrupted safely mid-download."},
+    }
+    _CACHE_SUMMARY.update(at=now, value=out)
+    return out
+
+
+@router.get("/cache")
+def sky_cache():
+    """Read-only summary of the server's caches, built views and jobs. Cached for 10 s."""
+    return cache_summary()
 
 
 @router.get("/files/{slug}/{path:path}")

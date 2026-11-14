@@ -586,3 +586,29 @@ def test_slug_format_matches_the_typescript_port():
     strings in apps/web/lib/sky.test.ts."""
     assert SVC.SkyRequest(133.795129, -7.245147, 0.1).slug == "ra133.7951-dec-7.2451-fov0.100"
     assert SVC.SkyRequest(269.45207696, 4.69336497, 0.1).slug == "ra269.4521-dec+4.6934-fov0.100"
+
+
+# ---------------------------------------------------------------------------
+# Cache inspection
+# ---------------------------------------------------------------------------
+
+def test_cache_route_is_read_only_and_reports_real_directories(client, tmp_path, monkeypatch):
+    """GET /sky/cache summarises what is on disk; it must count files it can see and must
+    not offer destructive controls."""
+    import deepfield.config as CFG
+    import deepfield_api.sky as API_SKY
+    (tmp_path / "sia").mkdir()
+    (tmp_path / "sia" / "a.parquet").write_bytes(b"x" * 100)
+    (tmp_path / "cutouts" / "spherex_dr1").mkdir(parents=True)
+    (tmp_path / "cutouts" / "spherex_dr1" / "b.fits").write_bytes(b"y" * 50)
+    monkeypatch.setattr(CFG, "CACHE_DIR", tmp_path)
+    monkeypatch.setitem(API_SKY._CACHE_SUMMARY, "value", None)
+    body = client.get("/sky/cache").json()
+    by = {s["name"]: s for s in body["sections"]}
+    assert by["sia"]["files"] == 1 and by["sia"]["bytes"] == 100
+    assert by["cutouts"]["files"] == 1 and by["cutouts"]["bytes"] == 50
+    assert body["total_bytes"] == 150
+    assert body["controls"]["clear"] is False and body["controls"]["cancel_jobs"] is False
+    assert {"jobs", "freshness_entries", "max_active_jobs", "refresher"} <= set(body["memory"])
+    # Only GET is routed: nothing here can modify the cache.
+    assert client.delete("/sky/cache").status_code == 405
