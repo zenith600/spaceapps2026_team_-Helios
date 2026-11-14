@@ -32,6 +32,10 @@ app.add_middleware(CORSMiddleware,
                    allow_origins=[o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",")],
                    allow_methods=["*"], allow_headers=["*"])
 
+from deepfield_api.sky import router as sky_router  # noqa: E402  (after app/middleware exist)
+
+app.include_router(sky_router)
+
 store = make_store()
 _rng = random.Random(int(os.environ.get("TASK_SEED", "0")) or None)
 

@@ -30,7 +30,7 @@ from deepfield.config import REPO_ROOT, SPHEREX_PIXEL_ARCSEC
 from deepfield.data import spherex as SX
 from deepfield.sky import releases as REL
 from deepfield.sky import render as RENDER
-from deepfield.sky.resolver import Target, slugify
+from deepfield.sky.resolver import Target
 
 log = logging.getLogger("deepfield.sky.service")
 
@@ -84,8 +84,18 @@ class SkyRequest:
 
     @property
     def slug(self) -> str:
-        name = slugify(self.target.name) if self.target else "field"
-        return f"{name}-{self.ra_deg:.5f}{self.dec_deg:+.5f}-fov{self.fov_deg:.3f}"
+        """Identity of a view: position and field of view, nothing else.
+
+        Deliberately NOT the target name. Searching "WISE 0855" and typing its
+        coordinates are the same request and must hit the same cached bundle; if the
+        name were part of the slug they would build twice and the viewer would report
+        "not built yet" for something it had already built. The name lives inside
+        sky.json and in the demo index, where it belongs.
+
+        4 decimal places is 0.36 arcsec, well inside one 6.15 arcsec pixel, so queries
+        that round to the same slug really are the same patch of sky.
+        """
+        return f"ra{self.ra_deg:.4f}-dec{self.dec_deg:+.4f}-fov{self.fov_deg:.3f}"
 
 
 def _now_iso() -> str:
