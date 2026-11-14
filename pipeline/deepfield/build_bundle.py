@@ -186,6 +186,10 @@ def build(work_dir: Path, out_dir: Path) -> dict:
                                        "known_bodies", "device", "elapsed_s")} for s in summaries],
         "sources": [SPHEREX_SOURCE, REFPOP_SOURCE, "JPL Horizons", "JPL SBIdent"],
     }
+    # The globe texture lives in the bundle so the API can serve it from /files.
+    from deepfield.export_demo import MAP_TEXTURE, write_map_texture
+    write_map_texture(prior, int(pmeta.get("nside", 32)), out_dir / MAP_TEXTURE)
+
     (out_dir / "bundle.json").write_text(json.dumps(info, indent=1, default=float))
     log.info("bundle built: %s", json.dumps({k: info[k] for k in ("n_patches", "mag50", "n_injected", "n_recovered", "n_excluded_deepfield", "ml")}, default=float))
     return info

@@ -265,6 +265,10 @@ def write_sample_bundle(out_dir: Path, seed: int = 42, nside: int = 32) -> dict:
         "kind": "SAMPLE", "generated_at": now_iso(), "note": "Synthetic placeholder bundle. Not NASA data.",
         "frac_excluded_prior": frac_prior, "frac_excluded_deepfield": frac_df,
     }, indent=1))
+    # The globe texture belongs in the bundle, not only in the web folder: the API serves
+    # /files from here, and a missing texture 404s the home page's globe.
+    from deepfield.export_demo import MAP_TEXTURE, write_map_texture
+    write_map_texture(prior, nside, out_dir / MAP_TEXTURE)
     return {"candidates": len(cands), "spectra": len(spec_rows), "patches": len(targets)}
 
 

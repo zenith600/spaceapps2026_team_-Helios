@@ -21,6 +21,14 @@ from deepfield.contracts import read_table
 
 WEB_DEMO_DIR = REPO_ROOT / "apps" / "web" / "public" / "demo"
 
+#: Subdirectories of the web demo folder that this exporter does NOT own and must leave alone.
+#: `sky/` is produced by `deepfield.cli sky bake` and holds the baked challenge targets --
+#: several MB of real IRSA data that take minutes to rebuild. The export used to rmtree the
+#: whole folder, which silently deleted them.
+PRESERVE = ("sky",)
+
+MAP_TEXTURE = "map_equirect.png"
+
 
 def _clean(v):
     if isinstance(v, (np.floating, float)):
@@ -68,12 +76,29 @@ def render_equirect(prior: pd.DataFrame, nside: int, width: int = 1440, height: 
     return rgb
 
 
-def export(bundle_dir: Path, out_dir: Path = WEB_DEMO_DIR) -> dict:
+def write_map_texture(prior: pd.DataFrame, nside: int, path: Path) -> Path:
+    """Render the exclusion-map globe texture to `path`.
+
+    Written into the bundle directory as well as the web folder, because the API serves
+    /files straight out of the bundle: without it, the web app in API mode asks for
+    /files/map_equirect.png, gets a 404, and the globe takes the whole page down.
+    """
     from PIL import Image
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(render_equirect(prior, nside)).save(path)
+    return path
+
+
+def export(bundle_dir: Path, out_dir: Path = WEB_DEMO_DIR) -> dict:
     bundle_dir, out_dir = Path(bundle_dir), Path(out_dir)
     if out_dir.exists():
-        shutil.rmtree(out_dir)
-    out_dir.mkdir(parents=True)
+        # Clear only what this exporter owns; `sky/` belongs to `cli sky bake`.
+        for child in out_dir.iterdir():
+            if child.name in PRESERVE:
+                continue
+            shutil.rmtree(child) if child.is_dir() else child.unlink()
+    out_dir.mkdir(parents=True, exist_ok=True)
     info = json.loads((bundle_dir / "bundle.json").read_text()) if (bundle_dir / "bundle.json").exists() else {}
 
     prior, pmeta = read_table(bundle_dir / "prior_map.parquet")
@@ -101,7 +126,10 @@ def export(bundle_dir: Path, out_dir: Path = WEB_DEMO_DIR) -> dict:
                         "completeness limit, credited as the crowd verifies each patch's injected test cards."),
     }
     (out_dir / "map.json").write_text(json.dumps(map_json))
-    Image.fromarray(render_equirect(prior, nside)).save(out_dir / "map_equirect.png")
+    write_map_texture(prior, nside, out_dir / MAP_TEXTURE)
+    # Keep the bundle's own copy current too, so the API can serve it from /files.
+    if not (bundle_dir / MAP_TEXTURE).exists():
+        write_map_texture(prior, nside, bundle_dir / MAP_TEXTURE)
 
     (out_dir / "targets.json").write_text(json.dumps({"targets": records(targets), "source": tmeta.get("data_source")}))
     (out_dir / "completeness.json").write_text(json.dumps({"rows": records(comp), "source": kmeta.get("data_source")}))
