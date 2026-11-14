@@ -79,7 +79,21 @@ datasets:
     country: France
     licence: Free for research and education (CDS terms of use)
     access: ["https://cds.unistra.fr/cgi-bin/nph-sesame/-oI/SNV"]
-    domains: [cds.unistra.fr, cdsweb.u-strasbg.fr, vizier.cds.unistra.fr]
+    # cds.unistra.fr 302-redirects to whichever VizieR mirror its load balancer picks.
+    # Listed below are the mirrors we accept. The China-VO mirror (vizier.china-vo.org)
+    # is deliberately NOT listed: the redirect guard in data/manifest.py checks every
+    # hop, so if CDS ever sends us there the fetch is refused and name resolution falls
+    # back to the offline catalogue. Verified 2026-11-14: cds.unistra.fr -> vizier.idia.ac.za.
+    domains:
+      - cds.unistra.fr
+      - cdsweb.u-strasbg.fr
+      - vizier.cds.unistra.fr      # France (CDS)
+      - vizier.cfa.harvard.edu     # USA (Harvard CfA)
+      - vizier.idia.ac.za          # South Africa (IDIA)
+      - vizier.nao.ac.jp           # Japan (NAOJ)
+      - vizier.iucaa.in            # India (IUCAA)
+    excluded_mirrors:
+      - vizier.china-vo.org        # refused by the project rule
     optional: true
     used_for: >
       resolving an object name typed by the user into RA/Dec. Optional: the

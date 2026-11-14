@@ -39,12 +39,21 @@ def _key(*parts) -> str:
     return hashlib.sha1("|".join(str(p) for p in parts).encode()).hexdigest()[:16]
 
 
-def sia_search(ra: float, dec: float, radius_deg: float, collection: str = "spherex_dr1") -> pd.DataFrame:
-    """List SPHEREx exposures covering a circle. Cached as parquet."""
+def sia_search(ra: float, dec: float, radius_deg: float, collection: str = "spherex_dr1",
+               *, max_age_hours: float | None = None) -> pd.DataFrame:
+    """List SPHEREx exposures covering a circle. Cached as parquet.
+
+    `max_age_hours` expires the cache: a freshness check passes a small value to force a
+    re-query, while an ordinary build reuses whatever is on disk.
+    """
+    import time as _time
+
     from astropy.io.votable import parse_single_table
     cache = CACHE_DIR / "sia" / f"{collection}_{_key(round(ra, 4), round(dec, 4), round(radius_deg, 4))}.parquet"
     if cache.exists():
-        return pd.read_parquet(cache)
+        fresh = max_age_hours is None or (_time.time() - cache.stat().st_mtime) < max_age_hours * 3600.0
+        if fresh:
+            return pd.read_parquet(cache)
     r = fetch(SIA_URL, params={"COLLECTION": collection, "POS": f"circle {ra} {dec} {radius_deg}",
                                "RESPONSEFORMAT": "votable"}, timeout=180)
     table = parse_single_table(io.BytesIO(r.content)).to_table(use_names_over_ids=True)
