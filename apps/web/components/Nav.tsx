@@ -13,6 +13,12 @@ const EXPERIMENTAL = [
   { href: "/hunt", label: "The Hunt" },
   { href: "/lab", label: "Candidate Lab" },
   { href: "/classify", label: "Classify" },
+  { href: "/hunt/proof", label: "Injection tests" },
+];
+
+/** The challenge tool and the evidence that it measures what it says it measures. */
+const MAIN = [
+  { href: "/sky", label: "Sky Viewer" },
   { href: "/proof", label: "Proof" },
 ];
 
@@ -30,11 +36,13 @@ export function Nav() {
         </Link>
         <nav className="-mx-1 order-last w-full overflow-x-auto px-1 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:px-0">
           <div className="flex items-center gap-1 text-sm sm:justify-center">
-            <Link href="/sky"
-              className={cn("whitespace-nowrap rounded-md px-2.5 py-1.5 font-medium sm:px-3",
-                path === "/sky" ? "bg-panel text-fg" : "text-muted hover:text-fg")}>
-              Sky Viewer
-            </Link>
+            {MAIN.map((it) => (
+              <Link key={it.href} href={it.href}
+                className={cn("whitespace-nowrap rounded-md px-2.5 py-1.5 font-medium sm:px-3",
+                  path === it.href ? "bg-panel text-fg" : "text-muted hover:text-fg")}>
+                {it.label}
+              </Link>
+            ))}
             <span className="mx-1 h-4 w-px shrink-0 bg-line" aria-hidden />
             <span className="whitespace-nowrap px-1 text-[10px] uppercase tracking-wider text-muted/70"
               title="A second project on synthetic sample data. Not part of the Sky Viewer.">
