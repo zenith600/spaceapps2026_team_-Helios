@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deep Field User Guide</title>
+<style>
+  @page { size: A4; margin: 14mm 13mm 14mm 13mm; }
+  :root { --ink: #1b1d22; --dim: #5d6370; --line: #d9dce2; --accent: #c77800; --soft: #f5f6f8; }
+  * { box-sizing: border-box; }
+  body { font: 10pt/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; color: var(--ink); background: #fff; margin: 0; }
+  main { max-width: 184mm; margin: 0 auto; }
+  h1 { font-size: 22pt; margin: 0 0 2mm; letter-spacing: -0.01em; }
+  h2 { font-size: 14pt; margin: 0 0 2mm; padding-top: 1mm; border-bottom: 2px solid var(--accent); padding-bottom: 1mm; }
+  h3 { font-size: 11pt; margin: 4mm 0 1.5mm; }
+  p { margin: 0 0 2mm; }
+  .lede { color: var(--dim); font-size: 10.5pt; }
+  .meta { color: var(--dim); font-size: 9pt; margin-bottom: 5mm; }
+  a { color: var(--accent); }
+  code, kbd { font-family: "Cascadia Mono", Consolas, monospace; font-size: 8.6pt; }
+  kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; padding: 0 3px; background: var(--soft); white-space: nowrap; }
+  figure { margin: 2mm 0 3mm; }
+  figure img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 3px; }
+  figcaption { color: var(--dim); font-size: 8.5pt; margin-top: 1mm; }
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; margin: 1mm 0 3mm; }
+  th, td { text-align: left; vertical-align: top; padding: 1.2mm 2mm; border-bottom: 1px solid var(--line); }
+  th { background: var(--soft); font-weight: 600; }
+  td:first-child { font-weight: 600; white-space: nowrap; width: 30%; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4mm; }
+  .note { background: #fff7e8; border-left: 3px solid var(--accent); padding: 2mm 3mm; font-size: 9pt; margin: 2mm 0 3mm; }
+  section { margin-top: 6mm; }
+  section.page { break-before: page; margin-top: 0; }
+  figure, .note, tr { break-inside: avoid; }
+  h2, h3 { break-after: avoid; }
+  figure.half { width: 62%; margin-left: auto; margin-right: auto; }
+  .keys td:first-child { width: 22%; }
+  .pagemap td:first-child { width: 22%; }
+</style>
+</head>
+<body>
+<main>
+
+<section style="margin-top:0">
+  <h1>Deep Field: User Guide</h1>
+  <p class="lede">A tool for watching any patch of sky change over time, built on NASA SPHEREx images. This guide walks through every page and every control, using screenshots of the real app.</p>
+  <p class="meta">NASA Space Apps 2026 · Live demo: <a href="http://144.24.143.52/sky">http://144.24.143.52/sky</a> · Source: github.com/zenith600/spaceapps2026_team_-Helios</p>
+
+  <h3>Pages at a glance</h3>
+  <table class="pagemap">
+    <tr><th>Page</th><th>Address</th><th>What it is for</th></tr>
+    <tr><td>Sky Viewer · Simple</td><td><code>/sky</code></td><td>The main tool. Pick a target or type coordinates, then play back every SPHEREx visit. This is the default view.</td></tr>
+    <tr><td>Sky Viewer · Pro</td><td><code>/sky?ui=pro</code></td><td>The same data in an analysis workstation, with layers, a timeline, measurements, panels and a cache view.</td></tr>
+    <tr><td>The Hunt</td><td><code>/hunt</code></td><td><b>Experimental, simulated.</b> An overview of the Planet Nine search.</td></tr>
+    <tr><td>Candidate Lab</td><td><code>/lab</code></td><td><b>Experimental, simulated.</b> Inspect injected test candidates and run the classifier on them.</td></tr>
+    <tr><td>Classify</td><td><code>/classify</code></td><td><b>Experimental, simulated.</b> Phone-friendly crowd voting on candidate cards.</td></tr>
+    <tr><td>Proof</td><td><code>/proof</code></td><td><b>Experimental, simulated.</b> Injection-recovery completeness and honest limits.</td></tr>
+  </table>
+  <p>Opening the site root (<code>/</code>) takes you straight to the Sky Viewer.</p>
+
+  <h3>Top navigation (every page)</h3>
+  <table>
+    <tr><td>Deep Field logo</td><td>Back to the Sky Viewer start page.</td></tr>
+    <tr><td>Sky Viewer</td><td>The main tool.</td></tr>
+    <tr><td>Planet X · experimental</td><td>Links to The Hunt, Candidate Lab, Classify and Proof. Every one of these pages carries a green “simulated data” banner.</td></tr>
+    <tr><td>“ready-made views”</td><td>Data-source badge. The live demo serves frozen NASA files, so no server-side API is needed.</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>1 · Sky Viewer: start page</h2>
+  <figure><img src="img/01-home.jpg" alt="Sky Viewer start page"><figcaption>The start page at <code>/sky</code>.</figcaption></figure>
+  <table>
+    <tr><td>Search box</td><td>Type an object name (e.g. <i>Barnard's Star</i>, <i>eps Ind B</i>) or coordinates, either sexagesimal (<code>08 55 10.8 −07 14 42</code>) or decimal degrees (<code>133.795 −7.245</code>).</td></tr>
+    <tr><td>Show me</td><td>Opens that patch of sky. Press <kbd>Enter</kbd> in the box for the same effect.</td></tr>
+    <tr><td>Try: chips</td><td>Fill in an example (a name, a sexagesimal position or a decimal position) and open it.</td></tr>
+    <tr><td>Interface: Simple / Pro</td><td>Picks the view to open. Simple is the default; Pro opens the workstation.</td></tr>
+    <tr><td>Target cards</td><td>Five ready-made fields, built from real SPHEREx data, that open instantly. Each card shows visits, time span and how many of the 102 colours were seen.</td></tr>
+  </table>
+</section>
+
+<section class="page">
+  <h2>2 · Sky Viewer: Simple view</h2>
+  <figure><img src="img/02-simple.jpg" alt="Simple view of Barnard's Star"><figcaption>Barnard's Star, after clicking a field star to get its spectrum (right).</figcaption></figure>
+  <table>
+    <tr><td>← all targets</td><td>Back to the start page.</td></tr>
+    <tr><td>Simple / Pro</td><td>Switches view and keeps the same target, mode and field size.</td></tr>
+    <tr><td>Exact position ▸</td><td>Expands the coordinates. For a fast-moving star it also explains why the view is centred where Gaia says the star is <i>now</i>, not at its year-2000 catalogue position.</td></tr>
+    <tr><td>Mode tabs</td><td><b>Time-lapse</b>: one picture per visit, best for spotting movement. <b>In colour</b>: infrared bands mapped to red, green and blue. <b>Deeper</b>: same-colour images stacked so faint things show. <b>Every frame</b>: each raw exposure. <b>What changed</b>: each visit minus the first. The number on each tab is how many frames it has. Keys <kbd>1</kbd>–<kbd>5</kbd> switch modes.</td></tr>
+    <tr><td>Player</td><td>Plays the frames as a film. The date of the current frame is in the top-left corner. <b>Click anywhere on the image</b> to get the spectrum at that point.</td></tr>
+    <tr><td>Pause / Play · ◀ ▶ · slider · speed</td><td>Play or stop, step one frame, scrub, and choose the playback speed. <kbd>Space</kbd> plays or pauses; <kbd>←</kbd> <kbd>→</kbd> step one frame.</td></tr>
+    <tr><td>How it moves</td><td>Shown for moving stars. Gives the motion measured from SPHEREx, with its error and direction, next to Gaia DR3's value and how well they agree. It refuses to give a number when the measurement isn't trustworthy, for example a saturated star or a blended source.</td></tr>
+    <tr><td>Colours of a single point</td><td>The spectrum at the clicked pixel, one dot per exposure. <b>area</b> sets the aperture (1×1, 3×3, …). <b>group by</b> colours the dots by camera or by visit. Below the chart, “Shape looks …” is a simple fit (star-like, reflected sunlight, …) with its fitted temperature. A saturated pixel gives a warning and a button that jumps to the nearest usable pixel.</td></tr>
+    <tr><td>This view at a glance</td><td>Visits, years covered and colours measured. <b>Technical details</b> expands the data provenance.</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>3 · Simple view: tools below the player</h2>
+  <figure><img src="img/03-simple-lower.jpg" alt="Simple view lower half"><figcaption>After pressing “Find what changed”: 12 flagged spots, and a comparison of the first and last visit.</figcaption></figure>
+  <table>
+    <tr><td>Compare with</td><td><b>nothing</b> shows the frame on its own. <b>everything added up</b> overlays the stack of all images. <b>the unchanging sky</b> overlays the median of all visits; anything that moves stands out against it.</td></tr>
+    <tr><td>Show its measured path</td><td>Turns the motion track on or off. The dashed ring marks where the star started and the solid ring where it is in this frame.</td></tr>
+    <tr><td>Zoom</td><td>Field size: Close in (0.05°), Normal (0.1°), Wide (0.2°), Wider (0.35°), Widest (0.5°). The demo serves only the sizes that were built in advance; any other size needs the API.</td></tr>
+    <tr><td>Mark known sources</td><td>Rings around catalogued objects: <b>Gaia DR3</b> (its rings move with each star's proper motion), <b>AllWISE</b> and <b>2MASS</b>. The number on each button is how many sources are in view.</td></tr>
+    <tr><td>Find what changed / Hide</td><td>Scores every pixel against “nothing happened here”. Flagged spots are listed with pixel position and strength (z); click one to go to it. A flagged spot is a place to look, not a discovery.</td></tr>
+    <tr><td>Compare any two dates</td><td>Choose <b>from</b> and <b>to</b> visits; <b>swap</b> reverses them. White means brighter, black means fainter, grey means unchanged.</td></tr>
+    <tr><td>Show sky context</td><td>Loads an Aladin Lite atlas you can pan and zoom, so you can see where this field sits on the whole sky. It loads only when you ask.</td></tr>
+  </table>
+</section>
+
+<section class="page">
+  <h2>4 · Sky Viewer: Pro workstation</h2>
+  <figure><img src="img/04-pro.jpg" alt="Pro workstation"><figcaption><code>/sky?q=Barnard's Star&amp;ui=pro</code> with the spectral probe on a field star.</figcaption></figure>
+  <h3>Top bar</h3>
+  <table>
+    <tr><td>Modules</td><td>Jump to the Sky Viewer or the Planet X pages (marked experimental).</td></tr>
+    <tr><td>Window</td><td>Show or hide each panel, the panel dock (<kbd>\</kbd>) and the timeline, and pick a workspace layout: Default, Image Analysis, Temporal Analysis, Spectral Analysis, Processing or Performance Monitoring. <b>Reset</b> restores the current layout.</td></tr>
+    <tr><td>View in URL</td><td>Copies a link that reopens this exact field, mode and field size.</td></tr>
+    <tr><td>Undo / Redo</td><td>Steps back and forward through edits (<kbd>Ctrl+Z</kbd>, <kbd>Ctrl+Shift+Z</kbd>).</td></tr>
+    <tr><td>Workspace list</td><td>The same workspace layouts as the Window menu.</td></tr>
+    <tr><td>⚙ Settings</td><td>Coordinate format (hms/dms or decimal degrees), and canvas crosshair, pixel grid, compass and hints. Stored in this browser only.</td></tr>
+    <tr><td>⌨ Keyboard shortcuts</td><td>Opens the shortcut sheet (<kbd>?</kbd>); see section 6.</td></tr>
+    <tr><td>Simple / Pro</td><td>Back to the Simple view, keeping the same target.</td></tr>
+  </table>
+  <h3>Options bar and canvas</h3>
+  <table>
+    <tr><td>Tool options (left)</td><td>Settings for the active tool. For the probe, these are the aperture (<kbd>[</kbd> / <kbd>]</kbd>), the probed pixel and <b>Clear</b>.</td></tr>
+    <tr><td>− · zoom % · + · Fit · 100%</td><td>Zoom out or in, fit the image to the screen (<kbd>F</kbd>), or show actual pixels (<kbd>0</kbd>). The mouse wheel zooms at the cursor.</td></tr>
+    <tr><td>Crosshair · Pixel grid · Compass</td><td>Canvas overlays (<kbd>X</kbd>, <kbd>G</kbd>). The compass shows N/E and a scale bar.</td></tr>
+    <tr><td>Mode tabs · Field</td><td>The same five modes as the Simple view, plus a field-size list.</td></tr>
+  </table>
+</section>
+
+<section>
+  <h3>Left toolbar</h3>
+  <table>
+    <tr><td>Pan <kbd>H</kbd></td><td>Drag to move around the image. Middle-drag pans with any tool.</td></tr>
+    <tr><td>Zoom <kbd>Z</kbd></td><td>Click to zoom in; Alt-click to zoom out.</td></tr>
+    <tr><td>Spectral probe <kbd>I</kbd></td><td>Click a pixel for its spectrum, built from every exposure. The result appears in the <b>Spectral Data</b> panel.</td></tr>
+    <tr><td>Measure <kbd>M</kbd></td><td>Drag between two points for their angular separation and position angle.</td></tr>
+    <tr><td>Change detection <kbd>D</kbd></td><td>Scores every pixel against “nothing changed” and marks the peaks (green boxes, below).</td></tr>
+    <tr><td>Greyed-out tools</td><td>Rectangle, ellipse and polygon regions, annotation, and object tracking. They are visible but disabled; hovering one explains which backend feature it needs. None of them pretends to work.</td></tr>
+  </table>
+  <h3>Timeline (bottom)</h3>
+  <table>
+    <tr><td>|◀ ◀ ▶ ▶ ▶|</td><td>First frame, previous, play/pause, next, last (<kbd>Home</kbd> <kbd>←</kbd> <kbd>Space</kbd> <kbd>→</kbd> <kbd>End</kbd>).</td></tr>
+    <tr><td>Loop · speed</td><td>Loop on/off (<kbd>L</kbd>) and playback speed.</td></tr>
+    <tr><td>Time / Frames</td><td><b>Time</b> places frames at their real dates, so the survey cadence is visible. <b>Frames</b> spaces them evenly, which separates frames taken minutes apart.</td></tr>
+    <tr><td>Lanes</td><td>Frames, Visits, Exposures (coloured by detector) and the current mode. Hover any tick for its details (ID, detector, wavelength, % good pixels, date); click it to jump there.</td></tr>
+  </table>
+  <h3>Status bar</h3>
+  <p>Background tasks, cursor pixel and sky coordinates, zoom, image size and pixel scale, current frame, browser memory use, and data source (<code>static</code> = ready-made files).</p>
+  <figure class="half"><img src="img/08-change.jpg" alt="Change detection on canvas"><figcaption>Change detection (<kbd>D</kbd>): green boxes are the strongest changes, ready to inspect.</figcaption></figure>
+</section>
+
+<section>
+  <h2>5 · Pro workstation: panels</h2>
+  <p>Panels sit in two docked groups on the right. Each group header has <b>collapse</b>, <b>move to the other group</b> (⇅) and <b>close</b> (×) buttons; reopen a closed panel from <b>Window</b>.</p>
+  <div class="grid3">
+    <figure><img src="img/05-processing.jpg" alt="Processing panel"><figcaption>Processing: the real steps behind this view.</figcaption></figure>
+    <figure><img src="img/06-cache.jpg" alt="Cache panel"><figcaption>Cache / Performance: what is actually in memory.</figcaption></figure>
+    <figure><img src="img/07-metadata.jpg" alt="Metadata panel"><figcaption>Metadata: everything recorded, with a filter box.</figcaption></figure>
+  </div>
+  <table>
+    <tr><td>Spectral Data</td><td>Spectrum at the probe: area (aperture), group by camera or visit, the shape fit, and saturation warnings.</td></tr>
+    <tr><td>Histogram</td><td>Pixel statistics of the current frame.</td></tr>
+    <tr><td>Sky Context</td><td>About this field and where it sits on the sky.</td></tr>
+    <tr><td>Layers</td><td>Everything drawn on the canvas, grouped into Marks, Analysis (motion track, change detection, quality flags), Catalogues, Comparison and Observation. Each layer has an eye (show/hide). At the top: blend mode and opacity. At the bottom: move up/down, lock, and delete (source data layers can't be deleted).</td></tr>
+    <tr><td>Properties</td><td>Settings and provenance of the selected layer. For the motion track this includes the measured motion, Gaia's value and the per-visit fits.</td></tr>
+    <tr><td>Metadata</td><td>Target, instrument and data, WCS and per-visit records, searchable.</td></tr>
+    <tr><td>Processing</td><td>The processing graph: steps baked on the server (coverage search, cutouts, coadds, …) and steps run in the browser (spectrum, change detection, motion fit). Click a step to see what it feeds.</td></tr>
+    <tr><td>Cache / Performance</td><td>The pixel cube held in memory (with an evict button), derived-result cache hits, misses and evictions, and per-view network loading. All figures are live; nothing is mocked.</td></tr>
+    <tr><td>Compare</td><td>Subtract any visit from any other, in calibrated flux.</td></tr>
+    <tr><td>History</td><td>Undo steps for this view; click one to go back to it.</td></tr>
+    <tr><td>Targets</td><td>The ready-made fields, plus search.</td></tr>
+  </table>
+</section>
+
+<section class="page">
+  <h2>6 · Keyboard shortcuts</h2>
+  <p>Press <kbd>?</kbd> in the Pro view for this sheet. <kbd>Space</kbd> and the arrow keys also work in the Simple view. Shortcuts are ignored while you are typing in a field.</p>
+  <table class="keys">
+    <tr><th>Key</th><th>Action</th><th>Key</th><th>Action</th></tr>
+    <tr><td><kbd>Space</kbd></td><td>Play / pause</td><td><kbd>←</kbd> <kbd>→</kbd></td><td>Previous / next frame</td></tr>
+    <tr><td><kbd>Home</kbd> <kbd>End</kbd></td><td>First / last frame</td><td><kbd>L</kbd></td><td>Loop on / off</td></tr>
+    <tr><td><kbd>1</kbd>–<kbd>5</kbd></td><td>Time-lapse · In colour · Deeper · Every frame · What changed</td><td><kbd>H</kbd></td><td>Pan tool</td></tr>
+    <tr><td><kbd>Z</kbd></td><td>Zoom tool (Alt-click zooms out)</td><td><kbd>I</kbd></td><td>Spectral probe</td></tr>
+    <tr><td><kbd>M</kbd></td><td>Measure</td><td><kbd>[</kbd> <kbd>]</kbd></td><td>Smaller / larger spectrum aperture</td></tr>
+    <tr><td><kbd>F</kbd></td><td>Fit to screen</td><td><kbd>0</kbd></td><td>Actual pixels (100%)</td></tr>
+    <tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>Zoom in / out</td><td>Wheel</td><td>Zoom at the cursor</td></tr>
+    <tr><td>Middle-drag</td><td>Pan with any tool</td><td><kbd>X</kbd></td><td>Crosshair</td></tr>
+    <tr><td><kbd>G</kbd></td><td>Pixel grid</td><td><kbd>D</kbd></td><td>Run / show change detection</td></tr>
+    <tr><td><kbd>Ctrl+Z</kbd></td><td>Undo</td><td><kbd>Ctrl+Shift+Z</kbd> / <kbd>Ctrl+Y</kbd></td><td>Redo</td></tr>
+    <tr><td><kbd>\</kbd></td><td>Show / hide the panel dock</td><td><kbd>Esc</kbd></td><td>Close a dialog / leave a text field</td></tr>
+  </table>
+
+  <h2 style="margin-top:6mm">7 · Planet X pages (experimental)</h2>
+  <div class="note">These four pages run on a <b>synthetic sample</b> with injected test planets. They show how a Planet Nine search pipeline would work; nothing on them is a discovery. Each one carries a green banner saying so, with a link back to the Sky Viewer.</div>
+  <div class="grid2">
+    <figure><img src="img/09-hunt.jpg" alt="The Hunt"><figcaption><b>The Hunt</b> (<code>/hunt</code>)</figcaption></figure>
+    <figure><img src="img/10-lab.jpg" alt="Candidate Lab"><figcaption><b>Candidate Lab</b> (<code>/lab</code>)</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <div class="grid2">
+    <figure><img src="img/11-classify.jpg" alt="Classify"><figcaption><b>Classify</b> (<code>/classify</code>)</figcaption></figure>
+    <figure><img src="img/12-proof.jpg" alt="Proof"><figcaption><b>Proof</b> (<code>/proof</code>)</figcaption></figure>
+  </div>
+  <table>
+    <tr><th>Page · control</th><th>What it does</th></tr>
+    <tr><td>Hunt · Open the Sky Viewer</td><td>Goes to the main tool.</td></tr>
+    <tr><td>Hunt · See a moving star</td><td>Opens Barnard's Star in the Sky Viewer.</td></tr>
+    <tr><td>Hunt · globe and counter</td><td>Where a Planet Nine could still be, according to a reference population (green = searched patches), and how much of that space surveys have ruled out. Deep Field's own share is shown separately; so far it is effectively 0%.</td></tr>
+    <tr><td>Hunt · Open the Candidate Lab / Classify on your phone</td><td>Links to the next two pages.</td></tr>
+    <tr><td>Lab · candidate list</td><td>Pick a candidate. Labels: <b>SIM</b> = injected test planet; <b>EMPTY</b> = an empty control field.</td></tr>
+    <tr><td>Lab · pause</td><td>Stops the single-frame blink so you can compare it with the shift-and-stack image and the static sky.</td></tr>
+    <tr><td>Lab · Score it here</td><td>Runs our small classifier, trained from scratch on injections, in the browser; shown next to the rule-based score and the crowd vote.</td></tr>
+    <tr><td>Classify · pause</td><td>Stops the frame blink.</td></tr>
+    <tr><td>Classify · Real mover / Artifact / Nothing</td><td>Your vote on the card; you can also tap the spot first. About 1 card in 10 is a hidden test that trains your reliability score.</td></tr>
+    <tr><td>Proof</td><td>No buttons. Charts of the fraction of injected planets recovered, by brightness and by distance, followed by the honest list of limits.</td></tr>
+  </table>
+</section>
+
+</main>
+</body>
+</html>
