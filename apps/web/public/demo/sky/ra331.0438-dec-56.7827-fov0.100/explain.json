@@ -1,0 +1,23 @@
+{
+ "text": "This 6\u2011arcminute patch of sky, observed 19 times with 55 images over 1.4 years, shows no known solar\u2011system objects. In the time\u2011lapse you will likely see no noticeable changes, as the field appears unremarkable.",
+ "generator": "llm:openai/gpt-oss-20b",
+ "facts": {
+  "right_ascension_deg": 331.0438,
+  "declination_deg": -56.7827,
+  "field_width_arcmin": 6.0,
+  "number_of_visits": 19,
+  "images_used": 55,
+  "years_covered": 1.4,
+  "infrared_colours_measured": 49,
+  "infrared_colours_possible": 102,
+  "wavelength_range_microns": [
+   0.7701,
+   5.0019
+  ],
+  "pixel_size_arcsec": 6.15,
+  "known_solar_system_objects_in_field": []
+ },
+ "generated_at": "2026-11-14T10:57:52+00:00",
+ "is_machine_written": true,
+ "disclaimer": "Written automatically from measured survey statistics. Not a discovery claim."
+}

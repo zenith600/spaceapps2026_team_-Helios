@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "slug": "ra133.7951-dec-7.2451-fov0.100",
- "generated_at": "2026-11-14T09:51:47+00:00",
+ "generated_at": "2026-11-14T13:18:05+00:00",
  "source": "NASA SPHEREx DR1 Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
  "is_simulated": false,
  "target": {
@@ -11,7 +11,9 @@
   "dec_deg": -7.245147,
   "resolver": "builtin",
   "note": "The coldest known brown dwarf, 250 K, 7.5 light years away. Moves about 8 arcsec per year. Water-ice clouds. Position as given in the challenge brief.",
-  "slug": "wise-0855"
+  "slug": "wise-0855",
+  "look_for": "The coldest object of its kind ever found \u2014 about -23 C, cold enough for water-ice clouds. It is 7.5 light years away and drifts roughly one SPHEREx pixel every nine months, so watch the centre across the full time-lapse.",
+  "kind": "coldest brown dwarf"
  },
  "ra_deg": 133.795129,
  "dec_deg": -7.245147,
@@ -84,7 +86,7 @@
     "earliest_mjd": null
    }
   },
-  "searched_at": "2026-11-14T09:51:45+00:00",
+  "searched_at": "2026-11-14T13:18:03+00:00",
   "n_exposures": 282,
   "n_visits": 11,
   "mjd_min": 60800.700028,
@@ -294,7 +296,7 @@
     "earliest_mjd": null
    }
   },
-  "built_at": "2026-11-14T09:51:47+00:00"
+  "built_at": "2026-11-14T13:18:05+00:00"
  },
  "frames": {
   "epochs": [
@@ -2164,7 +2166,273 @@
      "OVERFLOW": 0.00086
     }
    }
+  ],
+  "colour": [
+   {
+    "id": "c0",
+    "png": "colour/v0.png",
+    "visit": 0,
+    "n": 4,
+    "mjd": 60801.194888055754,
+    "label": "2025W19",
+    "bands": [
+     [
+      1.591,
+      1.591
+     ],
+     [
+      2.365,
+      2.365
+     ],
+     [
+      3.643,
+      4.11
+     ]
+    ]
+   },
+   {
+    "id": "c1",
+    "png": "colour/v1.png",
+    "visit": 1,
+    "n": 4,
+    "mjd": 60979.789779803505,
+    "label": "2025W44",
+    "bands": [
+     [
+      0.861,
+      0.861
+     ],
+     [
+      0.946,
+      0.946
+     ],
+     [
+      3.443,
+      3.825
+     ]
+    ]
+   },
+   {
+    "id": "c2",
+    "png": "colour/v2.png",
+    "visit": 2,
+    "n": 4,
+    "mjd": 60982.915578787746,
+    "label": "2025W45",
+    "bands": [
+     [
+      0.749,
+      0.749
+     ],
+     [
+      1.028,
+      1.028
+     ],
+     [
+      2.774,
+      3.853
+     ]
+    ]
+   },
+   {
+    "id": "c3",
+    "png": "colour/v3.png",
+    "visit": 3,
+    "n": 4,
+    "mjd": 60986.767981632,
+    "label": "2025W45",
+    "bands": [
+     [
+      1.1,
+      1.1
+     ],
+     [
+      1.256,
+      1.256
+     ],
+     [
+      1.445,
+      4.259
+     ]
+    ]
+   },
+   {
+    "id": "c4",
+    "png": "colour/v4.png",
+    "visit": 4,
+    "n": 4,
+    "mjd": 60989.4868123755,
+    "label": "2025W46",
+    "bands": [
+     [
+      1.63,
+      1.63
+     ],
+     [
+      1.745,
+      1.745
+     ],
+     [
+      4.611,
+      4.666
+     ]
+    ]
+   },
+   {
+    "id": "c5",
+    "png": "colour/v5.png",
+    "visit": 5,
+    "n": 4,
+    "mjd": 60993.62724269075,
+    "label": "2025W46",
+    "bands": [
+     [
+      1.985,
+      1.985
+     ],
+     [
+      2.127,
+      2.127
+     ],
+     [
+      2.278,
+      2.417
+     ]
+    ]
+   },
+   {
+    "id": "c6",
+    "png": "colour/v6.png",
+    "visit": 6,
+    "n": 4,
+    "mjd": 61021.50306834475,
+    "label": "2025W50",
+    "bands": [
+     [
+      0.98,
+      0.98
+     ],
+     [
+      1.897,
+      1.897
+     ],
+     [
+      4.151,
+      4.223
+     ]
+    ]
+   },
+   {
+    "id": "c7",
+    "png": "colour/v7.png",
+    "visit": 7,
+    "n": 4,
+    "mjd": 61152.70882309875,
+    "label": "2026W17",
+    "bands": [
+     [
+      1.642,
+      1.642
+     ],
+     [
+      1.757,
+      1.757
+     ],
+     [
+      4.619,
+      4.721
+     ]
+    ]
+   },
+   {
+    "id": "c8",
+    "png": "colour/v8.png",
+    "visit": 8,
+    "n": 4,
+    "mjd": 61156.30718624999,
+    "label": "2026W17",
+    "bands": [
+     [
+      2.156,
+      2.156
+     ],
+     [
+      2.26,
+      2.26
+     ],
+     [
+      4.755,
+      4.933
+     ]
+    ]
+   },
+   {
+    "id": "c9",
+    "png": "colour/v9.png",
+    "visit": 9,
+    "n": 4,
+    "mjd": 61162.99672388325,
+    "label": "2026W18",
+    "bands": [
+     [
+      0.78,
+      0.78
+     ],
+     [
+      0.837,
+      0.837
+     ],
+     [
+      2.158,
+      3.244
+     ]
+    ]
+   },
+   {
+    "id": "c10",
+    "png": "colour/v10.png",
+    "visit": 10,
+    "n": 4,
+    "mjd": 61171.345783316,
+    "label": "2026W19",
+    "bands": [
+     [
+      2.158,
+      2.158
+     ],
+     [
+      2.312,
+      2.312
+     ],
+     [
+      4.26,
+      4.37
+     ]
+    ]
+   }
   ]
+ },
+ "colour": {
+  "available": true,
+  "png": "colour.png",
+  "channels": [
+   {
+    "colour": "red",
+    "role": "longest wavelengths",
+    "range_um": "3.64-4.93 um"
+   },
+   {
+    "colour": "green",
+    "role": "middle wavelengths",
+    "range_um": "1.76-3.44 um"
+   },
+   {
+    "colour": "blue",
+    "role": "shortest wavelengths",
+    "range_um": "0.75-1.75 um"
+   }
+  ],
+  "note": "False colour: SPHEREx's infrared bands mapped to red, green and blue. Red means a source is brighter at longer wavelengths \u2014 cooler, dustier or more absorbed. Blue means the opposite. These are not visible-light colours."
  },
  "difference": [
   {

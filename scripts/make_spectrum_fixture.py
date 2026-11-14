@@ -52,7 +52,51 @@ def main() -> int:
         "cases": cases,
     }, indent=1))
     print(f"wrote {OUT} ({len(cases)} cases, {sum(c['n_points'] for c in cases)} points)")
+    write_classify_fixture()
     return 0
+
+
+def write_classify_fixture() -> None:
+    """Reference values for the template fit, which the browser reimplements in TypeScript."""
+    import numpy as np
+
+    from deepfield.sky.analyse import classify_point
+    from deepfield.spectral.templates import template_fnu
+
+    out = Path(__file__).resolve().parents[1] / "apps" / "web" / "lib" / "__fixtures__" / "classify.json"
+    rng = np.random.default_rng(7)
+    waves = np.array([0.80, 0.95, 1.10, 1.25, 1.45, 1.70, 2.00, 2.35, 2.80, 3.30, 4.10, 4.80])
+    cases = []
+    for kind, scale, noise in (("planet", 3.0, 0.02), ("asteroid", 2.0, 0.02),
+                               ("star", 5.0, 0.03), ("star", 5.0, 0.30)):
+        flux = scale * template_fnu(kind, waves) + rng.normal(0, noise, waves.size)
+        err = np.full(waves.size, max(noise, 1e-3))
+        pts = [{"wave_um": float(w), "flux_mjysr": float(f), "flux_err_mjysr": float(e),
+                "bandwidth_um": 0.01, "mjd": 60800.0, "detector": 1, "visit": 0,
+                "obs_id": "SYN", "n_pixels": 1}
+               for w, f, e in zip(waves, flux, err)]
+        res = classify_point(pts)
+        cases.append({
+            "truth": kind, "noise": noise,
+            "points": [{k: p[k] for k in ("wave_um", "flux_mjysr", "flux_err_mjysr")} for p in pts],
+            "expect": {k: res[k] for k in ("available", "best", "label", "confident", "n_bands")},
+            "methane_score": res.get("methane_score"),
+            "temperature_k": (res.get("temperature") or {}).get("temperature_k"),
+            "ranking": res.get("ranking"),
+        })
+    # and the "too few colours" refusal
+    few = [{"wave_um": 1.0 + 0.001 * i, "flux_mjysr": 1.0, "flux_err_mjysr": 0.1,
+            "bandwidth_um": 0.01, "mjd": 1.0, "detector": 1, "visit": 0, "obs_id": "S",
+            "n_pixels": 1} for i in range(4)]
+    cases.append({"truth": "too-few-bands", "noise": 0.0,
+                  "points": [{k: p[k] for k in ("wave_um", "flux_mjysr", "flux_err_mjysr")} for p in few],
+                  "expect": {k: classify_point(few).get(k) for k in ("available",)},
+                  "methane_score": None, "temperature_k": None, "ranking": None})
+    out.write_text(json.dumps({
+        "generated_by": "scripts/make_spectrum_fixture.py",
+        "note": "Python reference for the template fit. apps/web/lib/spectralFit.test.ts must match.",
+        "cases": cases}, indent=1))
+    print(f"wrote {out} ({len(cases)} classification cases)")
 
 
 if __name__ == "__main__":

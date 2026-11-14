@@ -29,8 +29,45 @@ WEB_SKY_DIR = REPO_ROOT / "apps" / "web" / "public" / "demo" / "sky"
 DEFAULT_FOV = 0.1
 DEFAULT_MAX_FRAMES = 48
 
-WEB_FILES = ("sky.json", "stack.png", "static.png")
-WEB_DIRS = ("frames", "visits", "detectors", "diff", "flags")
+WEB_FILES = ("sky.json", "stack.png", "static.png", "colour.png", "overlay.json", "explain.json")
+WEB_DIRS = ("frames", "visits", "detectors", "diff", "flags", "colour")
+
+
+def enrich_one(slug: str, *, overlays: bool = True, explain: bool = True) -> dict:
+    """Add the slow, optional extras to a built bundle: catalogue overlays and a caption.
+
+    Both are written into the bundle so the demo serves them instantly. Both are allowed to
+    fail: an archive that is down costs that layer, not the view.
+    """
+    src = SVC.SKY_DIR / slug
+    meta = SVC.load_bundle(src)
+    out = {"overlay": None, "explain": None}
+
+    if overlays:
+        try:
+            from deepfield.sky.catalogs import write_overlay
+            ov = write_overlay(meta, src / "overlay.json")
+            out["overlay"] = {L["id"]: L["n"] for L in ov["layers"]}
+        except Exception as exc:
+            log.warning("%s: overlay failed: %s: %s", slug, type(exc).__name__, exc)
+
+    if explain:
+        try:
+            from deepfield.ai.explain import explain_field
+            known = []
+            try:
+                from deepfield.data.sbident import known_bodies
+                rows = known_bodies(meta["ra_deg"], meta["dec_deg"], meta["fov_deg"] * 0.75,
+                                    0.5 * (meta["coverage"]["mjd_min"] + meta["coverage"]["mjd_max"]))
+                known = rows.to_dict("records") if hasattr(rows, "to_dict") else list(rows)
+            except Exception:
+                pass
+            ex = explain_field(meta, known_bodies=known)
+            (src / "explain.json").write_text(json.dumps(ex, indent=1))
+            out["explain"] = ex["generator"]
+        except Exception as exc:
+            log.warning("%s: explain failed: %s: %s", slug, type(exc).__name__, exc)
+    return out
 
 
 def export_cube_u16(src: Path, dst: Path) -> dict:
@@ -170,7 +207,7 @@ def write_index(entries: list[dict], web_dir: Path | None = None) -> Path:
 
 def bake_featured(*, fov_deg: float = DEFAULT_FOV, max_frames: int = DEFAULT_MAX_FRAMES,
                   force: bool = False, refresh: bool = False, queries: list[str] | None = None,
-                  export: bool = True) -> dict:
+                  export: bool = True, enrich: bool = True) -> dict:
     """Build and export every featured target. Keeps going if one fails."""
     wanted = queries or [f["name"] for f in featured()]
     entries, failures = [], []
@@ -182,6 +219,8 @@ def bake_featured(*, fov_deg: float = DEFAULT_FOV, max_frames: int = DEFAULT_MAX
             failures.append({"query": q, "error": f"{type(exc).__name__}: {exc}"})
             continue
         b = res["bundle"]
+        if enrich:
+            enrich_one(res["slug"])
         if export:
             export_one(res["slug"])
         # Descriptive copy comes from the live catalogue, not from the bundle's frozen copy of

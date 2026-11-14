@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from pathlib import Path
 
@@ -31,6 +32,18 @@ log = logging.getLogger("deepfield.run_patch")
 #: Floor only. The working threshold is calibrated per patch from its own SNR map, because the
 #: map is a maximum over thousands of trials and a fixed 5 sigma sits near its median.
 SNR_FLOOR = 5.0
+
+#: Injected brightness range, V magnitudes, bright to faint.
+#:
+#: Deliberately brighter than any surviving reference planet (which are all V 17.5-23).
+#: Injecting them at their catalogue brightness recovered 0 of 32 and produced a
+#: completeness curve with no shape: it could say we were under the limit, but not where
+#: the limit is. A curve needs points either side of 50%, so the ladder brackets it. The
+#: orbits, tracks and spectra remain those of real reference planets.
+INJECT_VMAG_LADDER = (
+    float(os.environ.get("INJECT_VMAG_MIN", "13.0")),
+    float(os.environ.get("INJECT_VMAG_MAX", "22.0")),
+)
 
 
 def load_patch_frames(ra0: float, dec0: float, max_exposures: int = PATCH_MAX_EXPOSURES,
@@ -132,7 +145,8 @@ def search_patch(patch_id: str, ra0: float, dec0: float, work_dir: Path, *, n_in
     lab_pool: list[tuple[Injection, dict, S.Prepared, np.ndarray]] = []
     lab_pool_all: list[tuple[Injection, dict, S.Prepared, np.ndarray]] = []
     for run in range(n_inject_runs):
-        injs = make_injections(pop, prop, n_per_run, rng, wcs_out, npix, mjds, obs_xyz, mjd_ref, waves, tag=f"{patch_id[-3:]}R{run}")
+        injs = make_injections(pop, prop, n_per_run, rng, wcs_out, npix, mjds, obs_xyz, mjd_ref, waves,
+                               tag=f"{patch_id[-3:]}R{run}", vmag_ladder=INJECT_VMAG_LADDER)
         cuts_inj = apply_injections(cutouts, injs)
         prep = S.prepare(frames_from(cuts_inj), dev=dev)
         snr_i, flux_i, best_i, nden_i = S.stack_trials(prep, off)

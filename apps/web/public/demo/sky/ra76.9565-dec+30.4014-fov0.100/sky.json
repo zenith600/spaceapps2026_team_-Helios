@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "slug": "ra76.9565-dec+30.4014-fov0.100",
- "generated_at": "2026-11-14T09:51:49+00:00",
+ "generated_at": "2026-11-14T13:19:03+00:00",
  "source": "NASA SPHEREx DR1 Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
  "is_simulated": false,
  "target": {
@@ -11,7 +11,9 @@
   "dec_deg": 30.40143817,
   "resolver": "builtin",
   "note": "A young binary T Tauri star that dims by magnitudes for months at a time when its tidally disrupted disc passes in front of it. Brightness, not position, is the story.",
-  "slug": "rw-aurigae"
+  "slug": "rw-aurigae",
+  "look_for": "This one does not move \u2014 it blinks. A newborn star whose dusty disc has been torn by a passing companion; when a streamer of that dust drifts across our line of sight the star fades for months. Watch its brightness, not its position.",
+  "kind": "young star with a torn disc"
  },
  "ra_deg": 76.95652603,
  "dec_deg": 30.40143817,
@@ -84,7 +86,7 @@
     "earliest_mjd": 61285.097169
    }
   },
-  "searched_at": "2026-11-14T09:51:47+00:00",
+  "searched_at": "2026-11-14T13:19:00+00:00",
   "n_exposures": 342,
   "n_visits": 7,
   "mjd_min": 60919.419647,
@@ -228,7 +230,7 @@
     "earliest_mjd": 61285.097169
    }
   },
-  "built_at": "2026-11-14T09:51:49+00:00"
+  "built_at": "2026-11-14T13:19:03+00:00"
  },
  "frames": {
   "epochs": [
@@ -1923,7 +1925,185 @@
      "COLD": 0.00115
     }
    }
+  ],
+  "colour": [
+   {
+    "id": "c0",
+    "png": "colour/v0.png",
+    "visit": 0,
+    "n": 6,
+    "mjd": 60921.03791971533,
+    "label": "2025W36",
+    "bands": [
+     [
+      0.9,
+      1.019
+     ],
+     [
+      1.068,
+      2.435
+     ],
+     [
+      2.695,
+      3.254
+     ]
+    ]
+   },
+   {
+    "id": "c1",
+    "png": "colour/v1.png",
+    "visit": 1,
+    "n": 6,
+    "mjd": 60927.63845841916,
+    "label": "2025W37",
+    "bands": [
+     [
+      1.186,
+      1.441
+     ],
+     [
+      1.654,
+      4.03
+     ],
+     [
+      4.172,
+      4.961
+     ]
+    ]
+   },
+   {
+    "id": "c2",
+    "png": "colour/v2.png",
+    "visit": 2,
+    "n": 6,
+    "mjd": 60936.37666405216,
+    "label": "2025W38",
+    "bands": [
+     [
+      1.628,
+      2.038
+     ],
+     [
+      2.149,
+      4.505
+     ],
+     [
+      4.808,
+      4.925
+     ]
+    ]
+   },
+   {
+    "id": "c3",
+    "png": "colour/v3.png",
+    "visit": 3,
+    "n": 6,
+    "mjd": 61092.06160581683,
+    "label": "2026W08",
+    "bands": [
+     [
+      1.937,
+      2.074
+     ],
+     [
+      2.22,
+      4.697
+     ],
+     [
+      4.799,
+      4.904
+     ]
+    ]
+   },
+   {
+    "id": "c4",
+    "png": "colour/v4.png",
+    "visit": 4,
+    "n": 6,
+    "mjd": 61104.38309980617,
+    "label": "2026W09",
+    "bands": [
+     [
+      0.943,
+      1.036
+     ],
+     [
+      1.642,
+      2.818
+     ],
+     [
+      2.842,
+      4.132
+     ]
+    ]
+   },
+   {
+    "id": "c5",
+    "png": "colour/v5.png",
+    "visit": 5,
+    "n": 6,
+    "mjd": 61285.134739219655,
+    "label": "2026W36",
+    "bands": [
+     [
+      0.982,
+      1.005
+     ],
+     [
+      1.029,
+      3.593
+     ],
+     [
+      3.69,
+      3.789
+     ]
+    ]
+   },
+   {
+    "id": "c6",
+    "png": "colour/v6.png",
+    "visit": 6,
+    "n": 6,
+    "mjd": 61295.8018628925,
+    "label": "2026W37",
+    "bands": [
+     [
+      0.741,
+      0.93
+     ],
+     [
+      1.175,
+      4.051
+     ],
+     [
+      4.193,
+      4.828
+     ]
+    ]
+   }
   ]
+ },
+ "colour": {
+  "available": true,
+  "png": "colour.png",
+  "channels": [
+   {
+    "colour": "red",
+    "role": "longest wavelengths",
+    "range_um": "3.79-4.96 um"
+   },
+   {
+    "colour": "green",
+    "role": "middle wavelengths",
+    "range_um": "1.64-3.69 um"
+   },
+   {
+    "colour": "blue",
+    "role": "shortest wavelengths",
+    "range_um": "0.74-1.63 um"
+   }
+  ],
+  "note": "False colour: SPHEREx's infrared bands mapped to red, green and blue. Red means a source is brighter at longer wavelengths \u2014 cooler, dustier or more absorbed. Blue means the opposite. These are not visible-light colours."
  },
  "difference": [
   {
@@ -5533,7 +5713,7 @@
  },
  "cube": "cube.npz",
  "skipped": [],
- "elapsed_s": 2.0,
+ "elapsed_s": 2.5,
  "limits": [
   "SPHEREx pixels are 6.15 arcsec; close pairs blend together.",
   "42 distinct bands measured here, out of 102 across the full survey. Each pixel sees one wavelength, set by its position on the filter.",

@@ -27,14 +27,24 @@ run against the live service and the numbers quoted are from that run.
 | Suggestion | State |
 | --- | --- |
 | Easy to update with new data releases | **Real.** Collections are discovered from IRSA ObsTAP, not hardcoded; a background refresher reports new exposures and new releases; a weekly workflow re-bakes the demo. See §Live refresh. |
-| Creative use of the 102 bands | **Partly real.** Per-detector coadds, per-visit coadds, per-exposure wavelengths, honest "N of 102" everywhere. Not done: a colour composite across detectors. |
-| Spectra on the fly | **Real.** Click a pixel; the spectrum is assembled at click time from the per-exposure cube, in the browser on a static deployment or in the API otherwise. A pixel with no usable data explains why (saturation, flags) and offers a jump to the nearest usable pixel. |
-| Add/subtract images from different times | **Partly real.** Stack-all and static-sky overlays, and difference-from-first-visit frames. Not done: user-chosen arbitrary A−B pairs. |
-| Let users choose the field of view | **Real.** 0.02°–0.5°, in the URL. |
-| Overlay other telescopes (Gaia, WISE) | **Not done.** |
+| Creative use of the 102 bands | **Real.** Per-detector coadds, per-visit coadds, per-exposure wavelengths, honest "N of 102" everywhere, and false-colour composites mapping the bands to RGB (longest red, shortest blue). |
+| Spectra on the fly | **Real.** Click a pixel; the spectrum is assembled at click time from the per-exposure cube, in the browser on a static deployment or in the API otherwise. A pixel with no usable data explains why (saturation, flags) and offers a jump to the nearest usable pixel. The shape is also fitted against three physical templates plus a blackbody colour temperature. |
+| Add/subtract images from different times | **Real.** Stack-all and static-sky overlays, difference-from-first-visit frames, and an arbitrary visit-A-minus-visit-B comparison made on demand from calibrated flux. |
+| Let users choose the field of view | **Real.** 0.02°–0.5°, in the URL, labelled in plain words. |
+| Overlay other telescopes (Gaia, WISE) | **Real.** Gaia DR3 (ESA TAP), AllWISE and 2MASS (IRSA TAP), cone-searched and projected onto the viewer's pixel grid. ~130 sources per layer on Barnard's Star. |
 | Coordinates in the URL for embedding | **Real.** `/sky?ra=&dec=&fov=&mode=`, every control included. |
-| Display metadata like contamination flags | **Real.** Per-frame FLAGS fractions and a colour-coded RGBA overlay with a legend. |
-| Use Astropy / Aladin | **Partly.** Astropy throughout the pipeline (WCS, reprojection, coordinates). Aladin Lite not integrated. |
+| Display metadata like contamination flags | **Real.** Per-frame FLAGS fractions, a colour-coded RGBA overlay with a legend, and a per-pixel flag bitmask used to explain empty spectra. |
+| Use Astropy / Aladin | **Real.** Astropy throughout the pipeline (WCS, reprojection, coordinates); Aladin Lite v3 embedded as an optional, lazily-loaded sky-context panel. |
+
+### Beyond the brief
+
+| Feature | State |
+| --- | --- |
+| Find what changed | **Real.** Per-pixel χ² against a constant-brightness model. Untrained and transparent: a steady star scores ~1, a mover or variable scores high. Runs in the browser from the pixel cube. |
+| Spectral classification | **Real.** Three physical templates (methane-rich / reflected sunlight / stellar) plus a blackbody colour temperature, with a χ² ranking. Refuses below three distinct colours rather than guessing. |
+| "Odd one out" flag | **Real.** When even the best template fits badly (χ²/dof > 5) the point is flagged — stated as a gap in our model library, not as a discovery. |
+| Machine-written field captions | **Real.** Coordinates outside the built-in catalogue get a plain-language caption written from measured facts by an LLM, with claim-rejection and a deterministic fallback. Always labelled. |
+| Classifier in the browser | **Real.** The from-scratch CNN ships as ONNX and scores a candidate on the visitor's machine from the same normalised float stamps used in training. |
 
 ## Real, verified against live services
 
@@ -63,6 +73,8 @@ run against the live service and the numbers quoted are from that run.
 
 | Thing | Why |
 | --- | --- |
+| The LLM endpoint is slow | `openai/gpt-oss-20b` on NVIDIA's endpoint took 62–220 s for a two-token reply when measured on 2026-11-14. Captions are therefore written once at bake time and cached by fact sheet; nothing in the request path ever waits on it. |
+| CDS Sesame / Aladin may be unreachable | CDS has been intermittently down all week. Name resolution falls back to the built-in catalogue; the Aladin panel loads only on request and says so if it fails. Neither blocks the viewer. |
 | Two-visit patches cannot be localised | **Diagnosed and now enforced, not a bug.** Two time samples cannot separate parallax (curved in time) from proper motion (linear): a wrong (distance, rate) pair reproduces the same inter-visit shift and peaks elsewhere, often harder than the truth. Measured: the search put its peak 73 px from an amp-8 source it had ample signal to find. Three visits recover the position; four recover the distance to 0.4%. `run_patch` now searches distance only at two visits and says so in the summary. See §Cross-visit search. |
 | Nothing is deployed | No Vercel, Fly.io or Supabase credentials on this machine. `vercel.json`, `fly.toml`, Dockerfiles and the Supabase migration are all committed and ready; the deploy itself is a human action. |
 | CDS Sesame resolution | The CDS load balancer currently sends every request to `vizier.idia.ac.za`, which is timing out. Name resolution therefore falls back to the built-in catalogue, which covers the five test targets and a few more. Not a blocker for the demo; typed coordinates always work. |
@@ -136,6 +148,26 @@ failure mode that silent divergence would cause:
   WISE 0855 cube and compares it against a Python-generated fixture
   (`scripts/make_spectrum_fixture.py`). It found two genuine bugs: a dropped good-pixel
   mask, and a quantiser range poisoned by the 1e6 variance fill used for bad pixels.
+
+## AI and ML — what is trained, what is not, and on whose weights
+
+| Component | What it is | Weights |
+| --- | --- | --- |
+| Real/bogus classifier | Small CNN over 3×32×32 stamps | **Trained from scratch** on our own injections. Exported to ONNX and runs in the browser. |
+| Spectral classification | Weighted least-squares fit of three physical templates + a blackbody temperature | **No model at all** — the templates are closed-form physics in `spectral/templates.py`. |
+| Change detection | Per-pixel χ² against a constant | **No model at all.** |
+| "Odd one out" | Best-template χ²/dof over a threshold | **No model at all.** |
+| Field captions | Hosted LLM writing prose from a numeric fact sheet | Third-party **text** service. Touches no pixel and feeds nothing back into the science. |
+
+The project rule excludes third-party pretrained weights from the data path, and that holds:
+every number in this tool comes from physics or from a network we trained ourselves. The LLM
+writes captions and nothing else. `manifest.yaml` records the open question (from PLAN.md §1.6)
+of whether the rule is meant to reach AI services at all; if organisers say it is, clearing
+`LLM_API_KEY` drops the viewer to the deterministic fact-based caption with no other change.
+
+The endpoint offers 80-odd models, several of which the rule excludes, so model ids are checked
+against a vendor blocklist rather than trusted — pointing `LLM_MODEL` at one of those yields the
+offline fallback and a logged warning, not a silent rule break.
 
 ## Compliance
 

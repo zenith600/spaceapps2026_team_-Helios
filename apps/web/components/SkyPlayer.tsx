@@ -3,11 +3,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  type DetectorFrame, type EpochFrame, type SkyBundle, type VisitFrame,
+  type DetectorFrame, type EpochFrame, type Overlay, type SkyBundle, type VisitFrame,
   mjdLabel, skyFileUrl,
 } from "@/lib/sky";
 
-export type FrameMode = "visits" | "detectors" | "epochs" | "difference";
+export type FrameMode = "visits" | "colour" | "detectors" | "epochs" | "difference";
 
 /**
  * Plain-language names, technical meaning in the hint. "Per-detector coadd" is precise and
@@ -16,6 +16,8 @@ export type FrameMode = "visits" | "detectors" | "epochs" | "difference";
 export const MODES: { id: FrameMode; label: string; hint: string }[] = [
   { id: "visits", label: "Time-lapse",
     hint: "One picture per visit, months apart. This is where movement shows up — watch for anything that shifts while the background stays put." },
+  { id: "colour", label: "In colour",
+    hint: "SPHEREx's infrared bands mapped to red, green and blue. Red means brighter at longer wavelengths — cooler or dustier; blue the opposite. These are not visible-light colours." },
   { id: "detectors", label: "Deeper",
     hint: "Pictures of the same colour added together, so faint things come out of the noise." },
   { id: "epochs", label: "Every frame",
@@ -35,6 +37,14 @@ const SPEED_LABELS = ["slowest", "slow", "normal", "fast", "fastest"];
 
 function toPlayFrames(bundle: SkyBundle, mode: FrameMode): PlayFrame[] {
   const band = (w: number, bw: number) => `${w.toFixed(2)} µm ±${(bw / 2).toFixed(3)}`;
+  if (mode === "colour") {
+    return (bundle.frames.colour ?? []).map((f) => ({
+      id: f.id, png: f.png, mjd: f.mjd,
+      title: mjdLabel(f.mjd),
+      subtitle: "false colour · red = longest wavelengths, blue = shortest",
+      detail: `visit ${f.visit} · ${f.n} exposures · ${f.bands.map(([a, b]) => `${a.toFixed(2)}–${b.toFixed(2)}`).join(" | ")} µm`,
+    }));
+  }
   if (mode === "epochs") {
     return bundle.frames.epochs.map((f: EpochFrame) => ({
       id: f.id, png: f.png, flagPng: f.flag_png, mjd: f.mjd,
@@ -55,7 +65,7 @@ function toPlayFrames(bundle: SkyBundle, mode: FrameMode): PlayFrame[] {
     return bundle.difference.map((f) => ({
       id: f.id, png: f.png, mjd: f.mjd,
       title: mjdLabel(f.mjd),
-      subtitle: f.label,
+      subtitle: `visit ${f.visit} compared with visit ${f.reference_visit}`,
       detail: "grey = unchanged, white = brighter now, black = fainter now",
     }));
   }
@@ -69,6 +79,7 @@ function toPlayFrames(bundle: SkyBundle, mode: FrameMode): PlayFrame[] {
 
 export function SkyPlayer({
   bundle, mode, onPickPixel, marker, showFlags, onToggleFlags, hasPicked,
+  catalogOverlay, activeLayers, changePeaks,
 }: {
   bundle: SkyBundle;
   mode: FrameMode;
@@ -77,6 +88,10 @@ export function SkyPlayer({
   showFlags: boolean;
   onToggleFlags: (v: boolean) => void;
   hasPicked?: boolean;
+  /** Named to avoid colliding with the stack/static comparison overlay below. */
+  catalogOverlay?: Overlay | null;
+  activeLayers?: string[];
+  changePeaks?: { x: number; y: number; chi2_per_dof: number }[] | null;
 }) {
   const frames = useMemo(() => toPlayFrames(bundle, mode), [bundle, mode]);
   const [i, setI] = useState(0);
@@ -159,6 +174,32 @@ export function SkyPlayer({
             <img src={skyFileUrl(bundle.slug, cur.flagPng)} alt="contamination flags"
               className="absolute inset-0 h-full w-full object-contain [image-rendering:pixelated]" />
           ) : null}
+          {/* Catalogued sources from other missions. A dot with no ring is unlisted. */}
+          {catalogOverlay?.layers.filter((l) => (activeLayers ?? []).includes(l.id)).map((l) => (
+            <div key={l.id} className="pointer-events-none absolute inset-0">
+              {l.sources.map((s, k) => (
+                <span key={k} className="absolute rounded-full border"
+                  style={{
+                    left: `${((s.x + 0.5) / npix) * 100}%`,
+                    top: `${((npix - 1 - s.y + 0.5) / npix) * 100}%`,
+                    width: 9, height: 9, marginLeft: -4.5, marginTop: -4.5,
+                    borderColor: l.colour, opacity: 0.85,
+                  }} />
+              ))}
+            </div>
+          ))}
+
+          {/* Where the data say something happened. */}
+          {changePeaks?.map((p, k) => (
+            <span key={k} className="pointer-events-none absolute rounded-sm border-2 border-sim"
+              style={{
+                left: `${(p.x / npix) * 100}%`,
+                top: `${((npix - 1 - p.y) / npix) * 100}%`,
+                width: `${(100 / npix) * 1.6}%`, height: `${(100 / npix) * 1.6}%`,
+                transform: "translate(-18%, -18%)",
+              }} />
+          ))}
+
           {marker ? (
             <div className="pointer-events-none absolute border border-accent"
               style={{

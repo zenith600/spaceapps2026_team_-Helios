@@ -102,6 +102,61 @@ datasets:
       recommends; it is not a Chinese source, so the project rule is satisfied.
     verified: "2026-11-14 Barnard's Star -> 269.45208 +4.69336; RW Aur -> 76.95653 +30.40144; R Dra -> 248.16761 +66.75498"
 
+  - id: irsa_wise_catalogs
+    name: AllWISE and unWISE source catalogues (IRSA TAP)
+    owner: NASA / IPAC (IRSA)
+    country: USA
+    licence: Public domain (NASA data policy)
+    access: ["https://irsa.ipac.caltech.edu/TAP/sync"]
+    domains: [irsa.ipac.caltech.edu]
+    used_for: >
+      overlaying known infrared sources on a Sky Viewer field, so a user can tell a
+      catalogued star from something unidentified
+
+  - id: esa_gaia_tap
+    name: Gaia DR3 source catalogue (ESA Gaia Archive TAP)
+    owner: European Space Agency
+    country: International (ESA, Spain)
+    licence: ESA Gaia Data Licence (free re-use with attribution)
+    access: ["https://gea.esac.esa.int/tap-server/tap/sync"]
+    domains: [gea.esac.esa.int]
+    optional: true
+    used_for: >
+      precise positions, magnitudes and proper motions overlaid on a field. The brief
+      suggests Gaia explicitly. Optional: the viewer works without it.
+
+  - id: cds_aladin_lite
+    name: Aladin Lite v3 sky atlas (CDS)
+    owner: Centre de Donnees astronomiques de Strasbourg (CNRS)
+    country: France
+    licence: GPL-3.0 (Aladin Lite); HiPS imagery under its own survey terms
+    access: ["https://aladin.cds.unistra.fr/AladinLite/api/v3/"]
+    domains: [aladin.cds.unistra.fr, alasky.cds.unistra.fr, alaskybis.cds.unistra.fr]
+    optional: true
+    used_for: >
+      optional "where is this on the sky" context panel, loaded in the browser only when
+      the user asks for it. The brief recommends this tool by name.
+
+  - id: llm_field_explanations
+    name: OpenAI-compatible chat completions (NVIDIA-hosted gpt-oss-20b)
+    owner: NVIDIA (hosting), OpenAI (open-weight model)
+    country: USA
+    licence: Apache-2.0 model weights; NVIDIA API terms
+    access: ["https://integrate.api.nvidia.com/v1/chat/completions"]
+    domains: [integrate.api.nvidia.com]
+    optional: true
+    used_for: >
+      writing the plain-language "what to look for" line for a coordinate that is not in
+      the built-in catalogue. It is given measured facts only and is never part of the
+      science pipeline.
+    note: >
+      This is a text service, not a source of science. The project rule "no pretrained
+      third-party ML weights" still holds for everything that touches the data: the
+      real/bogus classifier and the spectrum classifier are both trained from scratch on
+      our own injections and templates. PLAN.md section 1.6 flags the open question of
+      whether the rule is meant to cover AI services at all; if organisers say it does,
+      set LLM_API_KEY empty and the viewer falls back to showing measured facts only.
+
 # Hosting / tooling domains that are not datasets but may appear in code or config.
 infrastructure_domains:
   - api.anthropic.com      # dossier agent (Claude API), optional

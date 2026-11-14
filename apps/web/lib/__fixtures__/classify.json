@@ -1,0 +1,406 @@
+{
+ "generated_by": "scripts/make_spectrum_fixture.py",
+ "note": "Python reference for the template fit. apps/web/lib/spectralFit.test.ts must match.",
+ "cases": [
+  {
+   "truth": "planet",
+   "noise": 0.02,
+   "points": [
+    {
+     "wave_um": 0.8,
+     "flux_mjysr": 4.136306518537288,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 0.95,
+     "flux_mjysr": 3.9086291459013283,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 1.1,
+     "flux_mjysr": 2.888861297922038,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 1.25,
+     "flux_mjysr": 3.4610127294225483,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 1.45,
+     "flux_mjysr": 1.4180332257604473,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 1.7,
+     "flux_mjysr": 0.5407399017102443,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 2.0,
+     "flux_mjysr": 2.2251343730559063,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 2.35,
+     "flux_mjysr": 0.3540125179724214,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 2.8,
+     "flux_mjysr": 1.1092734403605453,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 3.3,
+     "flux_mjysr": 0.05857028375462651,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 4.1,
+     "flux_mjysr": 0.301030510126428,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 4.8,
+     "flux_mjysr": 0.1477586971929619,
+     "flux_err_mjysr": 0.02
+    }
+   ],
+   "expect": {
+    "available": true,
+    "best": "planet",
+    "label": "cold and methane-rich",
+    "confident": true,
+    "n_bands": 12
+   },
+   "methane_score": 1.0,
+   "temperature_k": 11746,
+   "ranking": [
+    {
+     "template": "planet",
+     "label": "cold and methane-rich",
+     "chi2_per_dof": 0.43
+    },
+    {
+     "template": "asteroid",
+     "label": "reflected sunlight",
+     "chi2_per_dof": 2291.94
+    },
+    {
+     "template": "star",
+     "label": "star-like",
+     "chi2_per_dof": 3024.73
+    }
+   ]
+  },
+  {
+   "truth": "asteroid",
+   "noise": 0.02,
+   "points": [
+    {
+     "wave_um": 0.8,
+     "flux_mjysr": 2.8790163909417896,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 0.95,
+     "flux_mjysr": 2.9394364489677014,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 1.1,
+     "flux_mjysr": 2.8792686831193293,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 1.25,
+     "flux_mjysr": 2.7419169454561865,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 1.45,
+     "flux_mjysr": 2.4607519373391646,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 1.7,
+     "flux_mjysr": 2.1817670556595106,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 2.0,
+     "flux_mjysr": 1.8415412367327801,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 2.35,
+     "flux_mjysr": 1.559855784067345,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 2.8,
+     "flux_mjysr": 1.2617133007928358,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 3.3,
+     "flux_mjysr": 1.061164193099565,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 4.1,
+     "flux_mjysr": 0.7878324214474435,
+     "flux_err_mjysr": 0.02
+    },
+    {
+     "wave_um": 4.8,
+     "flux_mjysr": 0.6708598354704088,
+     "flux_err_mjysr": 0.02
+    }
+   ],
+   "expect": {
+    "available": true,
+    "best": "asteroid",
+    "label": "reflected sunlight",
+    "confident": true,
+    "n_bands": 12
+   },
+   "methane_score": 0.0,
+   "temperature_k": 5160,
+   "ranking": [
+    {
+     "template": "asteroid",
+     "label": "reflected sunlight",
+     "chi2_per_dof": 0.92
+    },
+    {
+     "template": "star",
+     "label": "star-like",
+     "chi2_per_dof": 108.62
+    },
+    {
+     "template": "planet",
+     "label": "cold and methane-rich",
+     "chi2_per_dof": 1948.63
+    }
+   ]
+  },
+  {
+   "truth": "star",
+   "noise": 0.03,
+   "points": [
+    {
+     "wave_um": 0.8,
+     "flux_mjysr": 10.155494972405396,
+     "flux_err_mjysr": 0.03
+    },
+    {
+     "wave_um": 0.95,
+     "flux_mjysr": 11.578659482406136,
+     "flux_err_mjysr": 0.03
+    },
+    {
+     "wave_um": 1.1,
+     "flux_mjysr": 11.983782518729909,
+     "flux_err_mjysr": 0.03
+    },
+    {
+     "wave_um": 1.25,
+     "flux_mjysr": 11.919815458613023,
+     "flux_err_mjysr": 0.03
+    },
+    {
+     "wave_um": 1.45,
+     "flux_mjysr": 11.281289475997552,
+     "flux_err_mjysr": 0.03
+    },
+    {
+     "wave_um": 1.7,
+     "flux_mjysr": 10.168606266048215,
+     "flux_err_mjysr": 0.03
+    },
+    {
+     "wave_um": 2.0,
+     "flux_mjysr": 8.747071700575813,
+     "flux_err_mjysr": 0.03
+    },
+    {
+     "wave_um": 2.35,
+     "flux_mjysr": 7.365844328662341,
+     "flux_err_mjysr": 0.03
+    },
+    {
+     "wave_um": 2.8,
+     "flux_mjysr": 5.900148422740764,
+     "flux_err_mjysr": 0.03
+    },
+    {
+     "wave_um": 3.3,
+     "flux_mjysr": 4.7003225914207665,
+     "flux_err_mjysr": 0.03
+    },
+    {
+     "wave_um": 4.1,
+     "flux_mjysr": 3.4420433260129832,
+     "flux_err_mjysr": 0.03
+    },
+    {
+     "wave_um": 4.8,
+     "flux_mjysr": 2.6273980578300495,
+     "flux_err_mjysr": 0.03
+    }
+   ],
+   "expect": {
+    "available": true,
+    "best": "star",
+    "label": "star-like",
+    "confident": true,
+    "n_bands": 12
+   },
+   "methane_score": 0.0,
+   "temperature_k": 4463,
+   "ranking": [
+    {
+     "template": "star",
+     "label": "star-like",
+     "chi2_per_dof": 0.79
+    },
+    {
+     "template": "asteroid",
+     "label": "reflected sunlight",
+     "chi2_per_dof": 786.17
+    },
+    {
+     "template": "planet",
+     "label": "cold and methane-rich",
+     "chi2_per_dof": 20926.93
+    }
+   ]
+  },
+  {
+   "truth": "star",
+   "noise": 0.3,
+   "points": [
+    {
+     "wave_um": 0.8,
+     "flux_mjysr": 10.141035928323014,
+     "flux_err_mjysr": 0.3
+    },
+    {
+     "wave_um": 0.95,
+     "flux_mjysr": 11.849584370959986,
+     "flux_err_mjysr": 0.3
+    },
+    {
+     "wave_um": 1.1,
+     "flux_mjysr": 11.884205180231532,
+     "flux_err_mjysr": 0.3
+    },
+    {
+     "wave_um": 1.25,
+     "flux_mjysr": 11.902465660613174,
+     "flux_err_mjysr": 0.3
+    },
+    {
+     "wave_um": 1.45,
+     "flux_mjysr": 11.315883747334428,
+     "flux_err_mjysr": 0.3
+    },
+    {
+     "wave_um": 1.7,
+     "flux_mjysr": 10.184341528744635,
+     "flux_err_mjysr": 0.3
+    },
+    {
+     "wave_um": 2.0,
+     "flux_mjysr": 8.425459025615666,
+     "flux_err_mjysr": 0.3
+    },
+    {
+     "wave_um": 2.35,
+     "flux_mjysr": 7.403018996056462,
+     "flux_err_mjysr": 0.3
+    },
+    {
+     "wave_um": 2.8,
+     "flux_mjysr": 6.3371510216049245,
+     "flux_err_mjysr": 0.3
+    },
+    {
+     "wave_um": 3.3,
+     "flux_mjysr": 4.26044430516499,
+     "flux_err_mjysr": 0.3
+    },
+    {
+     "wave_um": 4.1,
+     "flux_mjysr": 3.6680311737178806,
+     "flux_err_mjysr": 0.3
+    },
+    {
+     "wave_um": 4.8,
+     "flux_mjysr": 2.687430305798981,
+     "flux_err_mjysr": 0.3
+    }
+   ],
+   "expect": {
+    "available": true,
+    "best": "star",
+    "label": "star-like",
+    "confident": true,
+    "n_bands": 12
+   },
+   "methane_score": 0.0,
+   "temperature_k": 4572,
+   "ranking": [
+    {
+     "template": "star",
+     "label": "star-like",
+     "chi2_per_dof": 0.69
+    },
+    {
+     "template": "asteroid",
+     "label": "reflected sunlight",
+     "chi2_per_dof": 7.86
+    },
+    {
+     "template": "planet",
+     "label": "cold and methane-rich",
+     "chi2_per_dof": 208.23
+    }
+   ]
+  },
+  {
+   "truth": "too-few-bands",
+   "noise": 0.0,
+   "points": [
+    {
+     "wave_um": 1.0,
+     "flux_mjysr": 1.0,
+     "flux_err_mjysr": 0.1
+    },
+    {
+     "wave_um": 1.001,
+     "flux_mjysr": 1.0,
+     "flux_err_mjysr": 0.1
+    },
+    {
+     "wave_um": 1.002,
+     "flux_mjysr": 1.0,
+     "flux_err_mjysr": 0.1
+    },
+    {
+     "wave_um": 1.003,
+     "flux_mjysr": 1.0,
+     "flux_err_mjysr": 0.1
+    }
+   ],
+   "expect": {
+    "available": false
+   },
+   "methane_score": null,
+   "temperature_k": null,
+   "ranking": null
+  }
+ ]
+}

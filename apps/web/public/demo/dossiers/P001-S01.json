@@ -1,0 +1,54 @@
+{
+ "candidate_id": "P001-S01",
+ "generated_at": "2026-11-14T13:46:37+00:00",
+ "generator": "offline-template",
+ "is_simulated": true,
+ "scout": {
+  "summary": "SIMULATED injection. Stacked SNR 30.7 over 60 SPHEREx exposures in patch P001; best single-frame SNR 44.7.",
+  "facts": [
+   "SIMULATED injection of reference planet INJ001R0000710: V=15.0 at 291 AU",
+   "patch P001 at RA 64.6612, Dec 13.2138 (SPHEREx DR1)",
+   "stacked SNR 30.7 over 60 exposures; best single-frame SNR 44.7",
+   "best trial distance 263 AU, extra rate (+0.0, +0.0) arcsec/day",
+   "40 SPHEREx bands measured; methane score 1.00 (toy template fit)"
+  ]
+ },
+ "skeptic": {
+  "checks": [
+   {
+    "name": "known_object",
+    "result": "no JPL SBIdent match within 30 arcsec"
+   },
+   {
+    "name": "single_frame_visible",
+    "result": "yes: visible in a single frame (SNR 44.7), so a static residual is likely"
+   },
+   {
+    "name": "stationary",
+    "result": "best trial requires parallax motion"
+   },
+   {
+    "name": "spectrum",
+    "result": "best of three toy templates: planet; with 40 noisy points this is weak evidence"
+   },
+   {
+    "name": "noise",
+    "result": "above the 5-sigma threshold in the stack"
+   }
+  ],
+  "verdict": "Injected planet; recovered in the stack."
+ },
+ "reporter": {
+  "headline": "Simulated Planet Nine at V 15.0: recovered in the stack",
+  "dossier_md": "This is a synthetic planet from the Caltech reference population, injected into real SPHEREx frames along its true parallax track at 291 AU. It is invisible in any single frame (best single-frame SNR 44.7) and reaches SNR 30.7 when the frames are shifted along the correct trial motion and stacked.\n\nThe search recovered it with the right distance bin, which is the point of the injection test: it measures how deep the search reaches. \n\nNothing about this object is real. It exists to calibrate the search and to train the classifier and the crowd.",
+  "mpc_report": null
+ },
+ "verdict": "simulated",
+ "confidence": 1.0,
+ "sources": [
+  "NASA SPHEREx DR1 Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
+  "Caltech Planet Nine reference population v3",
+  "JPL SBIdent",
+  "JPL Horizons"
+ ]
+}

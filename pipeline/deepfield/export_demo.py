@@ -157,7 +157,49 @@ def export(bundle_dir: Path, out_dir: Path = WEB_DEMO_DIR) -> dict:
         dp = bundle_dir / "dossiers" / f"{cid}.json"
         if dp.exists():
             shutil.copy(dp, out_dir / "dossiers" / f"{cid}.json")
+    # Must run before candidates.json is written: it adds each row's `tensor` path.
+    n_model = export_model_for_browser(bundle_dir, out_dir, cand_rows)
     (out_dir / "candidates.json").write_text(json.dumps({"candidates": cand_rows, "source": cmeta.get("data_source"),
                                                           "n_total": len(cand_rows)}))
     (out_dir / "bundle.json").write_text(json.dumps(info))
-    return {"candidates": len(cand_rows), "cells": len(map_json["cells"]), "out": str(out_dir)}
+    return {"candidates": len(cand_rows), "cells": len(map_json["cells"]), "out": str(out_dir),
+            "browser_model": n_model}
+
+
+def export_model_for_browser(bundle_dir: Path, out_dir: Path, cand_rows: list[dict]) -> dict:
+    """Ship the classifier and its inputs so it can run in the visitor's browser.
+
+    The model is ours, trained from scratch on our own injections, and it is small enough
+    (tens of KB) to send. What was missing was its *input*: the web bundle carried only
+    display PNGs, which are 8-bit and stretched, not the normalised float stamps the
+    network was trained on. So each candidate also gets a 3x32x32 float32 tensor -- 12 KB
+    each -- prepared exactly as `normalise_stamp` does during training.
+
+    Without that, "AI in the browser" would mean scoring a picture of the data.
+    """
+    out = {"model": None, "tensors": 0}
+    model_src = bundle_dir / "model.onnx"
+    if model_src.exists():
+        shutil.copy(model_src, out_dir / "model.onnx")
+        if model_src.with_suffix(".json").exists():
+            shutil.copy(model_src.with_suffix(".json"), out_dir / "model.json")
+        out["model"] = model_src.stat().st_size
+
+    try:
+        from deepfield.ml.model import load_stamp_set
+    except Exception:
+        return out
+    for c in cand_rows:
+        cid = c["candidate_id"]
+        sd = bundle_dir / "stamps" / cid
+        if not (sd / "stamps.npz").exists():
+            continue
+        try:
+            tensor = load_stamp_set(sd).astype(np.float32)
+        except Exception:
+            continue
+        (out_dir / "stamps" / cid).mkdir(parents=True, exist_ok=True)
+        (out_dir / "stamps" / cid / "tensor.f32").write_bytes(tensor.tobytes())
+        c["tensor"] = f"stamps/{cid}/tensor.f32"
+        out["tensors"] += 1
+    return out

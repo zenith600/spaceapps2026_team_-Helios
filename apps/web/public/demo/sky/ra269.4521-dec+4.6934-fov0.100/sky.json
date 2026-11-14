@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "slug": "ra269.4521-dec+4.6934-fov0.100",
- "generated_at": "2026-11-14T09:51:42+00:00",
+ "generated_at": "2026-11-14T13:18:00+00:00",
  "source": "NASA SPHEREx DR1 Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
  "is_simulated": false,
  "target": {
@@ -11,7 +11,9 @@
   "dec_deg": 4.69336497,
   "resolver": "builtin",
   "note": "The fastest-moving star on the sky: 10.3 arcsec per year, about 1.7 SPHEREx pixels per year. Six light years away. The classic proper-motion target.",
-  "slug": "barnards-star"
+  "slug": "barnards-star",
+  "look_for": "Watch the bright star at the centre creep against the fixed background. It shifts about one SPHEREx pixel per year \u2014 the fastest motion of any star in the sky.",
+  "kind": "moving star"
  },
  "ra_deg": 269.45207696,
  "dec_deg": 4.69336497,
@@ -84,7 +86,7 @@
     "earliest_mjd": 61268.630812
    }
   },
-  "searched_at": "2026-11-14T09:51:39+00:00",
+  "searched_at": "2026-11-14T13:17:55+00:00",
   "n_exposures": 381,
   "n_visits": 16,
   "mjd_min": 60902.864715,
@@ -363,7 +365,7 @@
     "earliest_mjd": 61268.630812
    }
   },
-  "built_at": "2026-11-14T09:51:42+00:00"
+  "built_at": "2026-11-14T13:18:00+00:00"
  },
  "frames": {
   "epochs": [
@@ -901,29 +903,6 @@
     "png": "frames/e023.png",
     "flag_png": "flags/e023.png",
     "obs_id": "2026W13_1A_0549_1",
-    "detector": 3,
-    "mjd": 61124.894932277,
-    "wave_um": 1.7956,
-    "bandwidth_um": 0.044,
-    "visit": 8,
-    "collection": "spherex_dr1",
-    "good_fraction": 0.9816,
-    "psf_fwhm_arcsec": 7.45,
-    "flags": {
-     "SOURCE": 1.0,
-     "HALO": 0.00747,
-     "PERSIST": 0.00661,
-     "NONFUNC": 0.00431,
-     "TRANSIENT": 0.00373,
-     "SUR_ERROR": 0.00287,
-     "COLD": 0.00057
-    }
-   },
-   {
-    "id": "e024",
-    "png": "frames/e024.png",
-    "flag_png": "flags/e024.png",
-    "obs_id": "2026W13_1A_0549_1",
     "detector": 6,
     "mjd": 61124.894932277,
     "wave_um": 4.5525,
@@ -943,9 +922,54 @@
     }
    },
    {
+    "id": "e024",
+    "png": "frames/e024.png",
+    "flag_png": "flags/e024.png",
+    "obs_id": "2026W13_1A_0549_1",
+    "detector": 3,
+    "mjd": 61124.894932277,
+    "wave_um": 1.7956,
+    "bandwidth_um": 0.044,
+    "visit": 8,
+    "collection": "spherex_dr1",
+    "good_fraction": 0.9816,
+    "psf_fwhm_arcsec": 7.45,
+    "flags": {
+     "SOURCE": 1.0,
+     "HALO": 0.00747,
+     "PERSIST": 0.00661,
+     "NONFUNC": 0.00431,
+     "TRANSIENT": 0.00373,
+     "SUR_ERROR": 0.00287,
+     "COLD": 0.00057
+    }
+   },
+   {
     "id": "e025",
     "png": "frames/e025.png",
     "flag_png": "flags/e025.png",
+    "obs_id": "2026W15_2A_0137_1",
+    "detector": 3,
+    "mjd": 61140.030727046,
+    "wave_um": 1.8098,
+    "bandwidth_um": 0.0446,
+    "visit": 9,
+    "collection": "spherex_dr1",
+    "good_fraction": 0.9767,
+    "psf_fwhm_arcsec": 7.45,
+    "flags": {
+     "SOURCE": 1.0,
+     "PERSIST": 0.01005,
+     "HALO": 0.01005,
+     "TRANSIENT": 0.00345,
+     "NONFUNC": 0.00316,
+     "SUR_ERROR": 0.00259
+    }
+   },
+   {
+    "id": "e026",
+    "png": "frames/e026.png",
+    "flag_png": "flags/e026.png",
     "obs_id": "2026W15_2A_0137_1",
     "detector": 6,
     "mjd": 61140.030727046,
@@ -963,28 +987,6 @@
      "NONFUNC": 0.00373,
      "COLD": 0.00115,
      "OVERFLOW": 0.00029
-    }
-   },
-   {
-    "id": "e026",
-    "png": "frames/e026.png",
-    "flag_png": "flags/e026.png",
-    "obs_id": "2026W15_2A_0137_1",
-    "detector": 3,
-    "mjd": 61140.030727046,
-    "wave_um": 1.8098,
-    "bandwidth_um": 0.0446,
-    "visit": 9,
-    "collection": "spherex_dr1",
-    "good_fraction": 0.9767,
-    "psf_fwhm_arcsec": 7.45,
-    "flags": {
-     "SOURCE": 1.0,
-     "PERSIST": 0.01005,
-     "HALO": 0.01005,
-     "TRANSIENT": 0.00345,
-     "NONFUNC": 0.00316,
-     "SUR_ERROR": 0.00259
     }
    },
    {
@@ -1198,29 +1200,6 @@
     "png": "frames/e036.png",
     "flag_png": "flags/e036.png",
     "obs_id": "2026W36_1A_0510_1",
-    "detector": 1,
-    "mjd": 61285.257702231,
-    "wave_um": 0.7519,
-    "bandwidth_um": 0.0182,
-    "visit": 13,
-    "collection": "spherex_qr3",
-    "good_fraction": 0.9876,
-    "psf_fwhm_arcsec": 7.53,
-    "flags": {
-     "SOURCE": 1.0,
-     "HALO": 0.01063,
-     "TRANSIENT": 0.00431,
-     "SUR_ERROR": 0.00259,
-     "NONFUNC": 0.00172,
-     "CROSSTALK": 0.00144,
-     "COLD": 0.00029
-    }
-   },
-   {
-    "id": "e037",
-    "png": "frames/e037.png",
-    "flag_png": "flags/e037.png",
-    "obs_id": "2026W36_1A_0510_1",
     "detector": 4,
     "mjd": 61285.257702231,
     "wave_um": 2.4451,
@@ -1241,33 +1220,32 @@
     }
    },
    {
-    "id": "e038",
-    "png": "frames/e038.png",
-    "flag_png": "flags/e038.png",
-    "obs_id": "2026W38_2A_0562_1",
-    "detector": 3,
-    "mjd": 61303.186132277,
-    "wave_um": 2.41,
-    "bandwidth_um": 0.0535,
-    "visit": 14,
+    "id": "e037",
+    "png": "frames/e037.png",
+    "flag_png": "flags/e037.png",
+    "obs_id": "2026W36_1A_0510_1",
+    "detector": 1,
+    "mjd": 61285.257702231,
+    "wave_um": 0.7519,
+    "bandwidth_um": 0.0182,
+    "visit": 13,
     "collection": "spherex_qr3",
-    "good_fraction": 0.9776,
-    "psf_fwhm_arcsec": 7.45,
+    "good_fraction": 0.9876,
+    "psf_fwhm_arcsec": 7.53,
     "flags": {
      "SOURCE": 1.0,
-     "DICHROIC": 0.57541,
-     "HALO": 0.01436,
-     "PERSIST": 0.00575,
-     "TRANSIENT": 0.0046,
-     "SUR_ERROR": 0.00287,
-     "NONFUNC": 0.0023,
+     "HALO": 0.01063,
+     "TRANSIENT": 0.00431,
+     "SUR_ERROR": 0.00259,
+     "NONFUNC": 0.00172,
+     "CROSSTALK": 0.00144,
      "COLD": 0.00029
     }
    },
    {
-    "id": "e039",
-    "png": "frames/e039.png",
-    "flag_png": "flags/e039.png",
+    "id": "e038",
+    "png": "frames/e038.png",
+    "flag_png": "flags/e038.png",
     "obs_id": "2026W38_2A_0562_1",
     "detector": 6,
     "mjd": 61303.186132277,
@@ -1285,6 +1263,30 @@
      "NONFUNC": 0.00115,
      "PERSIST": 0.00057,
      "OVERFLOW": 0.00029,
+     "COLD": 0.00029
+    }
+   },
+   {
+    "id": "e039",
+    "png": "frames/e039.png",
+    "flag_png": "flags/e039.png",
+    "obs_id": "2026W38_2A_0562_1",
+    "detector": 3,
+    "mjd": 61303.186132277,
+    "wave_um": 2.41,
+    "bandwidth_um": 0.0535,
+    "visit": 14,
+    "collection": "spherex_qr3",
+    "good_fraction": 0.9776,
+    "psf_fwhm_arcsec": 7.45,
+    "flags": {
+     "SOURCE": 1.0,
+     "DICHROIC": 0.57541,
+     "HALO": 0.01436,
+     "PERSIST": 0.00575,
+     "TRANSIENT": 0.0046,
+     "SUR_ERROR": 0.00287,
+     "NONFUNC": 0.0023,
      "COLD": 0.00029
     }
    },
@@ -2416,7 +2418,251 @@
      "COLD": 0.00086
     }
    }
+  ],
+  "colour": [
+   {
+    "id": "c0",
+    "png": "colour/v0.png",
+    "visit": 0,
+    "n": 3,
+    "mjd": 60902.979988268664,
+    "label": "2025W33",
+    "bands": [
+     [
+      2.288,
+      2.288
+     ],
+     [
+      2.423,
+      2.423
+     ],
+     [
+      4.988,
+      4.988
+     ]
+    ]
+   },
+   {
+    "id": "c1",
+    "png": "colour/v1.png",
+    "visit": 1,
+    "n": 3,
+    "mjd": 60905.855415043006,
+    "label": "2025W34",
+    "bands": [
+     [
+      1.693,
+      1.693
+     ],
+     [
+      1.733,
+      1.733
+     ],
+     [
+      1.773,
+      1.773
+     ]
+    ]
+   },
+   {
+    "id": "c2",
+    "png": "colour/v2.png",
+    "visit": 2,
+    "n": 3,
+    "mjd": 60913.78142557567,
+    "label": "2025W34",
+    "bands": [
+     [
+      1.52,
+      1.52
+     ],
+     [
+      3.415,
+      3.415
+     ],
+     [
+      4.047,
+      4.047
+     ]
+    ]
+   },
+   {
+    "id": "c4",
+    "png": "colour/v4.png",
+    "visit": 4,
+    "n": 3,
+    "mjd": 60948.949156559676,
+    "label": "2025W40",
+    "bands": [
+     [
+      0.744,
+      0.744
+     ],
+     [
+      0.835,
+      0.835
+     ],
+     [
+      3.568,
+      3.568
+     ]
+    ]
+   },
+   {
+    "id": "c5",
+    "png": "colour/v5.png",
+    "visit": 5,
+    "n": 3,
+    "mjd": 61110.47579177567,
+    "label": "2026W11",
+    "bands": [
+     [
+      0.74,
+      0.74
+     ],
+     [
+      0.912,
+      0.912
+     ],
+     [
+      3.776,
+      3.776
+     ]
+    ]
+   },
+   {
+    "id": "c6",
+    "png": "colour/v6.png",
+    "visit": 6,
+    "n": 3,
+    "mjd": 61114.146880417335,
+    "label": "2026W11",
+    "bands": [
+     [
+      1.237,
+      1.237
+     ],
+     [
+      1.459,
+      1.459
+     ],
+     [
+      4.417,
+      4.417
+     ]
+    ]
+   },
+   {
+    "id": "c7",
+    "png": "colour/v7.png",
+    "visit": 7,
+    "n": 3,
+    "mjd": 61119.87361431034,
+    "label": "2026W12",
+    "bands": [
+     [
+      1.327,
+      1.327
+     ],
+     [
+      2.418,
+      2.418
+     ],
+     [
+      4.52,
+      4.52
+     ]
+    ]
+   },
+   {
+    "id": "c10",
+    "png": "colour/v10.png",
+    "visit": 10,
+    "n": 3,
+    "mjd": 61164.699074214,
+    "label": "2026W19",
+    "bands": [
+     [
+      2.125,
+      2.125
+     ],
+     [
+      2.225,
+      2.225
+     ],
+     [
+      4.908,
+      4.908
+     ]
+    ]
+   },
+   {
+    "id": "c11",
+    "png": "colour/v11.png",
+    "visit": 11,
+    "n": 3,
+    "mjd": 61271.211023963,
+    "label": "2026W33",
+    "bands": [
+     [
+      1.636,
+      1.636
+     ],
+     [
+      2.154,
+      2.154
+     ],
+     [
+      4.304,
+      4.304
+     ]
+    ]
+   },
+   {
+    "id": "c12",
+    "png": "colour/v12.png",
+    "visit": 12,
+    "n": 3,
+    "mjd": 61278.29215805667,
+    "label": "2026W34",
+    "bands": [
+     [
+      0.739,
+      0.739
+     ],
+     [
+      0.769,
+      0.769
+     ],
+     [
+      3.369,
+      3.369
+     ]
+    ]
+   }
   ]
+ },
+ "colour": {
+  "available": true,
+  "png": "colour.png",
+  "channels": [
+   {
+    "colour": "red",
+    "role": "longest wavelengths",
+    "range_um": "3.37-5.00 um"
+   },
+   {
+    "colour": "green",
+    "role": "middle wavelengths",
+    "range_um": "1.69-2.98 um"
+   },
+   {
+    "colour": "blue",
+    "role": "shortest wavelengths",
+    "range_um": "0.74-1.64 um"
+   }
+  ],
+  "note": "False colour: SPHEREx's infrared bands mapped to red, green and blue. Red means a source is brighter at longer wavelengths \u2014 cooler, dustier or more absorbed. Blue means the opposite. These are not visible-light colours."
  },
  "difference": [
   {
@@ -6098,7 +6344,7 @@
  },
  "cube": "cube.npz",
  "skipped": [],
- "elapsed_s": 3.0,
+ "elapsed_s": 5.6,
  "limits": [
   "SPHEREx pixels are 6.15 arcsec; close pairs blend together.",
   "39 distinct bands measured here, out of 102 across the full survey. Each pixel sees one wavelength, set by its position on the filter.",
@@ -6285,30 +6531,30 @@
    {
     "plane": "flux",
     "i": 23,
-    "offset": -0.20750434696674347,
-    "scale": 0.0003693072441317875,
-    "n_valid": 3417
-   },
-   {
-    "plane": "flux",
-    "i": 24,
     "offset": -1.4201347827911377,
     "scale": 0.0011042758572777187,
     "n_valid": 3427
    },
    {
     "plane": "flux",
+    "i": 24,
+    "offset": -0.20750434696674347,
+    "scale": 0.0003693072441317875,
+    "n_valid": 3417
+   },
+   {
+    "plane": "flux",
     "i": 25,
-    "offset": -2.166672706604004,
-    "scale": 0.002932057337164715,
-    "n_valid": 3433
+    "offset": 0.15571361780166626,
+    "scale": 0.0003468885830892512,
+    "n_valid": 3400
    },
    {
     "plane": "flux",
     "i": 26,
-    "offset": 0.15571361780166626,
-    "scale": 0.0003468885830892512,
-    "n_valid": 3400
+    "offset": -2.166672706604004,
+    "scale": 0.002932057337164715,
+    "n_valid": 3433
    },
    {
     "plane": "flux",
@@ -6376,30 +6622,30 @@
    {
     "plane": "flux",
     "i": 36,
-    "offset": -0.08344707638025284,
-    "scale": 0.00119501234038154,
-    "n_valid": 3438
-   },
-   {
-    "plane": "flux",
-    "i": 37,
     "offset": -1.9076424837112427,
     "scale": 0.0006200914002099327,
     "n_valid": 3430
    },
    {
     "plane": "flux",
+    "i": 37,
+    "offset": -0.08344707638025284,
+    "scale": 0.00119501234038154,
+    "n_valid": 3438
+   },
+   {
+    "plane": "flux",
     "i": 38,
-    "offset": -0.09757758677005768,
-    "scale": 0.00022198997703307127,
-    "n_valid": 3403
+    "offset": 0.5521804690361023,
+    "scale": 0.0018283858548319,
+    "n_valid": 3437
    },
    {
     "plane": "flux",
     "i": 39,
-    "offset": 0.5521804690361023,
-    "scale": 0.0018283858548319,
-    "n_valid": 3437
+    "offset": -0.09757758677005768,
+    "scale": 0.00022198997703307127,
+    "n_valid": 3403
    },
    {
     "plane": "flux",
@@ -6579,30 +6825,30 @@
    {
     "plane": "var",
     "i": 23,
-    "offset": 0.0002615361590869725,
-    "scale": 4.1746659732938484e-07,
-    "n_valid": 3417
-   },
-   {
-    "plane": "var",
-    "i": 24,
     "offset": 0.0017313295975327492,
     "scale": 2.605775696869875,
     "n_valid": 3427
    },
    {
     "plane": "var",
+    "i": 24,
+    "offset": 0.0002615361590869725,
+    "scale": 4.1746659732938484e-07,
+    "n_valid": 3417
+   },
+   {
+    "plane": "var",
     "i": 25,
-    "offset": 0.0014738142490386963,
-    "scale": 3.4094465529524483,
-    "n_valid": 3433
+    "offset": 0.00023809281992726028,
+    "scale": 3.907233129492546e-07,
+    "n_valid": 3400
    },
    {
     "plane": "var",
     "i": 26,
-    "offset": 0.00023809281992726028,
-    "scale": 3.907233129492546e-07,
-    "n_valid": 3400
+    "offset": 0.0014738142490386963,
+    "scale": 3.4094465529524483,
+    "n_valid": 3433
    },
    {
     "plane": "var",
@@ -6670,30 +6916,30 @@
    {
     "plane": "var",
     "i": 36,
-    "offset": 0.00023066102585289627,
-    "scale": 3.327278918703879e-05,
-    "n_valid": 3438
-   },
-   {
-    "plane": "var",
-    "i": 37,
     "offset": 0.00016296558897010982,
     "scale": 5.346967792856142,
     "n_valid": 3430
    },
    {
     "plane": "var",
+    "i": 37,
+    "offset": 0.00023066102585289627,
+    "scale": 3.327278918703879e-05,
+    "n_valid": 3438
+   },
+   {
+    "plane": "var",
     "i": 38,
-    "offset": 0.0002513833751436323,
-    "scale": 1.6393020065735192e-06,
-    "n_valid": 3403
+    "offset": 0.003936017397791147,
+    "scale": 2.6140943413187445,
+    "n_valid": 3437
    },
    {
     "plane": "var",
     "i": 39,
-    "offset": 0.003936017397791147,
-    "scale": 2.6140943413187445,
-    "n_valid": 3437
+    "offset": 0.0002513833751436323,
+    "scale": 1.6393020065735192e-06,
+    "n_valid": 3403
    },
    {
     "plane": "var",
@@ -6778,10 +7024,10 @@
    1.3274,
    2.4185,
    4.5203,
-   1.7956,
    4.5525,
-   4.5642,
+   1.7956,
    1.8098,
+   4.5642,
    2.1252,
    2.2251,
    4.9077,
@@ -6791,10 +7037,10 @@
    0.7692,
    0.739,
    3.3693,
-   0.7519,
    2.4451,
-   2.41,
+   0.7519,
    4.9987,
+   2.41,
    1.4978,
    4.2769
   ],
@@ -6822,10 +7068,10 @@
    0.032,
    0.0448,
    0.0363,
-   0.044,
    0.0365,
-   0.0359,
+   0.044,
    0.0446,
+   0.0359,
    0.0533,
    0.0557,
    0.037,
@@ -6835,10 +7081,10 @@
    0.019,
    0.0176,
    0.0958,
-   0.0182,
    0.0583,
-   0.0535,
+   0.0182,
    0.0363,
+   0.0535,
    0.0368,
    0.0373
   ],
@@ -6866,10 +7112,10 @@
    2,
    3,
    6,
-   3,
-   6,
    6,
    3,
+   3,
+   6,
    3,
    3,
    6,
@@ -6879,10 +7125,10 @@
    1,
    1,
    4,
-   1,
    4,
-   3,
+   1,
    6,
+   3,
    2,
    5
   ],

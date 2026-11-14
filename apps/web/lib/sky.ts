@@ -5,6 +5,7 @@
 //  - API mode: the FastAPI /sky/* routes, which can also build a view of ANY coordinate
 //    live from IRSA.
 import { API_URL, DEMO } from "./api";
+import { classifyPoints } from "./spectralFit";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,7 +49,8 @@ export type SkyBundle = {
   };
   search: { collections_searched: string[]; collections_available: string[]; collection_source: string };
   visits: { visit: number; n_exposures: number; mjd_start: number; mjd_end: number; label: string }[];
-  frames: { epochs: EpochFrame[]; detectors: DetectorFrame[]; visits: VisitFrame[] };
+  frames: { epochs: EpochFrame[]; detectors: DetectorFrame[]; visits: VisitFrame[]; colour?: ColourFrame[] };
+  colour?: ColourMeta;
   difference: DiffFrame[];
   stack: { png: string; n: number; note: string };
   static: { png: string; method: string; note: string };
@@ -104,6 +106,41 @@ export type Spectrum = {
   n_points: number; n_exposures: number; n_excluded: number;
   n_bands: number; bands_total: number; points: SpectrumPoint[];
   unit: string; source: string; note: string; quality: PixelQuality;
+};
+
+export type ColourFrame = {
+  id: string; png: string; visit: number; n: number; mjd: number; label: string; bands: number[][];
+};
+export type ColourMeta = {
+  available: boolean; reason?: string; png?: string; note?: string;
+  channels?: { colour: string; role: string; range_um: string }[];
+};
+
+export type ChangeReport = {
+  slug: string; threshold: number; median_chi2_per_dof: number | null;
+  n_significant_pixels: number;
+  peaks: { x: number; y: number; chi2_per_dof: number; n_used: number }[];
+  method: string; caveat: string;
+};
+
+export type Classification = {
+  available: boolean; reason?: string; best?: string; label?: string; meaning?: string;
+  confident?: boolean; methane_score?: number | null; n_bands?: number;
+  unexplained?: boolean; best_chi2_per_dof?: number | null; anomaly_note?: string | null;
+  ranking?: { template: string; label: string; chi2_per_dof: number }[];
+  temperature?: { temperature_k: number | null; chi2_per_dof: number | null };
+  method?: string; caveat?: string;
+};
+
+export type OverlayLayer = {
+  id: string; name: string; owner: string; colour: string; note: string; n: number;
+  band: string | null; sources: { x: number; y: number; mag: number | null }[];
+};
+export type Overlay = { layers: OverlayLayer[]; radius_deg: number; note: string };
+
+export type Explanation = {
+  text: string; generator: string; generated_at: string;
+  is_machine_written: boolean; disclaimer: string;
 };
 
 export const FOV_MIN = 0.02;
@@ -394,6 +431,178 @@ export async function getSpectrum(bundle: SkyBundle, x: number, y: number, r = 1
   }
   if (!bundle.cube_u16) throw new Error("this view was exported without its pixel cube");
   return decodeSpectrum(bundle, await loadCube(bundle.slug, bundle.cube_u16), x, y, r);
+}
+
+// ---------------------------------------------------------------------------
+// Analysis, overlays and captions
+//
+// In DEMO mode everything that can be computed from data already in the browser is,
+// so a static deployment keeps every feature. Only the things that genuinely need a
+// server -- an arbitrary visit difference rendered from calibrated flux, a live model
+// call -- fall back to the API.
+// ---------------------------------------------------------------------------
+
+/** Where did anything move or vary? Mirrors `change_map` in sky/analyse.py. */
+export function changeMap(bundle: SkyBundle, data: Uint16Array): ChangeReport {
+  const cube = bundle.cube_u16!;
+  const [, n, ny, nx] = cube.shape;
+  const plane = ny * nx;
+  const codec = (which: string, i: number) => cube.codec.find((c) => c.plane === which && c.i === i)!;
+  const cf = Array.from({ length: n }, (_, i) => codec("flux", i));
+  const cv = Array.from({ length: n }, (_, i) => codec("var", i));
+
+  const chi = new Float32Array(plane).fill(NaN);
+  const used = new Int16Array(plane);
+  for (let p = 0; p < plane; p++) {
+    let wsum = 0, wfsum = 0, cnt = 0;
+    for (let i = 0; i < n; i++) {
+      const fc = data[i * plane + p], vc = data[(n + i) * plane + p];
+      if (fc === cube.nodata_code || vc === cube.nodata_code) continue;
+      const v = cv[i].offset + vc * cv[i].scale;
+      if (!(v > 0)) continue;
+      const f = cf[i].offset + fc * cf[i].scale;
+      wsum += 1 / v; wfsum += f / v; cnt++;
+    }
+    used[p] = cnt;
+    if (cnt < 3 || wsum <= 0) continue;
+    const mean = wfsum / wsum;
+    let c2 = 0;
+    for (let i = 0; i < n; i++) {
+      const fc = data[i * plane + p], vc = data[(n + i) * plane + p];
+      if (fc === cube.nodata_code || vc === cube.nodata_code) continue;
+      const v = cv[i].offset + vc * cv[i].scale;
+      if (!(v > 0)) continue;
+      const d = cf[i].offset + fc * cf[i].scale - mean;
+      c2 += (d * d) / v;
+    }
+    chi[p] = c2 / (cnt - 1);
+  }
+
+  const threshold = 3.0;
+  const finite = Array.from(chi).filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
+  const peaks: ChangeReport["peaks"] = [];
+  const sep = 3;
+  for (let y = 0; y < ny; y++) {
+    for (let x = 0; x < nx; x++) {
+      const v = chi[y * nx + x];
+      if (!Number.isFinite(v) || v < threshold) continue;
+      let isMax = true;
+      for (let dy = -sep; dy <= sep && isMax; dy++) {
+        for (let dx = -sep; dx <= sep; dx++) {
+          const yy = y + dy, xx = x + dx;
+          if (yy < 0 || yy >= ny || xx < 0 || xx >= nx) continue;
+          const u = chi[yy * nx + xx];
+          if (Number.isFinite(u) && u > v) { isMax = false; break; }
+        }
+      }
+      if (isMax) peaks.push({ x, y, chi2_per_dof: Math.round(v * 100) / 100, n_used: used[y * nx + x] });
+    }
+  }
+  peaks.sort((a, b) => b.chi2_per_dof - a.chi2_per_dof);
+
+  return {
+    slug: bundle.slug, threshold,
+    median_chi2_per_dof: finite.length ? Math.round(finite[Math.floor(finite.length / 2)] * 1000) / 1000 : null,
+    n_significant_pixels: Array.from(chi).filter((v) => v > threshold).length,
+    peaks: peaks.slice(0, 12),
+    method: "Chi-squared of each pixel's brightness against a single constant value, weighted by the " +
+      "measured noise. Untrained and transparent: it reports where the data disagree with “nothing happened here”.",
+    caveat: "Flags change of any kind — real movement, variability, a cosmic ray, or the edge of a " +
+      "saturated star. It is a place to look, not a discovery.",
+  };
+}
+
+export async function getChangeMap(bundle: SkyBundle): Promise<ChangeReport> {
+  if (!DEMO) return getJson<ChangeReport>(`${API_URL}/sky/change/${bundle.slug}`);
+  if (!bundle.cube_u16) throw new Error("this view was exported without its pixel cube");
+  return changeMap(bundle, await loadCube(bundle.slug, bundle.cube_u16));
+}
+
+export async function getClassification(bundle: SkyBundle, x: number, y: number, r = 1): Promise<Classification> {
+  if (!DEMO) {
+    return getJson<Classification>(
+      `${API_URL}/sky/classify/${bundle.slug}?x=${Math.round(x)}&y=${Math.round(y)}&r=${r}`);
+  }
+  // In DEMO mode the browser already has the spectrum; the template fit runs here.
+  const spec = await getSpectrum(bundle, x, y, r);
+  return classifyPoints(spec.points);
+}
+
+export async function getOverlay(bundle: SkyBundle): Promise<Overlay> {
+  return DEMO
+    ? getJson<Overlay>(`/demo/sky/${bundle.slug}/overlay.json`)
+    : getJson<Overlay>(`${API_URL}/sky/overlay/${bundle.slug}`);
+}
+
+export async function getExplanation(bundle: SkyBundle): Promise<Explanation> {
+  return DEMO
+    ? getJson<Explanation>(`/demo/sky/${bundle.slug}/explain.json`)
+    : getJson<Explanation>(`${API_URL}/sky/explain/${bundle.slug}`);
+}
+
+/**
+ * Difference between any two visits.
+ *
+ * Precomputing every pair would be N² images — 961 for R Draconis — so it is made on
+ * demand. In the browser that means decoding the cube and painting a canvas, which keeps
+ * true A−B comparison working on a static deployment; with an API the server renders it
+ * from the same calibrated flux. Either way the subtraction is of real surface brightness,
+ * never of the 8-bit display PNGs.
+ */
+export async function differenceImage(bundle: SkyBundle, a: number, b: number): Promise<string> {
+  if (!DEMO) return `${API_URL}/sky/difference/${bundle.slug}?a=${a}&b=${b}`;
+  const cube = bundle.cube_u16;
+  if (!cube) throw new Error("this view was exported without its pixel cube");
+  const data = await loadCube(bundle.slug, cube);
+  const [, n, ny, nx] = cube.shape;
+  const plane = ny * nx;
+  const codec = (which: string, i: number) => cube.codec.find((c) => c.plane === which && c.i === i)!;
+
+  const coadd = (visit: number) => {
+    const out = new Float64Array(plane).fill(NaN);
+    const num = new Float64Array(plane), den = new Float64Array(plane);
+    for (let i = 0; i < n; i++) {
+      if (cube.visit[i] !== visit) continue;
+      const cf = codec("flux", i), cv = codec("var", i);
+      for (let p = 0; p < plane; p++) {
+        const fc = data[i * plane + p], vc = data[(n + i) * plane + p];
+        if (fc === cube.nodata_code || vc === cube.nodata_code) continue;
+        const v = cv.offset + vc * cv.scale;
+        if (!(v > 0)) continue;
+        num[p] += (cf.offset + fc * cf.scale) / v;
+        den[p] += 1 / v;
+      }
+    }
+    for (let p = 0; p < plane; p++) if (den[p] > 0) out[p] = num[p] / den[p];
+    return out;
+  };
+
+  const A = coadd(a), B = coadd(b);
+  const diff = new Float64Array(plane);
+  const finite: number[] = [];
+  for (let p = 0; p < plane; p++) {
+    diff[p] = B[p] - A[p];
+    if (Number.isFinite(diff[p])) finite.push(Math.abs(diff[p]));
+  }
+  finite.sort((x, y) => x - y);
+  const lim = finite.length ? finite[Math.floor(finite.length * 0.98)] || 1 : 1;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = nx; canvas.height = ny;
+  const ctx = canvas.getContext("2d")!;
+  const img = ctx.createImageData(nx, ny);
+  for (let y = 0; y < ny; y++) {
+    for (let x = 0; x < nx; x++) {
+      const v = diff[y * nx + x];
+      // PNG rows run top-down, the array bottom-up.
+      const o = ((ny - 1 - y) * nx + x) * 4;
+      const g = Number.isFinite(v) ? Math.round(255 * Math.min(1, Math.max(0, (v / lim + 1) / 2))) : 0;
+      img.data[o] = img.data[o + 1] = img.data[o + 2] = g;
+      img.data[o + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return canvas.toDataURL("image/png");
 }
 
 // ---------------------------------------------------------------------------

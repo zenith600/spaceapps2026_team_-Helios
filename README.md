@@ -31,6 +31,14 @@ instantly, with no API and no network:
 
 Any other coordinate is fetched live from IRSA when the API is running.
 
+**What you can do with a view:** play it as a time-lapse, see it in false colour (102 infrared
+bands mapped to RGB), coadd per detector for depth, step through raw exposures with NASA's
+quality flags, subtract any visit from any other, mark catalogued sources from Gaia DR3 /
+AllWISE / 2MASS to see which dots are *not* already known, ask "find what changed" for a
+per-pixel χ² against a constant-brightness model, and click any pixel for a spectrum built on
+the spot — with a template fit saying whether the shape looks methane-rich, like reflected
+sunlight, or like a star.
+
 Docs: [docs/SKY.md](docs/SKY.md) (how the viewer works) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
 [docs/PLAN.md](docs/PLAN.md) · [docs/STATUS.md](docs/STATUS.md) (what works, what is faked, what is blocked).
 
@@ -117,6 +125,23 @@ stack uses it automatically, else CPU.
 - **Sky Viewer on a static host:** `NEXT_PUBLIC_DEMO_MODE=1` serves the five baked targets with no API at all —
   including spectra, which the browser decodes from each bundle's `cube.u16`. Live views of arbitrary coordinates
   need the API; set `SKY_ALLOW_LIVE=0` there if you want a frozen deployment that refuses to fetch.
+
+## AI and ML
+
+Everything that touches the data is either physics or a network we trained ourselves:
+
+| Component | Weights |
+| --- | --- |
+| Real/bogus CNN (ships as ONNX, runs in your browser) | trained from scratch on our own injections |
+| Spectral classification, colour temperature | closed-form templates, no model |
+| "Find what changed", "odd one out" | plain statistics, no model |
+| Plain-language field captions | a hosted LLM writing prose from a numeric fact sheet |
+
+The LLM is optional and writes captions only — it sees measured numbers, never raw text from
+anywhere, so there is no prompt-injection surface; any output claiming a discovery is rejected;
+and with no key, no network, or a bad answer it falls back to a deterministic caption built from
+the same facts. Set `LLM_API_KEY` in `.env` (gitignored) to enable it. Model ids are checked
+against a vendor blocklist so the project's country rule cannot be bypassed by configuration.
 
 ## Data and rules
 

@@ -1,0 +1,56 @@
+{
+ "kind": "RELEASE",
+ "generated_at": "2026-11-14T13:46:37+00:00",
+ "n_patches": 1,
+ "mag50": {
+  "P001": 16.0,
+  "ALL": 16.0
+ },
+ "n_injected": 48,
+ "n_recovered": 8,
+ "n_off_field_excluded": 12,
+ "frac_excluded_prior": 0.7826,
+ "frac_excluded_deepfield": 0.0,
+ "n_excluded_deepfield": 0,
+ "ml": {
+  "trained": true,
+  "ranking_uses": "rule_score",
+  "val_auc": 0.7055555555555556,
+  "val_acc": 0.6551724137931034,
+  "n": 148,
+  "n_pos": 59,
+  "note": "ml_score filled from model.onnx"
+ },
+ "dossiers": {
+  "claude": 0,
+  "offline": 4,
+  "model": null
+ },
+ "patches": [
+  {
+   "patch_id": "P001",
+   "ra_deg": 64.6875,
+   "dec_deg": 13.24801490567695,
+   "n_exposures": 60,
+   "n_visits": 2,
+   "mode": "two-visit stack, distance grid only (two time samples cannot separate parallax from proper motion, so position is weakly constrained)",
+   "mjd_start": 60907.658609546,
+   "mjd_end": 61092.74537237,
+   "n_bands": 56,
+   "clean_snr_max": 30.894363403320312,
+   "median_pixel_sigma_mjysr": 0.02458011358976364,
+   "n_injected": 60,
+   "n_recovered": 8,
+   "observer": "JPL Horizons SPHEREx (-163182) heliocentric ICRF",
+   "known_bodies": "13 known bodies from JPL SBIdent",
+   "device": "cpu",
+   "elapsed_s": 570.790634393692
+  }
+ ],
+ "sources": [
+  "NASA SPHEREx DR1 Level 2 spectral images via IRSA (irsa.ipac.caltech.edu)",
+  "Caltech Planet Nine reference population v3 (Brown 2023, doi:10.22002/8fjad-x7y61)",
+  "JPL Horizons",
+  "JPL SBIdent"
+ ]
+}

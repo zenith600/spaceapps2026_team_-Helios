@@ -107,5 +107,37 @@ def write_flag_png(flags: np.ndarray, path: Path, *, source: str) -> Path:
     return path
 
 
+def write_rgb_png(r: np.ndarray, g: np.ndarray, b: np.ndarray, path: Path, *, source: str,
+                  limits: list[tuple[float, float]], mode: str = "asinh",
+                  extra: dict | None = None) -> Path:
+    """False-colour composite: three wavelength groups into red, green and blue.
+
+    SPHEREx sees in 102 infrared bands that no eye can perceive, so the honest way to show
+    colour is to map the longest wavelengths to red and the shortest to blue, exactly as
+    infrared images are conventionally presented. Each channel gets its own stretch, so a
+    detector that happens to be more sensitive does not simply tint the whole field.
+
+    Anything missing in a channel renders black there, which is why a saturated core can
+    come out strongly coloured rather than white -- worth knowing before reading colour as
+    composition.
+    """
+    from PIL import Image, PngImagePlugin
+    planes = []
+    for arr, (lo, hi) in zip((r, g, b), limits):
+        a = np.asarray(arr, dtype=np.float32)
+        img = stretch(np.nan_to_num(a, nan=lo), lo, hi, mode)
+        img[~np.isfinite(a)] = 0.0
+        planes.append((255 * img).astype(np.uint8))
+    rgb = np.dstack(planes)[::-1]
+    info = PngImagePlugin.PngInfo()
+    info.add_text("source", source)
+    info.add_text("mapping", "R = longest wavelengths, G = middle, B = shortest")
+    for k, v in (extra or {}).items():
+        info.add_text(str(k), str(v))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(rgb, mode="RGB").save(path, pnginfo=info, optimize=True)
+    return path
+
+
 def overlay_legend() -> list[dict]:
     return [{"id": n, "colour": "#%02x%02x%02x" % c, "flags": list(b)} for n, c, b in OVERLAY_CLASSES]

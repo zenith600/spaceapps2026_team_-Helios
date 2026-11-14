@@ -101,6 +101,39 @@ def fetch(url: str, *, params: dict | None = None, timeout: float = 180.0,
     raise last  # pragma: no cover
 
 
+def post_json(url: str, payload: dict, *, headers: dict | None = None, timeout: float = 120.0,
+              retries: int = 2) -> dict:
+    """POST JSON through the same allowlist as every other call, and return the JSON reply.
+
+    Used for the OpenAI-compatible chat endpoint. Going through here rather than a vendor
+    SDK keeps one rule for every outbound request: if the host is not in manifest.yaml, it
+    does not happen, redirects included.
+    """
+    import time
+    assert_allowed(url)
+    last: Exception | None = None
+    for attempt in range(retries + 1):
+        try:
+            resp = requests.post(
+                url, json=payload, timeout=timeout,
+                headers={"User-Agent": "DeepField/0.1 (NASA Space Apps 2026)",
+                         "Content-Type": "application/json", **(headers or {})})
+            assert_response_allowed(resp)
+            if resp.status_code >= 500 and attempt < retries:
+                last = requests.HTTPError(f"{resp.status_code} from {url}")
+                time.sleep(2.0 * 2 ** attempt)
+                continue
+            resp.raise_for_status()
+            return resp.json()
+        except (requests.ConnectionError, requests.Timeout) as exc:
+            last = exc
+            if attempt < retries:
+                time.sleep(2.0 * 2 ** attempt)
+                continue
+            raise
+    raise last  # pragma: no cover
+
+
 def download(url: str, dest: Path, *, params: dict | None = None,
              expected_md5: str | None = None, timeout: float = 600.0) -> Path:
     """Stream a file to disk (atomic rename), verifying md5 when given."""
