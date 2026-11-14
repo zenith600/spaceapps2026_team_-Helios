@@ -132,9 +132,12 @@ datasets:
     licence: GPL-3.0 (Aladin Lite); HiPS imagery under its own survey terms
     # The library itself is bundled from npm (aladin-lite 3.8.2, pinned), not fetched from CDS:
     # the hosted path https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js was
-    # retired (404, checked 2026-11-14) and took the panel down with it. Only the HiPS sky
-    # imagery is still streamed from CDS at runtime, from the domains below.
-    access: ["npm:aladin-lite@3.8.2", "https://alasky.cds.unistra.fr/"]
+    # retired (404, checked 2026-11-14) and took the panel down with it.
+    # Sky imagery: on 2026-11-14 every CDS survey on alasky.cds.unistra.fr returned 404 and
+    # alaskybis timed out. The surveys' own records list IRSA as an official mirror, so the
+    # panel names its surveys (2MASS, AllWISE, DSS2) by IRSA URL. IRSA is the NASA archive
+    # all SPHEREx data here already comes from, and is covered by the spherex_dr1 entry.
+    access: ["npm:aladin-lite@3.8.2", "https://irsa.ipac.caltech.edu/data/hips/CDS/"]
     domains: [aladin.cds.unistra.fr, alasky.cds.unistra.fr, alaskybis.cds.unistra.fr, alasky.unistra.fr]
     optional: true
     used_for: >
