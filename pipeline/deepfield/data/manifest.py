@@ -62,13 +62,28 @@ def assert_allowed(url: str) -> None:
 
 
 def fetch(url: str, *, params: dict | None = None, timeout: float = 180.0,
-          stream: bool = False, headers: dict | None = None) -> requests.Response:
-    """GET with the allowlist enforced. Raises for HTTP errors."""
+          stream: bool = False, headers: dict | None = None, retries: int = 4) -> requests.Response:
+    """GET with the allowlist enforced and exponential backoff on 5xx / connection errors. Raises for HTTP errors."""
+    import time
     assert_allowed(url)
-    resp = requests.get(url, params=params, timeout=timeout, stream=stream,
-                        headers={"User-Agent": "DeepField/0.1 (NASA Space Apps 2026)", **(headers or {})})
-    resp.raise_for_status()
-    return resp
+    last: Exception | None = None
+    for attempt in range(retries + 1):
+        try:
+            resp = requests.get(url, params=params, timeout=timeout, stream=stream,
+                                headers={"User-Agent": "DeepField/0.1 (NASA Space Apps 2026)", **(headers or {})})
+            if resp.status_code >= 500 and attempt < retries:
+                last = requests.HTTPError(f"{resp.status_code} from {url}")
+                time.sleep(2.0 * 2 ** attempt)
+                continue
+            resp.raise_for_status()
+            return resp
+        except (requests.ConnectionError, requests.Timeout) as exc:
+            last = exc
+            if attempt < retries:
+                time.sleep(2.0 * 2 ** attempt)
+                continue
+            raise
+    raise last  # pragma: no cover
 
 
 def download(url: str, dest: Path, *, params: dict | None = None,

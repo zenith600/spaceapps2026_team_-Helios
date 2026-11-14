@@ -5,9 +5,12 @@ __pycache__/
 .ruff_cache/
 data/cache/
 data/work/
+data/sky/
 .env
+.env.local
 node_modules/
 .next/
 out/
+*.tsbuildinfo
 *.log
 *.sqlite
