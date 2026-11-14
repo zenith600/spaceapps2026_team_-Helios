@@ -2,8 +2,9 @@
 
 NASA Space Apps 2026 entry.
 
-**Live demo: <http://144.24.143.52/sky>** — the ready-made views, served from frozen SPHEREx
-files (no API needed). Try Barnard's Star, then switch the Interface toggle to **Pro**.
+**Live demo: <http://144.24.143.52/sky>** — the five challenge targets open instantly; any other
+position is built live from NASA's archive by the API on the same server (about a minute to search,
+a few minutes to build, then cached). Try Barnard's Star, then switch the Interface toggle to **Pro**.
 Every page and button is explained, with screenshots, in the
 [user guide (PDF)](docs/user-guide/Deep-Field-User-Guide.pdf).
 
