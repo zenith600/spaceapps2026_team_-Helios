@@ -4,9 +4,10 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { DEMO } from "@/lib/api";
 
+// Sky Viewer first after home: it is the thing a first-time visitor can actually use.
 const items = [
-  { href: "/", label: "The Hunt" },
   { href: "/sky", label: "Sky Viewer" },
+  { href: "/", label: "The Hunt" },
   { href: "/lab", label: "Candidate Lab" },
   { href: "/classify", label: "Classify" },
   { href: "/proof", label: "Proof" },

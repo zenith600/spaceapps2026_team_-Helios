@@ -19,12 +19,35 @@ export default function Hunt() {
   }, []);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+    <div className="flex flex-col gap-10">
+      {/* The thing anyone can use, first. */}
+      <section className="flex flex-col items-center gap-4 rounded-xl border border-line bg-panel px-5 py-8 text-center">
+        <h1 className="max-w-2xl text-2xl font-bold tracking-tight sm:text-3xl">
+          See how any patch of sky <span className="text-accent">changes over time</span>
+        </h1>
+        <p className="max-w-xl text-sm text-muted">
+          NASA&apos;s SPHEREx telescope photographs the entire sky every six months, in 102 colours of
+          infrared light. Pick a spot and we&apos;ll play back every visit as a short film, so anything
+          that moves or flickers gives itself away.
+        </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button asChild size="lg"><Link href="/sky">Open the Sky Viewer</Link></Button>
+          <Button asChild variant="outline" size="lg">
+            <Link href="/sky?q=Barnard%27s+Star">See a moving star</Link>
+          </Button>
+        </div>
+        <p className="text-[11px] text-muted">
+          Ready to view: Barnard&apos;s Star · WISE 0855 · Epsilon Indi B · RW Aurigae · R Draconis
+        </p>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
       <section>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Everyone else looked at the pictures.<br /><span className="text-accent">We searched where the pictures can&apos;t see.</span></h1>
+        <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Everyone else looked at the pictures.<br /><span className="text-accent">We searched where the pictures can&apos;t see.</span></h2>
         <p className="mt-3 max-w-prose text-sm text-muted">
-          Deep Field stacks SPHEREx exposures along gravity-predicted Planet Nine motions, checks each candidate&apos;s spectrum,
-          and lets you vet the results. The globe shows where Planet Nine could still be hiding; green is where we have looked.
+          The same images can be stacked along the paths a ninth planet would follow, revealing things too
+          faint for any single frame. The globe shows where Planet Nine could still be hiding; green is
+          where we have looked.
         </p>
         <div className="mt-4 overflow-hidden rounded-lg border border-line bg-black">
           <Globe texture={fileUrl("map_equirect.png")} targets={targets} />
@@ -77,6 +100,7 @@ export default function Hunt() {
           <Button asChild variant="outline"><Link href="/classify">Classify on your phone</Link></Button>
         </div>
       </section>
+      </div>
     </div>
   );
 }

@@ -27,6 +27,8 @@ class Target:
     resolver: str       # builtin | coords | sesame
     note: str = ""
     slug: str = ""
+    look_for: str = ""  # plain-language "what to watch for", shown above the player
+    kind: str = ""      # short human label, e.g. "moving star"
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -41,6 +43,11 @@ class _Known:
     note: str
     aliases: tuple[str, ...]
     featured: bool = False
+    #: One plain sentence telling a first-time viewer what to actually watch for. The whole
+    #: point of the tool is spotting change, and "here are 93 images" does not help anyone
+    #: who does not already know what they are looking at.
+    look_for: str = ""
+    kind: str = ""          # short human label: "moving star", "variable star", ...
 
 
 # ---------------------------------------------------------------------------
@@ -54,7 +61,11 @@ CATALOGUE: tuple[_Known, ...] = (
         "The fastest-moving star on the sky: 10.3 arcsec per year, about 1.7 SPHEREx pixels "
         "per year. Six light years away. The classic proper-motion target.",
         ("barnard", "barnards star", "barnard's star", "barnard star", "gj 699", "gl 699",
-         "hip 87937", "v2500 oph"), featured=True),
+         "hip 87937", "v2500 oph"), featured=True,
+        kind="moving star",
+        look_for="Watch the bright star at the centre creep against the fixed background. "
+                 "It shifts about one SPHEREx pixel per year — the fastest motion of any star "
+                 "in the sky."),
     _Known(
         # Position decoded from the 2MASS designation 2MASS J22041052-5646577, which is
         # the discovery identifier for this pair: 22h04m10.52s, -56d46m57.7s.
@@ -64,36 +75,62 @@ CATALOGUE: tuple[_Known, ...] = (
         "A pair of brown dwarfs (T1 + T6) orbiting the nearby star Epsilon Indi A, about "
         "400 arcsec away from it. Cold, methane-rich, and bright in the near infrared.",
         ("eps ind b", "epsilon indi b", "eps ind ba", "epsilon indi ba", "eps indi b",
-         "epsilon ind b", "eps ind bab", "2mass j22041052-5646577"), featured=True),
+         "epsilon ind b", "eps ind bab", "2mass j22041052-5646577"), featured=True,
+        kind="brown dwarf pair",
+        look_for="Two failed stars too small to burn, orbiting each other. They are cold and "
+                 "methane-rich, so they are far brighter in infrared than in visible light — "
+                 "click the centre to see that in the spectrum."),
     _Known(
         "wise-0855", "WISE 0855-0714", 133.795129, -7.245147,
         "The coldest known brown dwarf, 250 K, 7.5 light years away. Moves about 8 arcsec "
         "per year. Water-ice clouds. Position as given in the challenge brief.",
         ("wise 0855", "wise0855", "wise j0855", "wise 0855-0714", "wise j0855-0714",
-         "wise j085510.83-071442.5", "w0855"), featured=True),
+         "wise j085510.83-071442.5", "w0855"), featured=True,
+        kind="coldest brown dwarf",
+        look_for="The coldest object of its kind ever found — about -23 C, cold enough for "
+                 "water-ice clouds. It is 7.5 light years away and drifts roughly one SPHEREx "
+                 "pixel every nine months, so watch the centre across the full time-lapse."),
     _Known(
         "rw-aurigae", "RW Aurigae", 76.95652603, 30.40143817,
         "A young binary T Tauri star that dims by magnitudes for months at a time when its "
         "tidally disrupted disc passes in front of it. Brightness, not position, is the story.",
-        ("rw aur", "rw aurigae", "rw aur a", "hd 240764"), featured=True),
+        ("rw aur", "rw aurigae", "rw aur a", "hd 240764"), featured=True,
+        kind="young star with a torn disc",
+        look_for="This one does not move — it blinks. A newborn star whose dusty disc has been "
+                 "torn by a passing companion; when a streamer of that dust drifts across our "
+                 "line of sight the star fades for months. Watch its brightness, not its position."),
     _Known(
         "r-draconis", "R Draconis", 248.16761083, 66.75497942,
         "A Mira variable: a pulsating red giant that swings about 8 magnitudes over a "
         "245-day period. Enormous in the near infrared.",
-        ("r dra", "r draconis", "hip 80488"), featured=True),
+        ("r dra", "r draconis", "hip 80488"), featured=True,
+        kind="pulsating giant",
+        look_for="A dying red giant that swells and shrinks over about 245 days, changing "
+                 "brightness by a factor of a thousand. It is so bright here that its core "
+                 "saturates the detector — click slightly off-centre for a spectrum."),
     # A few extras that make good demos.
     _Known(
         "proxima-centauri", "Proxima Centauri", 217.42895, -62.67948,
         "The nearest star. 3.85 arcsec per year of proper motion plus a large parallax wobble.",
-        ("proxima", "proxima cen", "proxima centauri", "alpha cen c", "gj 551")),
+        ("proxima", "proxima cen", "proxima centauri", "alpha cen c", "gj 551"),
+        kind="nearest star",
+        look_for="The closest star to the Sun, with a known planet in its habitable zone. "
+                 "It both drifts and wobbles, because it is near enough that Earth's own orbit "
+                 "shifts its apparent position."),
     _Known(
         "luhman-16", "Luhman 16 AB", 162.32883, -53.31944,
         "The nearest brown dwarf binary, 6.5 light years away, moving 2.8 arcsec per year.",
-        ("luhman 16", "luhman16", "wise 1049-5319", "wise j1049-5319")),
+        ("luhman 16", "luhman16", "wise 1049-5319", "wise j1049-5319"),
+        kind="brown dwarf pair",
+        look_for="The nearest pair of brown dwarfs, 6.5 light years away, with weather: one of "
+                 "them has clouds that change its brightness as it rotates."),
     _Known(
         "teegardens-star", "Teegarden's Star", 43.25371, 16.88128,
         "A nearby red dwarf with two temperate planets and 5 arcsec per year of proper motion.",
-        ("teegarden", "teegardens star", "teegarden's star", "2mass j02530084+1652532")),
+        ("teegarden", "teegardens star", "teegarden's star", "2mass j02530084+1652532"),
+        kind="moving star",
+        look_for="A small, cool red dwarf 12 light years away with two planets that could hold "
+                 "liquid water. It moves noticeably against the background."),
 )
 
 _BY_KEY: dict[str, _Known] = {}
@@ -102,15 +139,18 @@ for _k in CATALOGUE:
         _BY_KEY[_a.lower().replace("'", "").replace("-", " ").strip()] = _k
 
 
+def _entry(k: _Known) -> dict:
+    return {"slug": k.slug, "name": k.name, "ra_deg": k.ra_deg, "dec_deg": k.dec_deg,
+            "note": k.note, "look_for": k.look_for, "kind": k.kind, "featured": k.featured}
+
+
 def featured() -> list[dict]:
     """The challenge test targets, for the viewer's quick-pick row."""
-    return [{"slug": k.slug, "name": k.name, "ra_deg": k.ra_deg, "dec_deg": k.dec_deg, "note": k.note}
-            for k in CATALOGUE if k.featured]
+    return [_entry(k) for k in CATALOGUE if k.featured]
 
 
 def catalogue() -> list[dict]:
-    return [{"slug": k.slug, "name": k.name, "ra_deg": k.ra_deg, "dec_deg": k.dec_deg,
-             "note": k.note, "featured": k.featured} for k in CATALOGUE]
+    return [_entry(k) for k in CATALOGUE]
 
 
 def _norm(s: str) -> str:
@@ -220,7 +260,8 @@ def resolve(query: str, *, allow_network: bool = True) -> Target:
 
     known = _BY_KEY.get(_norm(q))
     if known is not None:
-        return Target(q, known.name, known.ra_deg, known.dec_deg, "builtin", known.note, known.slug)
+        return Target(q, known.name, known.ra_deg, known.dec_deg, "builtin", known.note, known.slug,
+                      known.look_for, known.kind)
 
     try:
         coords = parse_coords(q)

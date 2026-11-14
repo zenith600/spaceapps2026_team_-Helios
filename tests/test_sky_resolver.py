@@ -61,6 +61,30 @@ def test_the_five_challenge_targets_resolve_offline():
         assert t.slug == f["slug"]
 
 
+def test_every_target_tells_the_viewer_what_to_look_for():
+    """The copy is the UI's whole onboarding: a list of images helps nobody who does not
+    already know what they are looking at. Treat it as data that must be present."""
+    for entry in R.catalogue():
+        name = entry["name"]
+        assert entry["look_for"], f"{name} has no 'what to look for' text"
+        assert entry["kind"], f"{name} has no short kind label"
+        assert 60 < len(entry["look_for"]) < 320, f"{name}: look_for should be a sentence or two"
+        assert len(entry["kind"]) < 32, f"{name}: kind label is a chip, keep it short"
+        assert entry["kind"] == entry["kind"].lower(), f"{name}: kind is rendered as a label"
+
+
+def test_look_for_text_reaches_a_resolved_target():
+    t = R.resolve("R Dra", allow_network=False)
+    assert "saturat" in t.look_for, "R Draconis should warn about its saturated core"
+    assert t.kind == "pulsating giant"
+
+
+def test_typed_coordinates_have_no_invented_description():
+    """We know nothing about an arbitrary coordinate; do not pretend otherwise."""
+    t = R.resolve("133.795 -7.245", allow_network=False)
+    assert t.look_for == "" and t.kind == ""
+
+
 @pytest.mark.parametrize("alias,slug", [
     ("barnard's star", "barnards-star"),
     ("BARNARD", "barnards-star"),

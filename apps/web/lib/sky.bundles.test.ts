@@ -12,7 +12,8 @@ import { parseCoords, skySlug, type SkyBundle } from "./sky";
 const demoRoot = resolve(__dirname, "../public/demo/sky");
 const index = JSON.parse(readFileSync(resolve(demoRoot, "index.json"), "utf8")) as {
   targets: { slug: string; name: string; ra_deg: number; dec_deg: number; fov_deg: number;
-             n_frames: number; n_visits: number; n_bands: number; baseline_days: number }[];
+             n_frames: number; n_visits: number; n_bands: number; baseline_days: number;
+             look_for?: string; kind?: string }[];
   collections_at_bake_time: string[];
 };
 const catalogue = JSON.parse(readFileSync(resolve(demoRoot, "catalogue.json"), "utf8")) as {
@@ -39,6 +40,16 @@ describe("the demo index", () => {
       expect(t.n_visits, t.name).toBeGreaterThan(1);
       expect(t.baseline_days, t.name).toBeGreaterThan(300);
       expect(t.n_frames, t.name).toBeGreaterThan(10);
+    }
+  });
+
+  it("carries the guidance the gallery and viewer show", () => {
+    // The gallery renders kind + look_for; without them a first-time visitor is choosing
+    // between five names with no idea what any of them does.
+    for (const t of index.targets) {
+      expect(t.look_for, t.name).toBeTruthy();
+      expect(t.kind, t.name).toBeTruthy();
+      expect(t.look_for!.length, t.name).toBeGreaterThan(60);
     }
   });
 

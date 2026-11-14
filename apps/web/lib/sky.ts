@@ -12,6 +12,7 @@ import { API_URL, DEMO } from "./api";
 export type SkyTarget = {
   query: string; name: string; ra_deg: number; dec_deg: number;
   resolver: "builtin" | "coords" | "sesame"; note: string; slug: string;
+  look_for?: string; kind?: string;
 };
 
 export type FlagSummary = Record<string, number>;
@@ -60,7 +61,8 @@ export type SkyBundle = {
 };
 
 export type SkyIndexEntry = {
-  slug: string; query: string; name: string; note: string; ra_deg: number; dec_deg: number; fov_deg: number;
+  slug: string; query: string; name: string; note: string; look_for?: string; kind?: string;
+  ra_deg: number; dec_deg: number; fov_deg: number;
   n_frames: number; n_visits: number; n_bands: number; bands_total: number; baseline_days: number;
   mjd_min: number; mjd_max: number; generated_at: string;
 };
@@ -135,7 +137,10 @@ async function getJson<T>(url: string): Promise<T> {
 // ---------------------------------------------------------------------------
 // Resolving. Mirrors pipeline/deepfield/sky/resolver.py so DEMO mode needs no API.
 // ---------------------------------------------------------------------------
-type CatalogueEntry = { slug: string; name: string; ra_deg: number; dec_deg: number; note: string; featured: boolean };
+type CatalogueEntry = {
+  slug: string; name: string; ra_deg: number; dec_deg: number;
+  note: string; look_for?: string; kind?: string; featured: boolean;
+};
 let catalogueCache: CatalogueEntry[] | null = null;
 
 export async function getCatalogue(): Promise<CatalogueEntry[]> {
@@ -182,7 +187,10 @@ export async function resolveTarget(query: string): Promise<SkyTarget> {
 
   const cat = await getCatalogue();
   const hit = cat.find((c) => normalise(c.name) === normalise(q) || normalise(c.slug) === normalise(q));
-  if (hit) return { query: q, name: hit.name, ra_deg: hit.ra_deg, dec_deg: hit.dec_deg, resolver: "builtin", note: hit.note, slug: hit.slug };
+  if (hit) {
+    return { query: q, name: hit.name, ra_deg: hit.ra_deg, dec_deg: hit.dec_deg, resolver: "builtin",
+             note: hit.note, slug: hit.slug, look_for: hit.look_for, kind: hit.kind };
+  }
 
   const coords = parseCoords(q);
   if (coords) {

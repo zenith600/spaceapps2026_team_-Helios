@@ -9,6 +9,21 @@ import {
 
 export type FrameMode = "visits" | "detectors" | "epochs" | "difference";
 
+/**
+ * Plain-language names, technical meaning in the hint. "Per-detector coadd" is precise and
+ * useless to someone meeting SPHEREx for the first time; "Deeper" plus a sentence is both.
+ */
+export const MODES: { id: FrameMode; label: string; hint: string }[] = [
+  { id: "visits", label: "Time-lapse",
+    hint: "One picture per visit, months apart. This is where movement shows up — watch for anything that shifts while the background stays put." },
+  { id: "detectors", label: "Deeper",
+    hint: "Pictures of the same colour added together, so faint things come out of the noise." },
+  { id: "epochs", label: "Every frame",
+    hint: "Each raw exposure as it came down, with its own colour and NASA's quality flags." },
+  { id: "difference", label: "What changed",
+    hint: "Each visit with the first one subtracted. Anything unchanged cancels to grey; white got brighter, black got fainter." },
+];
+
 /** The common shape the player needs, whichever mode is showing. */
 type PlayFrame = {
   id: string; png: string; flagPng?: string; mjd: number;
@@ -16,6 +31,7 @@ type PlayFrame = {
 };
 
 const SPEEDS = [1200, 700, 400, 200, 100];
+const SPEED_LABELS = ["slowest", "slow", "normal", "fast", "fastest"];
 
 function toPlayFrames(bundle: SkyBundle, mode: FrameMode): PlayFrame[] {
   const band = (w: number, bw: number) => `${w.toFixed(2)} µm ±${(bw / 2).toFixed(3)}`;
@@ -52,7 +68,7 @@ function toPlayFrames(bundle: SkyBundle, mode: FrameMode): PlayFrame[] {
 }
 
 export function SkyPlayer({
-  bundle, mode, onPickPixel, marker, showFlags, onToggleFlags,
+  bundle, mode, onPickPixel, marker, showFlags, onToggleFlags, hasPicked,
 }: {
   bundle: SkyBundle;
   mode: FrameMode;
@@ -60,6 +76,7 @@ export function SkyPlayer({
   marker?: { x: number; y: number } | null;
   showFlags: boolean;
   onToggleFlags: (v: boolean) => void;
+  hasPicked?: boolean;
 }) {
   const frames = useMemo(() => toPlayFrames(bundle, mode), [bundle, mode]);
   const [i, setI] = useState(0);
@@ -112,7 +129,7 @@ export function SkyPlayer({
 
   if (n === 0) {
     return <p className="rounded border border-line bg-panel p-4 text-xs text-muted">
-      No frames in this mode. {mode === "difference" ? "Difference frames need at least two visits." : ""}
+      Nothing to show in this view.{mode === "difference" ? " Comparing visits needs at least two of them." : ""}
     </p>;
   }
 
@@ -150,52 +167,64 @@ export function SkyPlayer({
                 width: `${100 / npix}%`, height: `${100 / npix}%`,
               }} />
           ) : null}
-          <div className="pointer-events-none absolute left-2 top-2 rounded bg-bg/70 px-2 py-1 text-[11px] mono">
+          <div className="pointer-events-none absolute left-2 top-2 rounded bg-bg/80 px-2 py-1 text-[11px] mono">
             {cur.title}
           </div>
           <div className="pointer-events-none absolute bottom-2 right-2 rounded bg-bg/70 px-2 py-1 text-[10px] text-muted mono">
-            {bundle.fov_deg}° · {npix}×{npix} px
+            {bundle.fov_deg}° across
           </div>
+          {/* The spectrum is the best thing in here and nothing hinted at it. Say so until used. */}
+          {onPickPixel && !hasPicked ? (
+            <div className="pointer-events-none absolute bottom-2 left-2 rounded bg-accent/90 px-2 py-1 text-[10px] font-medium text-black">
+              Click anywhere for that point&apos;s colours
+            </div>
+          ) : null}
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" onClick={() => setPlaying((p) => !p)} className="min-w-[72px]">
-          {playing ? "pause" : "play"}
+        <Button size="sm" onClick={() => setPlaying((p) => !p)} className="min-w-[84px]">
+          {playing ? "❚❚ Pause" : "▶ Play"}
         </Button>
-        <Button size="sm" variant="ghost" onClick={() => step(-1)}>◀</Button>
-        <Button size="sm" variant="ghost" onClick={() => step(1)}>▶</Button>
-        <input type="range" min={0} max={n - 1} value={i} aria-label="frame"
+        <Button size="sm" variant="outline" onClick={() => step(-1)} aria-label="previous frame">◀</Button>
+        <Button size="sm" variant="outline" onClick={() => step(1)} aria-label="next frame">▶</Button>
+        <input type="range" min={0} max={Math.max(n - 1, 0)} value={i} aria-label="frame"
           onChange={(e) => { setPlaying(false); setI(Number(e.target.value)); }}
-          className="h-1 flex-1 min-w-[120px] accent-[var(--color-accent)]" />
+          className="h-1.5 flex-1 min-w-[120px] accent-[var(--color-accent)]" />
         <span className="text-[11px] text-muted mono">{i + 1}/{n}</span>
-        <select value={speedIdx} onChange={(e) => setSpeedIdx(Number(e.target.value))}
-          aria-label="speed" className="rounded border border-line bg-panel px-2 py-1 text-[11px] mono">
-          {SPEEDS.map((ms, k) => <option key={ms} value={k}>{(1000 / ms).toFixed(1)} fps</option>)}
-        </select>
+        <label className="flex items-center gap-1 text-[11px] text-muted">
+          speed
+          <select value={speedIdx} onChange={(e) => setSpeedIdx(Number(e.target.value))}
+            aria-label="playback speed" className="rounded border border-line bg-panel px-1.5 py-1 text-[11px]">
+            {SPEED_LABELS.map((lbl, k) => <option key={lbl} value={k}>{lbl}</option>)}
+          </select>
+        </label>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
-        <span className="text-fg mono">{cur.subtitle}</span>
-        <span className="text-muted">{cur.detail}</span>
+      <div className="rounded border border-line bg-panel px-2 py-1.5 text-[11px]">
+        <span className="font-medium text-fg">{cur.subtitle}</span>
+        <span className="ml-2 text-muted">{cur.detail}</span>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-[11px]">
-        <span className="text-muted">overlay</span>
-        {(["none", "stack", "static"] as const).map((o) => (
+        <span className="text-muted">Compare with:</span>
+        {([["none", "nothing"], ["stack", "everything added up"], ["static", "the unchanging sky"]] as const).map(([o, lbl]) => (
           <button key={o} onClick={() => setOverlay(o)}
-            className={cn("rounded border border-line px-2 py-0.5 mono hover:text-fg",
-              overlay === o ? "bg-panel text-accent" : "text-muted")}>
-            {o === "none" ? "off" : o === "stack" ? `all ${bundle.stack.n} coadded` : "static sky"}
+            title={o === "stack" ? `All ${bundle.stack.n} images combined, laid over the current frame`
+              : o === "static" ? "What stays put across every visit — anything that moves is missing from it"
+              : "Show the frame on its own"}
+            className={cn("rounded-full border px-2.5 py-0.5",
+              overlay === o ? "border-accent/60 bg-accent/10 text-accent" : "border-line text-muted hover:text-fg")}>
+            {lbl}
           </button>
         ))}
         {mode === "epochs" ? (
-          <label className="ml-2 flex items-center gap-1 text-muted">
+          <label className="ml-1 flex cursor-pointer items-center gap-1 text-muted hover:text-fg">
             <input type="checkbox" checked={showFlags} onChange={(e) => onToggleFlags(e.target.checked)} />
-            contamination flags
+            show NASA&apos;s quality flags
           </label>
         ) : null}
-        <span className="ml-auto text-muted">space = play/pause · ← → = step</span>
+        <span className="ml-auto text-muted/70">space = play/pause · ← → = step</span>
       </div>
     </div>
   );

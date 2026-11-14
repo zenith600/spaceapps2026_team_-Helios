@@ -184,9 +184,13 @@ def bake_featured(*, fov_deg: float = DEFAULT_FOV, max_frames: int = DEFAULT_MAX
         b = res["bundle"]
         if export:
             export_one(res["slug"])
+        # Descriptive copy comes from the live catalogue, not from the bundle's frozen copy of
+        # it: rewording "what to look for" must not require re-downloading images.
+        t = resolve(q, allow_network=False)
         entries.append({
             "slug": res["slug"], "status": res["status"],
-            "query": q, "name": b["target"]["name"], "note": b["target"].get("note", ""),
+            "query": q, "name": t.name, "note": t.note,
+            "look_for": t.look_for, "kind": t.kind,
             "ra_deg": b["ra_deg"], "dec_deg": b["dec_deg"], "fov_deg": b["fov_deg"],
             "n_frames": b["coverage"]["n_used"], "n_visits": b["coverage"]["n_visits"],
             "n_bands": b["coverage"]["n_bands"], "bands_total": b["coverage"]["bands_total"],

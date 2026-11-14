@@ -40,12 +40,16 @@ export function SkySpectrum({ bundle, pixel, radius, onRadius, onJump }: {
 
   if (!pixel) {
     return (
-      <div className="rounded border border-line bg-panel p-4 text-xs text-muted">
-        <p className="mb-1 text-fg">Click any pixel in the image for its spectrum.</p>
-        <p>
-          Each SPHEREx exposure measures one wavelength at a given pixel, set by where that pixel
-          falls on the linear variable filter. Stack the exposures of one position and you get a
-          spectrum, built here in your browser the moment you click.
+      <div className="rounded-lg border border-dashed border-line bg-panel p-4 text-xs text-muted">
+        <p className="mb-1.5 text-sm font-medium text-fg">Click anywhere on the image →</p>
+        <p className="mb-2">
+          You&apos;ll get a <strong className="text-fg">spectrum</strong> for that exact spot: how bright
+          it is at each infrared colour. That is how astronomers tell what something is made of — water,
+          methane and carbon dioxide each absorb their own colours.
+        </p>
+        <p className="text-muted/80">
+          SPHEREx measures one colour per pixel per shot, so every exposure of this patch contributes a
+          different point. We assemble them the moment you click.
         </p>
       </div>
     );
@@ -61,18 +65,20 @@ export function SkySpectrum({ bundle, pixel, radius, onRadius, onJump }: {
           {spec ? <> · {formatRa(spec.ra_deg)} {formatDec(spec.dec_deg)}</> : null}
         </span>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1 text-muted">
-            box
+          <label className="flex items-center gap-1 text-muted" title="Average over a larger area for less noise">
+            area
             <select value={radius} onChange={(e) => onRadius(Number(e.target.value))}
-              className="rounded border border-line bg-panel px-1 py-0.5 mono">
-              {[0, 1, 2, 3].map((r) => <option key={r} value={r}>{2 * r + 1}×{2 * r + 1}</option>)}
+              className="rounded border border-line bg-panel px-1 py-0.5">
+              {[0, 1, 2, 3].map((r) => (
+                <option key={r} value={r}>{["1 pixel", "3×3", "5×5", "7×7"][r]}</option>
+              ))}
             </select>
           </label>
-          <label className="flex items-center gap-1 text-muted">
-            colour
+          <label className="flex items-center gap-1 text-muted" title="How the points are grouped by colour">
+            group by
             <select value={colourBy} onChange={(e) => setColourBy(e.target.value as "detector" | "visit")}
-              className="rounded border border-line bg-panel px-1 py-0.5 mono">
-              <option value="detector">detector</option>
+              className="rounded border border-line bg-panel px-1 py-0.5">
+              <option value="detector">camera</option>
               <option value="visit">visit</option>
             </select>
           </label>
@@ -116,7 +122,7 @@ export function SkySpectrum({ bundle, pixel, radius, onRadius, onJump }: {
                   error_y: { type: "data", array: pts.map((p) => p.flux_err_mjysr), visible: true, color: "#8b91a3", thickness: 1 },
                   error_x: { type: "data", array: pts.map((p) => p.bandwidth_um / 2), visible: true, color: "#8b91a3", thickness: 1 },
                   mode: "markers", type: "scatter",
-                  name: colourBy === "detector" ? `D${g}` : `visit ${g}`,
+                  name: colourBy === "detector" ? `camera ${g}` : `visit ${g}`,
                   marker: { color: DETECTOR_COLOURS[k % DETECTOR_COLOURS.length], size: 7 },
                   text: pts.map((p) => `${p.obs_id}<br>${mjdLabel(p.mjd)}<br>D${p.detector} · visit ${p.visit}`),
                   hovertemplate: "%{x:.3f} µm<br>%{y:.4f} MJy/sr<br>%{text}<extra></extra>",
@@ -132,8 +138,10 @@ export function SkySpectrum({ bundle, pixel, radius, onRadius, onJump }: {
             />
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
-            <span className="mono text-accent">{spec.n_bands} of {spec.bands_total} bands measured here</span>
-            <span className="text-muted mono">{spec.n_points} exposures · {(2 * radius + 1) ** 2}-pixel box</span>
+            <span className="text-accent">
+              <span className="mono">{spec.n_bands}</span> of SPHEREx&apos;s {spec.bands_total} colours measured here
+            </span>
+            <span className="text-muted">from <span className="mono">{spec.n_points}</span> separate exposures</span>
             <SourceTag source={spec.source} />
           </div>
           <p className="text-[10px] text-muted">{spec.note}</p>
