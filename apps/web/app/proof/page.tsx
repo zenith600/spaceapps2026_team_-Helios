@@ -82,7 +82,6 @@ export default function Proof() {
               ))}
             </tbody>
           </table>
-          <p className="mt-2 text-[11px] text-muted">{man?.rule}</p>
         </CardContent>
       </Card>
     </div>
