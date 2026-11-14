@@ -75,22 +75,22 @@
     "n_bands": 12
    },
    "methane_score": 1.0,
-   "temperature_k": 11746,
+   "temperature_k": 20000,
    "ranking": [
     {
      "template": "planet",
      "label": "cold and methane-rich",
-     "chi2_per_dof": 0.43
+     "chi2_per_dof": 0.1
     },
     {
      "template": "asteroid",
      "label": "reflected sunlight",
-     "chi2_per_dof": 2291.94
+     "chi2_per_dof": 45.78
     },
     {
      "template": "star",
      "label": "star-like",
-     "chi2_per_dof": 3024.73
+     "chi2_per_dof": 46.72
     }
    ]
   },
@@ -167,22 +167,22 @@
     "n_bands": 12
    },
    "methane_score": 0.0,
-   "temperature_k": 5160,
+   "temperature_k": 4799,
    "ranking": [
     {
      "template": "asteroid",
      "label": "reflected sunlight",
-     "chi2_per_dof": 0.92
+     "chi2_per_dof": 0.02
     },
     {
      "template": "star",
      "label": "star-like",
-     "chi2_per_dof": 108.62
+     "chi2_per_dof": 0.77
     },
     {
      "template": "planet",
      "label": "cold and methane-rich",
-     "chi2_per_dof": 1948.63
+     "chi2_per_dof": 31.99
     }
    ]
   },
@@ -264,17 +264,17 @@
     {
      "template": "star",
      "label": "star-like",
-     "chi2_per_dof": 0.79
+     "chi2_per_dof": 0.0
     },
     {
      "template": "asteroid",
      "label": "reflected sunlight",
-     "chi2_per_dof": 786.17
+     "chi2_per_dof": 0.79
     },
     {
      "template": "planet",
      "label": "cold and methane-rich",
-     "chi2_per_dof": 20926.93
+     "chi2_per_dof": 36.62
     }
    ]
   },
@@ -351,22 +351,22 @@
     "n_bands": 12
    },
    "methane_score": 0.0,
-   "temperature_k": 4572,
+   "temperature_k": 4463,
    "ranking": [
     {
      "template": "star",
      "label": "star-like",
-     "chi2_per_dof": 0.69
+     "chi2_per_dof": 0.15
     },
     {
      "template": "asteroid",
      "label": "reflected sunlight",
-     "chi2_per_dof": 7.86
+     "chi2_per_dof": 0.76
     },
     {
      "template": "planet",
      "label": "cold and methane-rich",
-     "chi2_per_dof": 208.23
+     "chi2_per_dof": 27.5
     }
    ]
   },

@@ -53,7 +53,27 @@ def main() -> int:
     }, indent=1))
     print(f"wrote {OUT} ({len(cases)} cases, {sum(c['n_points'] for c in cases)} points)")
     write_classify_fixture()
+    write_change_fixture(src)
     return 0
+
+
+def write_change_fixture(src: Path) -> None:
+    """Reference output of change_map on the real bundle, for the browser port to match."""
+    import numpy as np
+
+    from deepfield.sky.analyse import change_map, change_peaks
+    with np.load(src / "cube.npz", allow_pickle=True) as z:
+        cm = change_map(z["flux"], z["var"], z["good"], z["wave_um"])
+    out = Path(__file__).resolve().parents[1] / "apps" / "web" / "lib" / "__fixtures__" / "change.json"
+    out.write_text(json.dumps({
+        "generated_by": "scripts/make_spectrum_fixture.py",
+        "slug": SLUG,
+        "note": "Python change_map on float32 flux. The browser runs on the uint16 cube, so "
+                "values agree to quantisation; peak positions must agree exactly.",
+        "median": cm["median"], "mad": cm["mad"], "n_significant": cm["n_significant"],
+        "peaks": change_peaks(cm, max_peaks=12),
+    }, indent=1))
+    print(f"wrote {out}")
 
 
 def write_classify_fixture() -> None:

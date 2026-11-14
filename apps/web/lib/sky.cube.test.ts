@@ -15,14 +15,17 @@ const bundle = JSON.parse(readFileSync(resolve(demoDir, "sky.json"), "utf8")) as
 const raw = readFileSync(resolve(demoDir, "cube.u16"));
 const cube = new Uint16Array(raw.buffer, raw.byteOffset, raw.byteLength / 2);
 
-// The only legitimate disagreement is the quantiser itself, so the tolerance is read
-// from the codec rather than guessed: one step of the coarsest frame. Averaging a box
-// can only shrink the error, never grow it past a single step.
-const step = (plane: string) =>
-  Math.max(...bundle.cube_u16!.codec.filter((c) => c.plane === plane).map((c) => c.scale));
-const FLUX_TOL = step("flux");
-// err = sqrt(sum var)/n, so d(err) <= n*step_var / (2*sqrt(sum var)*n) = step_var/(2*err).
-const errTol = (err: number) => step("var") / (2 * Math.max(err, 1e-9));
+// Flux is linear-quantised, so its only legitimate disagreement is one step of the coarsest
+// frame. Averaging a box can only shrink that.
+const fluxStep = Math.max(...bundle.cube_u16!.codec.filter((c) => c.plane === "flux").map((c) => c.scale));
+const FLUX_TOL = fluxStep;
+
+// Error bars are held to a fixed *relative* tolerance, deliberately not one derived from
+// the quantiser. The first version derived it from the variance step, and so passed while
+// linear quantisation of a plane spanning ~4e9x left 10% of pixels' variance wrong by
+// more than 38%: a tolerance that scales with the quantiser cannot catch a bad quantiser.
+// With the variance stored in log space the real error is ~0.01%.
+const ERR_REL_TOL = 0.005;
 
 describe("uint16 cube decoder matches the Python reference", () => {
   it("loaded a real baked bundle", () => {
@@ -52,7 +55,7 @@ describe("uint16 cube decoder matches the Python reference", () => {
       it("recovers the same uncertainties and pixel counts", () => {
         got.points.forEach((p, i) => {
           const exp = c.points[i].flux_err_mjysr;
-          expect(Math.abs(p.flux_err_mjysr - exp)).toBeLessThan(errTol(exp));
+          expect(Math.abs(p.flux_err_mjysr - exp) / exp).toBeLessThan(ERR_REL_TOL);
           // Equal counts prove the browser applies the same good-pixel mask as Python.
           expect(p.n_pixels).toBe(c.points[i].n_pixels);
         });

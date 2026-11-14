@@ -105,9 +105,17 @@ export function fitTemplates(w: number[], f: number[], e: number[]) {
 }
 
 /** Same verdict shape the API returns, computed locally. */
-export function classifyPoints(points: SpectrumPoint[]): Classification {
+/** Matches CLASSIFY_SYS_FLOOR in sky/analyse.py — see there for why it exists. */
+const SYS_FLOOR = 0.10;
+
+/**
+ * `oddThreshold` is the field's own calibration (sky.json `classify.odd_threshold`). Without
+ * it a fixed fallback applies, which on real SPHEREx data flags almost everything.
+ */
+export function classifyPoints(points: SpectrumPoint[], oddThreshold?: number | null): Classification {
   if (!points.length) return { available: false, reason: "no usable exposures at this point" };
-  const w = points.map((p) => p.wave_um), f = points.map((p) => p.flux_mjysr), e = points.map((p) => p.flux_err_mjysr);
+  const w = points.map((p) => p.wave_um), f = points.map((p) => p.flux_mjysr);
+  const e = points.map((p) => Math.sqrt(p.flux_err_mjysr ** 2 + (SYS_FLOOR * Math.abs(p.flux_mjysr)) ** 2));
   const nBands = new Set(w.map((x) => x.toFixed(2))).size;
   if (nBands < 3) {
     return { available: false,
@@ -122,16 +130,19 @@ export function classifyPoints(points: SpectrumPoint[]): Classification {
   // How badly does even the best template fit? High means none of our shapes explain this,
   // which says something about our small model library rather than about the object.
   const bestChi = ranked.length ? Math.round((ranked[0][1] / dof) * 100) / 100 : null;
-  const unexplained = bestChi !== null && bestChi > 5.0;
+  const limit = oddThreshold ?? 5.0;
+  const unexplained = bestChi !== null && bestChi > limit;
   return {
     available: true, best, label, meaning,
-    confident: ranked.length > 1 && ranked[1][1] - ranked[0][1] > 2.0,
+    // Winning among three shapes that all fail is not confidence.
+    confident: ranked.length > 1 && ranked[1][1] - ranked[0][1] > 2.0 && !unexplained,
     unexplained,
     best_chi2_per_dof: bestChi,
     anomaly_note: unexplained
-      ? "None of the three templates fits this spectrum well. That makes it worth a look, but it is a " +
-        "gap in our small model library, not evidence of something new — a blended pair, a variable " +
-        "source, or a bad measurement all land here too."
+      ? "This spectrum fits our templates worse than almost every other point in this field. That makes " +
+        "it worth a look, but it is a gap in our small model library, not evidence of something new — a " +
+        "variable source (whose colours change between visits), a blended pair, or a bad measurement all " +
+        "land here too."
       : null,
     methane_score: Number.isFinite(fit.methane_score) ? Math.round(fit.methane_score * 1000) / 1000 : null,
     n_bands: nBands,

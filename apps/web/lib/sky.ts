@@ -33,9 +33,21 @@ export type VisitFrame = {
 };
 export type DiffFrame = { id: string; png: string; visit: number; reference_visit: number; mjd: number; label: string };
 
+export type Codec = { plane: string; i: number; offset: number; scale: number; transform?: "linear" | "log" };
+
+/**
+ * The one place a quantised cube value becomes a number. The variance plane is stored in
+ * log space (it spans ~4e9x within a frame, which linear uint16 cannot hold), so every
+ * reader must go through here rather than doing offset + code*scale by hand.
+ */
+export const decode = (c: Codec, code: number): number => {
+  const v = c.offset + code * c.scale;
+  return c.transform === "log" ? Math.exp(v) : v;
+};
+
 export type CubeU16 = {
   file: string; shape: [number, number, number, number]; planes: string[]; nodata_code: number;
-  codec: { plane: string; i: number; offset: number; scale: number }[];
+  codec: Codec[];
   mjd: number[]; wave_um: number[]; bandwidth_um: number[]; detector: number[]; visit: number[]; obs_id: string[];
 };
 
@@ -57,6 +69,7 @@ export type SkyBundle = {
   scale: { mode: string; vmin: number; vmax: number; unit: string; note: string };
   flag_legend: { id: string; colour: string; flags: string[] }[];
   pixel_quality?: { flag_class: number[]; classes: string[]; note: string };
+  classify?: { odd_threshold: number; odd_percentile: number | null; n_sampled: number; note: string };
   limits: string[];
   cube_u16?: CubeU16;
   file_base?: string;
@@ -117,9 +130,9 @@ export type ColourMeta = {
 };
 
 export type ChangeReport = {
-  slug: string; threshold: number; median_chi2_per_dof: number | null;
+  slug: string; threshold: number; median_chi2_per_dof: number | null; mad_chi2_per_dof?: number | null;
   n_significant_pixels: number;
-  peaks: { x: number; y: number; chi2_per_dof: number; n_used: number }[];
+  peaks: { x: number; y: number; z: number; chi2_per_dof: number; n_used: number }[];
   method: string; caveat: string;
 };
 
@@ -325,8 +338,8 @@ export function decodeSpectrum(bundle: SkyBundle, data: Uint16Array, x: number, 
         const fc = data[i * plane + off];
         const vc = data[(n + i) * plane + off];
         if (fc === cube.nodata_code || vc === cube.nodata_code) continue;
-        sum += cf.offset + fc * cf.scale;
-        vsum += cv.offset + vc * cv.scale;
+        sum += decode(cf, fc);
+        vsum += decode(cv, vc);
         npx++;
       }
     }
@@ -442,71 +455,135 @@ export async function getSpectrum(bundle: SkyBundle, x: number, y: number, r = 1
 // call -- fall back to the API.
 // ---------------------------------------------------------------------------
 
-/** Where did anything move or vary? Mirrors `change_map` in sky/analyse.py. */
-export function changeMap(bundle: SkyBundle, data: Uint16Array): ChangeReport {
+const median = (xs: number[]) => {
+  if (!xs.length) return NaN;
+  const s = [...xs].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : 0.5 * (s[m - 1] + s[m]);
+};
+
+/** Solve a small dense system A x = b by Gaussian elimination with partial pivoting. */
+function solveSmall(A: number[][], b: number[]): number[] | null {
+  const k = b.length;
+  const M = A.map((row, i) => [...row, b[i]]);
+  for (let c = 0; c < k; c++) {
+    let p = c;
+    for (let r = c + 1; r < k; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    if (Math.abs(M[p][c]) < 1e-300) return null;
+    [M[c], M[p]] = [M[p], M[c]];
+    for (let r = c + 1; r < k; r++) {
+      const f = M[r][c] / M[c][c];
+      for (let j = c; j <= k; j++) M[r][j] -= f * M[c][j];
+    }
+  }
+  const x = new Array(k).fill(0);
+  for (let r = k - 1; r >= 0; r--) {
+    let s = M[r][k];
+    for (let j = r + 1; j < k; j++) s -= M[r][j] * x[j];
+    x[r] = s / M[r][r];
+  }
+  return x;
+}
+
+/**
+ * Where does the brightness change in a way its colour cannot explain?
+ * Mirrors `change_map` in pipeline/deepfield/sky/analyse.py — see there for why a
+ * constant-brightness model is wrong for SPHEREx (each exposure sees a different
+ * wavelength, and the zodiacal background shifts per frame).
+ */
+export function changeMap(bundle: SkyBundle, data: Uint16Array,
+                          { deg = 2, floor = 0.05, threshold = 5.0 } = {}): ChangeReport {
   const cube = bundle.cube_u16!;
   const [, n, ny, nx] = cube.shape;
   const plane = ny * nx;
   const codec = (which: string, i: number) => cube.codec.find((c) => c.plane === which && c.i === i)!;
   const cf = Array.from({ length: n }, (_, i) => codec("flux", i));
   const cv = Array.from({ length: n }, (_, i) => codec("var", i));
+  const valid = (i: number, p: number) =>
+    data[i * plane + p] !== cube.nodata_code && data[(n + i) * plane + p] !== cube.nodata_code;
 
-  const chi = new Float32Array(plane).fill(NaN);
-  const used = new Int16Array(plane);
-  for (let p = 0; p < plane; p++) {
-    let wsum = 0, wfsum = 0, cnt = 0;
-    for (let i = 0; i < n; i++) {
-      const fc = data[i * plane + p], vc = data[(n + i) * plane + p];
-      if (fc === cube.nodata_code || vc === cube.nodata_code) continue;
-      const v = cv[i].offset + vc * cv[i].scale;
-      if (!(v > 0)) continue;
-      const f = cf[i].offset + fc * cf[i].scale;
-      wsum += 1 / v; wfsum += f / v; cnt++;
+  // 1. per-exposure robust background
+  const bg = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const vals: number[] = [];
+    for (let p = 0; p < plane; p++) {
+      if (!valid(i, p)) continue;
+      const v = decode(cv[i], data[(n + i) * plane + p]);
+      if (v > 0) vals.push(decode(cf[i], data[i * plane + p]));
     }
-    used[p] = cnt;
-    if (cnt < 3 || wsum <= 0) continue;
-    const mean = wfsum / wsum;
-    let c2 = 0;
-    for (let i = 0; i < n; i++) {
-      const fc = data[i * plane + p], vc = data[(n + i) * plane + p];
-      if (fc === cube.nodata_code || vc === cube.nodata_code) continue;
-      const v = cv[i].offset + vc * cv[i].scale;
-      if (!(v > 0)) continue;
-      const d = cf[i].offset + fc * cf[i].scale - mean;
-      c2 += (d * d) / v;
-    }
-    chi[p] = c2 / (cnt - 1);
+    bg[i] = vals.length > 20 ? median(vals) : 0;
   }
 
-  const threshold = 3.0;
-  const finite = Array.from(chi).filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
+  // 2. weighted polynomial in centred wavelength, per pixel
+  const lamMean = cube.wave_um.reduce((a, b) => a + b, 0) / Math.max(n, 1);
+  const lam = cube.wave_um.map((w) => w - lamMean);
+  const k = deg + 1;
+  const chi = new Float64Array(plane).fill(NaN);
+  const used = new Int16Array(plane);
+  for (let p = 0; p < plane; p++) {
+    const S = new Array(2 * k - 1).fill(0), T = new Array(k).fill(0);
+    let wf2 = 0, cnt = 0;
+    for (let i = 0; i < n; i++) {
+      if (!valid(i, p)) continue;
+      const v = decode(cv[i], data[(n + i) * plane + p]);
+      if (!(v > 0)) continue;
+      const f = decode(cf[i], data[i * plane + p]) - bg[i];
+      const w = 1 / (v + (floor * Math.abs(f)) ** 2);
+      let lp = 1;
+      for (let q = 0; q < 2 * k - 1; q++) { S[q] += w * lp; if (q < k) T[q] += w * f * lp; lp *= lam[i]; }
+      wf2 += w * f * f; cnt++;
+    }
+    used[p] = cnt;
+    if (cnt < k + 2) continue;
+    const M = Array.from({ length: k }, (_, a) => Array.from({ length: k }, (_, b) => S[a + b]));
+    const tr = M.reduce((s, row, i) => s + row[i], 0);
+    for (let i = 0; i < k; i++) M[i][i] += 1e-9 * tr;
+    const c = solveSmall(M, T);
+    if (!c) continue;
+    const chi2 = wf2 - c.reduce((s, ci, i) => s + ci * T[i], 0);
+    chi[p] = Math.max(chi2, 0) / Math.max(cnt - k, 1);
+  }
+
+  // 3. robust z against this field's own distribution
+  const finite = Array.from(chi).filter(Number.isFinite);
+  const med = median(finite);
+  const mad = 1.4826 * median(finite.map((v) => Math.abs(v - med)));
+  const z = new Float64Array(plane).fill(NaN);
+  if (mad > 0) for (let p = 0; p < plane; p++) if (Number.isFinite(chi[p])) z[p] = (chi[p] - med) / mad;
+
   const peaks: ChangeReport["peaks"] = [];
   const sep = 3;
   for (let y = 0; y < ny; y++) {
     for (let x = 0; x < nx; x++) {
-      const v = chi[y * nx + x];
+      const v = z[y * nx + x];
       if (!Number.isFinite(v) || v < threshold) continue;
       let isMax = true;
       for (let dy = -sep; dy <= sep && isMax; dy++) {
         for (let dx = -sep; dx <= sep; dx++) {
           const yy = y + dy, xx = x + dx;
           if (yy < 0 || yy >= ny || xx < 0 || xx >= nx) continue;
-          const u = chi[yy * nx + xx];
+          const u = z[yy * nx + xx];
           if (Number.isFinite(u) && u > v) { isMax = false; break; }
         }
       }
-      if (isMax) peaks.push({ x, y, chi2_per_dof: Math.round(v * 100) / 100, n_used: used[y * nx + x] });
+      if (isMax) {
+        peaks.push({ x, y, z: Math.round(v * 10) / 10,
+                     chi2_per_dof: Math.round(chi[y * nx + x] * 100) / 100, n_used: used[y * nx + x] });
+      }
     }
   }
-  peaks.sort((a, b) => b.chi2_per_dof - a.chi2_per_dof);
+  peaks.sort((a, b) => b.z - a.z);
 
   return {
     slug: bundle.slug, threshold,
-    median_chi2_per_dof: finite.length ? Math.round(finite[Math.floor(finite.length / 2)] * 1000) / 1000 : null,
-    n_significant_pixels: Array.from(chi).filter((v) => v > threshold).length,
+    median_chi2_per_dof: Number.isFinite(med) ? Math.round(med * 1000) / 1000 : null,
+    mad_chi2_per_dof: Number.isFinite(mad) ? Math.round(mad * 1000) / 1000 : null,
+    n_significant_pixels: Array.from(z).filter((v) => v > threshold).length,
     peaks: peaks.slice(0, 12),
-    method: "Chi-squared of each pixel's brightness against a single constant value, weighted by the " +
-      "measured noise. Untrained and transparent: it reports where the data disagree with “nothing happened here”.",
+    method: "Each exposure's own background is removed, then every pixel's brightness is fitted as a smooth " +
+      "curve in wavelength — because SPHEREx sees a different colour in each shot, a star's brightness " +
+      "legitimately varies with its spectrum. What that curve cannot explain is scored against the rest of " +
+      "this field, so “changed” means “varies far more than a typical pixel here”. No trained model.",
     caveat: "Flags change of any kind — real movement, variability, a cosmic ray, or the edge of a " +
       "saturated star. It is a place to look, not a discovery.",
   };
@@ -525,7 +602,7 @@ export async function getClassification(bundle: SkyBundle, x: number, y: number,
   }
   // In DEMO mode the browser already has the spectrum; the template fit runs here.
   const spec = await getSpectrum(bundle, x, y, r);
-  return classifyPoints(spec.points);
+  return classifyPoints(spec.points, bundle.classify?.odd_threshold);
 }
 
 export async function getOverlay(bundle: SkyBundle): Promise<Overlay> {
@@ -567,9 +644,9 @@ export async function differenceImage(bundle: SkyBundle, a: number, b: number): 
       for (let p = 0; p < plane; p++) {
         const fc = data[i * plane + p], vc = data[(n + i) * plane + p];
         if (fc === cube.nodata_code || vc === cube.nodata_code) continue;
-        const v = cv.offset + vc * cv.scale;
+        const v = decode(cv, vc);
         if (!(v > 0)) continue;
-        num[p] += (cf.offset + fc * cf.scale) / v;
+        num[p] += decode(cf, fc) / v;
         den[p] += 1 / v;
       }
     }

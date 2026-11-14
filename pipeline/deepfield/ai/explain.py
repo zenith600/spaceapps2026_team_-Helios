@@ -197,6 +197,22 @@ def _call_llm(facts: dict, timeout: float = LLM_TIMEOUT) -> str | None:
     return text
 
 
+#: Typographic characters models like to emit that render as tofu or mojibake in some fonts
+#: and terminals. gpt-oss-20b wrote "6‑arcmin" with U+2011 (non-breaking hyphen), which
+#: Windows PowerShell 5.1 displays as "6âarcmin". Plain equivalents read identically.
+_TYPOGRAPHY = str.maketrans({
+    "‐": "-", "‑": "-", "‒": "-", "–": "-", "—": " - ", "−": "-",
+    "‘": "'", "’": "'", "“": '"', "”": '"',
+    " ": " ", " ": " ", " ": " ", " ": " ", " ": " ",
+    "​": "", "⁠": "", "﻿": "",
+    "…": "...",
+})
+
+
+def _normalise(text: str) -> str:
+    return " ".join(text.translate(_TYPOGRAPHY).split())
+
+
 def _acceptable(text: str) -> bool:
     if not text or len(text) < 40 or len(text) > 600:
         return False
@@ -215,15 +231,21 @@ def explain_field(bundle: dict, *, known_bodies=None, spectrum=None, use_cache: 
     path = _cache_path(key)
     if use_cache and path.exists():
         try:
-            return json.loads(path.read_text())
+            cached = json.loads(path.read_text(encoding="utf-8"))
+            # Captions cached before normalisation existed still carry the odd characters;
+            # fix them on read rather than paying another minute-long model call.
+            cached["text"] = _normalise(cached.get("text", ""))
+            return cached
         except Exception:
             pass
 
     text, generator = None, "offline-facts"
     if allow_network and configured():
         raw = _call_llm(facts)
+        if raw:
+            raw = _normalise(raw)
         if raw and _acceptable(raw):
-            text = " ".join(raw.split())
+            text = raw
             generator = f"llm:{_env('LLM_MODEL', DEFAULT_MODEL)}"
     if text is None:
         text = offline_explanation(facts)
