@@ -12,9 +12,10 @@ import { TargetGallery } from "@/components/TargetGallery";
 import { VisitCompare } from "@/components/VisitCompare";
 import { MotionSummary } from "@/components/MotionTrack";
 import { UiModeToggle } from "@/components/UiModeToggle";
+import { BUILD_STEP, StillWorking, slowStepFor, useElapsed } from "@/components/StillWorking";
 import { Workstation } from "@/components/workstation/Workstation";
 import {
-  type ChangeReport, type SkyBundle,
+  type ChangeReport, type Job, type SkyBundle,
   formatDec, formatRa, getChangeMap, mjdLabel,
 } from "@/lib/sky";
 import { ZOOMS, useSkySession } from "@/lib/useSkySession";
@@ -45,11 +46,38 @@ export default function SkyPage() {
 }
 
 function LoadingBlock({ label }: { label: string }) {
+  const seconds = useElapsed(label);
   return (
     <div className="flex flex-col items-center gap-3 py-16">
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
       <p className="text-sm text-muted">{label}</p>
+      <StillWorking seconds={seconds} step={slowStepFor(label)} className="max-w-md text-center text-xs text-muted" />
     </div>
+  );
+}
+
+/** Progress while a view is built on the server. The server reports no image count until it has
+ *  one, so until then the bar moves on its own (that is activity, not a percentage). */
+function BuildProgress({ job }: { job: Job }) {
+  const seconds = useElapsed(job.job_id);
+  const known = job.n_total > 0;
+  const stage = job.message && !["queued", "complete"].includes(job.message) ? job.message : null;
+  return (
+    <>
+      <p>Fetching images from NASA…</p>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-panel">
+        {known ? (
+          <div className="h-full bg-accent transition-all" style={{ width: `${Math.max(4, Math.round(100 * job.progress))}%` }} />
+        ) : (
+          <div className="h-full w-full animate-pulse bg-accent/60" />
+        )}
+      </div>
+      <p className="text-xs text-muted">
+        {known ? `${job.n_done} of ${job.n_total} images` : stage ?? "working on the server"} · usually a few
+        minutes on our server, and instant for everyone once it&apos;s built.
+      </p>
+      <StillWorking seconds={seconds} step={BUILD_STEP} quietFor={0} />
+    </>
   );
 }
 
@@ -211,18 +239,8 @@ function SkyViewer() {
 
       {!busy && !bundle && (status === "not-built" || job) ? (
         <Card><CardContent className="flex flex-col gap-3 py-5 text-sm">
-          {job && job.state !== "done" ? (
-            <>
-              <p>Fetching images from NASA…</p>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-panel">
-                <div className="h-full bg-accent transition-all"
-                  style={{ width: `${Math.max(4, Math.round(100 * job.progress))}%` }} />
-              </div>
-              <p className="text-xs text-muted">
-                {job.n_total ? `${job.n_done} of ${job.n_total} images` : "starting up"} · this usually
-                takes a minute or two, and is instant next time.
-              </p>
-            </>
+          {job && (job.state === "queued" || job.state === "running") ? (
+            <BuildProgress job={job} />
           ) : (
             <>
               <p className="font-semibold">Ready to build this view</p>

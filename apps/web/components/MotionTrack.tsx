@@ -3,6 +3,7 @@
 // straight line fitted through them, a ring fixed where the source started, and a ring that
 // rides the fit to the current frame's date. The old blink-comparator trick -- a fixed
 // reference mark -- plus the measurement itself.
+import Link from "next/link";
 import { type Motion, motionAt } from "@/lib/sky";
 
 export function MotionTrack({ motion, npix, mjd, z, opacity = 1 }: {
@@ -88,7 +89,51 @@ export function MotionSummary({ motion, compact }: { motion: Motion; compact?: b
           Solid ring: where the fit puts it on the frame you are looking at. {motion.caveat}
         </p>
       ) : null}
+      {!compact ? <HowMotionIsMeasured motion={motion} /> : null}
     </div>
+  );
+}
+
+/** Plain-language version of pipeline/deepfield/sky/motion.py; the full maths is on /proof. */
+function HowMotionIsMeasured({ motion }: { motion: Motion }) {
+  const pix = motion.pixel_arcsec;
+  const n = motion.visits?.length ?? 0;
+  return (
+    <details className="group rounded-md border border-line bg-bg/40 px-3 py-2 text-[11px] text-muted">
+      <summary className="cursor-pointer select-none text-fg">How is this motion measured?</summary>
+      <ol className="mt-2 list-decimal space-y-1.5 pl-4">
+        <li>
+          <span className="text-fg">Find the star at each visit.</span> SPHEREx comes back to this patch every few
+          months. For each visit we combine its pictures, weighting the cleaner ones more, and skip pixels NASA
+          flags as saturated or bad.
+        </li>
+        <li>
+          <span className="text-fg">Pin down its position to a fraction of a pixel.</span> A star&apos;s light spreads
+          over a few pixels, so instead of picking the brightest pixel we fit the shape of that spread and take its
+          centre. That is how a {pix}″ pixel can still give each visit&apos;s position to within a tenth of a pixel. Visits where
+          the star is too faint or saturated are left out ({n} were usable here).
+        </li>
+        <li>
+          <span className="text-fg">Draw the best straight line through time.</span> The positions are plotted
+          against date, separately east–west and north–south. The slope of each line is the motion; how far the
+          points scatter around the line sets the ± error. If they scatter more than expected, the error grows.
+        </li>
+        <li>
+          <span className="text-fg">Turn it into a speed and a direction on the sky.</span> Pixels per year times
+          {" "}{pix}″ per pixel gives arcseconds per year; the two slopes together give the direction.
+        </li>
+        <li>
+          <span className="text-fg">Check it against Gaia.</span> ESA&apos;s Gaia satellite has measured this star&apos;s
+          motion far more precisely. We look Gaia up only <em>after</em> measuring, and report how many of our own
+          error bars apart the two answers are.
+        </li>
+      </ol>
+      <p className="mt-2">
+        The track on the image is that fit: the dashed ring is the first visit, the cyan dots are where we found the
+        star each visit, and the solid ring slides along the fitted line to the date of the frame you are watching.
+        Full maths, tests and results for every target: <Link href="/proof" className="text-accent underline underline-offset-2">Proof</Link>.
+      </p>
+    </details>
   );
 }
 

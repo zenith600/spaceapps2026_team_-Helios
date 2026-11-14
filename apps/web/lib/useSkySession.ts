@@ -5,7 +5,7 @@
 //
 // Moved verbatim out of app/sky/page.tsx so the Simple view and the workstation load data
 // through the same code. The URL stays the source of truth for what is shown.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DEMO } from "@/lib/api";
 import {
@@ -17,6 +17,11 @@ import {
 import type { FrameMode } from "@/components/SkyPlayer";
 
 /** Field-of-view choices in plain words. Degrees stay visible, but nobody has to think in them. */
+/** Consecutive failed job polls (1.5 s apart) before the build is reported as lost. */
+const MAX_POLL_FAILURES = 10;
+/** A build running this long is far outside normal; say so (and keep polling). */
+const BUILD_TOO_LONG_MS = 20 * 60 * 1000;
+
 export const ZOOMS: { fov: number; label: string; hint: string }[] = [
   { fov: 0.05, label: "Close in", hint: "3 arcmin" },
   { fov: 0.1, label: "Normal", hint: "6 arcmin" },
@@ -132,15 +137,38 @@ export function useSkySession() {
   }, [bundle]);
 
   // ---- live build job ----------------------------------------------------
+  // The UI promises "if anything goes wrong, we'll tell you". So a build never ends in a silent
+  // spin: a job the server has forgotten (404 "unknown job", e.g. after a restart) or a server
+  // that stops answering for ~15 s ends the build with a visible error, and a build that runs far
+  // longer than normal says so (while still polling, in case it finishes).
+  const pollFailures = useRef(0);
+  const buildStarted = useRef(0);
+  const warnedSlow = useRef(false);
   useEffect(() => {
     if (!job?.job_id || job.state === "done" || job.state === "error") return;
     const id = setInterval(async () => {
       try {
         const j = await getSkyJob(job.job_id!);
+        pollFailures.current = 0;
         setJob(j);
-        if (j.state === "done") { setBundle(await getSkyBundle(j.slug)); setStatus(null); }
-        else if (j.state === "error") { setError(j.error || "build failed"); }
-      } catch { /* keep polling */ }
+        if (j.state === "done") { setBundle(await getSkyBundle(j.slug)); setStatus(null); setError(null); }
+        else if (j.state === "error") { setError(`The build stopped: ${j.error || "unknown error"}. Press “Build it” to try again.`); }
+        else if (!warnedSlow.current && buildStarted.current && Date.now() - buildStarted.current > BUILD_TOO_LONG_MS) {
+          warnedSlow.current = true;
+          setError("This build has been running for over 20 minutes, far longer than usual. NASA's archive may be "
+            + "struggling; we'll keep checking, or you can come back later.");
+        }
+      } catch (e) {
+        pollFailures.current += 1;
+        const msg = String((e as Error).message || e);
+        const lost = /unknown job/i.test(msg);
+        if (lost || pollFailures.current >= MAX_POLL_FAILURES) {
+          setJob({ ...job, state: "error", error: msg });     // stops polling
+          setError(lost
+            ? "The server no longer knows about this build (it may have restarted). Press “Build it” to start again; images it already downloaded are reused."
+            : `Lost contact with the server while building (${msg}). Press “Build it” to try again; images already downloaded are reused.`);
+        }
+      }
     }, 1500);
     return () => clearInterval(id);
   }, [job]);
@@ -148,6 +176,9 @@ export function useSkySession() {
   const build = useCallback(async (force = false) => {
     if (!target) return;
     setError(null);
+    pollFailures.current = 0;
+    warnedSlow.current = false;
+    buildStarted.current = Date.now();
     try {
       const j = await startSkyJob(target.ra_deg, target.dec_deg, fov, { label: target.name });
       setJob(j);

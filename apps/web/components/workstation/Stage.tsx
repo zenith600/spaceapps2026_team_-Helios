@@ -4,7 +4,9 @@
 import { useState } from "react";
 import { FolderOpen, LoaderCircle, RefreshCw, Telescope, TriangleAlert } from "lucide-react";
 import { TargetGallery } from "@/components/TargetGallery";
+import { BUILD_STEP, StillWorking, slowStepFor, useElapsed } from "@/components/StillWorking";
 import { DEMO } from "@/lib/api";
+import type { Job } from "@/lib/sky";
 import { Canvas } from "./Canvas";
 import { useWS } from "./context";
 import { TextBtn } from "./ui";
@@ -74,17 +76,42 @@ function Dialog({ title, children }: { title: string; children: React.ReactNode 
   );
 }
 
+function BusyState({ status }: { status: string | null }) {
+  const seconds = useElapsed(status);
+  return (
+    <div className="flex max-w-md flex-col items-center gap-3 text-center text-ws-muted">
+      <LoaderCircle size={22} className="animate-spin text-ws-sel" />
+      <span className="text-[12px]">{status ?? "Loading…"}</span>
+      <StillWorking seconds={seconds} step={slowStepFor(status)} className="text-[11px] text-ws-muted" />
+    </div>
+  );
+}
+
+/** The server reports no image count until it has one; until then the bar shows activity, not a percentage. */
+function BuildingState({ job }: { job: Job }) {
+  const seconds = useElapsed(job.job_id);
+  const known = job.n_total > 0;
+  const stage = job.message && !["queued", "complete"].includes(job.message) ? job.message : null;
+  return (
+    <Dialog title="Fetching images from NASA…">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-ws-raised">
+        {known
+          ? <div className="h-full bg-ws-sel transition-all" style={{ width: `${Math.max(4, Math.round(100 * job.progress))}%` }} />
+          : <div className="h-full w-full animate-pulse bg-ws-sel/60" />}
+      </div>
+      <p className="text-[11px] text-ws-muted">
+        {known ? `${job.n_done} of ${job.n_total} images` : stage ?? "working on the server"} · usually a few minutes on
+        our server, and instant for everyone once it&apos;s built. The rest of the workstation stays usable meanwhile.
+      </p>
+      <StillWorking seconds={seconds} step={BUILD_STEP} quietFor={0} className="text-[11px] text-ws-muted" />
+    </Dialog>
+  );
+}
+
 function EmptyState() {
   const ws = useWS();
   const s = ws.session;
-  if (s.busy) {
-    return (
-      <div className="flex flex-col items-center gap-3 text-ws-muted">
-        <LoaderCircle size={22} className="animate-spin text-ws-sel" />
-        <span className="text-[12px]">{s.status ?? "Loading…"}</span>
-      </div>
-    );
-  }
+  if (s.busy) return <BusyState status={s.status} />;
   if (s.status === "not-prebuilt") {
     return (
       <Dialog title="This view hasn’t been prepared yet">
@@ -109,19 +136,7 @@ function EmptyState() {
   }
   if (s.status === "not-built" || s.job) {
     const j = s.job;
-    if (j && j.state !== "done") {
-      return (
-        <Dialog title="Fetching images from NASA…">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-ws-raised">
-            <div className="h-full bg-ws-sel transition-all" style={{ width: `${Math.max(4, Math.round(100 * j.progress))}%` }} />
-          </div>
-          <p className="text-[11px] text-ws-muted">
-            {j.n_total ? `${j.n_done} of ${j.n_total} images` : "starting up"} · {j.state} · this usually takes a minute
-            or two, and is instant next time. The rest of the workstation stays usable meanwhile.
-          </p>
-        </Dialog>
-      );
-    }
+    if (j && (j.state === "queued" || j.state === "running")) return <BuildingState job={j} />;
     const e = s.epochs;
     return (
       <Dialog title="Ready to build this view">
