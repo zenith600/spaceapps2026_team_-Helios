@@ -2,6 +2,9 @@
 
 NASA Space Apps 2026 entry.
 
+**Live demo: <http://144.24.143.52/sky>** — the ready-made views, served from frozen SPHEREx
+files (no API needed). Try Barnard's Star, then switch the Interface toggle to **Pro**.
+
 **Type a position, watch that patch of sky change.** The Sky Viewer at `/sky` — the site's
 front door — is the answer to the challenge objective: enter Right Ascension and declination
 (or a name), and every SPHEREx visit to that patch plays back as a little video, so anything
