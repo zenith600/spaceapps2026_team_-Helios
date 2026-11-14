@@ -8,6 +8,7 @@ import {
 import { MODES } from "@/components/SkyPlayer";
 import { UiModeToggle } from "@/components/UiModeToggle";
 import { DEMO } from "@/lib/api";
+import { useLiveApi } from "@/lib/liveApi";
 import { formatDec, formatRa } from "@/lib/sky";
 import { ZOOMS } from "@/lib/useSkySession";
 import { cn } from "@/lib/utils";
@@ -147,6 +148,7 @@ function WindowMenu() {
 function SettingsMenu() {
   const ws = useWS();
   const p = ws.prefs;
+  const live = useLiveApi();
   return (
     <Menu align="right" width={240} trigger={() => <IconBtn icon={Settings} label="Settings" />}>
       {() => (
@@ -162,7 +164,12 @@ function SettingsMenu() {
           <MenuItem checked={p.hints} onClick={() => ws.setPrefs({ hints: !p.hints })}>Hints</MenuItem>
           <MenuSep />
           <div className="px-2.5 py-1 text-[10.5px] leading-snug text-ws-dim">
-            Layout and these settings are kept in this browser only. {DEMO ? "Serving ready-made views (no server)." : "Connected to the live API."}
+            Layout and these settings are kept in this browser only. {{
+              demo: "Serving ready-made views (no server).",
+              checking: "Checking the live API…",
+              live: "Connected to the live API.",
+              unreachable: "Set up for the live API, but it is not answering right now.",
+            }[live]}
           </div>
         </>
       )}

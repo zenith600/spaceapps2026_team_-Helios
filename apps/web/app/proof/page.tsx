@@ -366,7 +366,15 @@ export default function Proof() {
             <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted">
               <li><span className="text-fg">Independent reference.</span> Every moving star in section 1 is graded against Gaia DR3, which is never used as an input.</li>
               <li><span className="text-fg">Null test.</span> RW Aurigae should not move; the same pipeline measures it as consistent with zero.</li>
-              <li><span className="text-fg">Change detection finds the right thing.</span> On the five challenge fields each target flags at its own position (recorded 14 Nov 2026: RW Aurigae z = 43, Barnard&apos;s Star 17, R Draconis 10, WISE 0855 5). Reproduce it: open RW Aurigae and press “Find what changed”.</li>
+              <li>
+                <span className="text-fg">Change detection finds the right thing.</span> Measured on the current views
+                (15 Nov 2026, with the same <Code>change_map</Code> the viewer runs): RW Aurigae z = 43 and ε Indi Ba z = 25,
+                each the strongest spot in its field; Barnard&apos;s Star z ≈ 115 within 2 px of its fitted position (the
+                field&apos;s top spot, z = 193, is 4.5 px away in its bright, mostly flagged halo); R Draconis z = 7, fourth in
+                its field. WISE 0855 does not flag at the view centre (z ≈ 0): the brief&apos;s 2010 position is about 2′ from
+                where it is now, the same reason no motion is claimed for it. Reproduce: open a target and press
+                “Find what changed”.
+              </li>
               <li><span className="text-fg">Spectra make physical sense.</span> Barnard&apos;s Star, an M4 red dwarf with an effective temperature near 3,100–3,200 K, reads “star-like” at about 3,100–3,350 K wherever its spectrum is usable.</li>
               <li><span className="text-fg">Empty sky behaves like noise.</span> After background removal the median χ²/dof over empty sky is ≈ 1 (0.95 on Barnard&apos;s Star&apos;s field), as it should be when nothing changes.</li>
             </ul>

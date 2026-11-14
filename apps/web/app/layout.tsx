@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
+import { pageMeta, SITE_DESCRIPTION, SITE_TITLE } from "@/lib/meta";
 
-export const metadata: Metadata = {
-  title: "Deep Field — Planet X × SPHEREx",
-  description: "We searched where the pictures can't see. Shift-and-stack search for Planet Nine in SPHEREx data. NASA Space Apps 2026.",
-};
+/** Site-wide default. Planet X routes override it in their own layout.tsx. */
+export const metadata: Metadata = pageMeta(SITE_TITLE, SITE_DESCRIPTION);
+
 export const viewport: Viewport = { themeColor: "#07080c", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

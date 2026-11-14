@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { DEMO } from "@/lib/api";
+import { LIVE_API_LABEL, useLiveApi } from "@/lib/liveApi";
 
 /**
  * The Sky Viewer is the challenge tool and the front door. The Planet X search is a second,
@@ -24,6 +24,7 @@ const MAIN = [
 
 export function Nav() {
   const path = usePathname();
+  const live = useLiveApi();
   const experimental = EXPERIMENTAL.some((it) => path === it.href);
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur">
@@ -57,8 +58,12 @@ export function Nav() {
             ))}
           </div>
         </nav>
-        <span className="ml-auto hidden text-[10px] text-muted mono md:inline">
-          {DEMO ? "ready-made views" : "live NASA access"}
+        <span className={cn("ml-auto hidden text-[10px] mono md:inline", live === "unreachable" ? "text-amber-400" : "text-muted")}
+          title={live === "demo" ? "This copy serves the ready-made targets only; new positions need the live API."
+            : live === "live" ? "The live API answered: any position can be built from NASA's archive."
+            : live === "unreachable" ? "This copy is set up for the live API, but it is not answering right now."
+            : undefined}>
+          {LIVE_API_LABEL[live]}
         </span>
       </div>
       {experimental ? (
