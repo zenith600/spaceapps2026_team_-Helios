@@ -28,8 +28,13 @@ Two interfaces over the same data and the same URL: **Simple** (the default — 
 words, works on a phone) and **Pro** (`?ui=pro`, a desktop analysis workstation with layers,
 a timeline, measurement tools, a processing graph and live cache/performance panels).
 
+**`/proof` is the evidence.** It loads every view's motion measurement live and grades it
+against Gaia DR3, plots Barnard's Star visit by visit, and writes out the maths of every
+method (motion fit, epoch propagation, spectra, classifier, change detection), the tests, and
+the bugs that real data caught.
+
 A second, separate project lives under **Planet X · experimental** (`/hunt`, `/lab`,
-`/classify`, `/proof`): a shift-and-stack search for Planet Nine that currently runs on a
+`/classify`, `/hunt/proof`): a shift-and-stack search for Planet Nine that currently runs on a
 synthetic SAMPLE bundle. Every page there says so in a banner; nothing here is a discovery.
 
 ```
@@ -189,7 +194,7 @@ and were all released on or before 2026-10-30.
 ## Repo layout
 
 ```
-apps/web/        Next.js 16 (Sky Viewer, The Hunt, Candidate Lab, Classify, Proof)
+apps/web/        Next.js 16 (Sky Viewer, Proof, and the Planet X pages)
 apps/api/        FastAPI (sky, map, candidates, task, vote) + SQLite/Supabase store
 pipeline/        deepfield: data wrappers, sky viewer, prior map, stacking, injection, spectral, ml, agents, crowd
 data/sky/        built sky-viewer bundles (ignored);  data/samples/  committed fake bundle

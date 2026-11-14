@@ -51,10 +51,11 @@
     <tr><th>Page</th><th>Address</th><th>What it is for</th></tr>
     <tr><td>Sky Viewer · Simple</td><td><code>/sky</code></td><td>The main tool. Pick a target or type coordinates, then play back every SPHEREx visit. This is the default view.</td></tr>
     <tr><td>Sky Viewer · Pro</td><td><code>/sky?ui=pro</code></td><td>The same data in an analysis workstation, with layers, a timeline, measurements, panels and a cache view.</td></tr>
+    <tr><td>Proof</td><td><code>/proof</code></td><td>How we know the tool is right: every measurement graded against Gaia DR3, the full maths of each method, the tests, and the known limits.</td></tr>
     <tr><td>The Hunt</td><td><code>/hunt</code></td><td><b>Experimental, simulated.</b> An overview of the Planet Nine search.</td></tr>
     <tr><td>Candidate Lab</td><td><code>/lab</code></td><td><b>Experimental, simulated.</b> Inspect injected test candidates and run the classifier on them.</td></tr>
     <tr><td>Classify</td><td><code>/classify</code></td><td><b>Experimental, simulated.</b> Phone-friendly crowd voting on candidate cards.</td></tr>
-    <tr><td>Proof</td><td><code>/proof</code></td><td><b>Experimental, simulated.</b> Injection-recovery completeness and honest limits.</td></tr>
+    <tr><td>Injection tests</td><td><code>/hunt/proof</code></td><td><b>Experimental, simulated.</b> Injection-recovery completeness of the Planet X search.</td></tr>
   </table>
   <p>Opening the site root (<code>/</code>) takes you straight to the Sky Viewer.</p>
 
@@ -62,7 +63,8 @@
   <table>
     <tr><td>Deep Field logo</td><td>Back to the Sky Viewer start page.</td></tr>
     <tr><td>Sky Viewer</td><td>The main tool.</td></tr>
-    <tr><td>Planet X · experimental</td><td>Links to The Hunt, Candidate Lab, Classify and Proof. Every one of these pages carries a green “simulated data” banner.</td></tr>
+    <tr><td>Proof</td><td>The evidence that the tool's measurements are right (section 6).</td></tr>
+    <tr><td>Planet X · experimental</td><td>Links to The Hunt, Candidate Lab, Classify and Injection tests. Every one of these pages carries a green “simulated data” banner.</td></tr>
     <tr><td>Data-source badge</td><td>“live NASA access” when the API is connected (as on the live demo): new positions are built from NASA's archive. “ready-made views” on a static copy, which serves only the prepared targets. Screenshots in this guide were taken on a static copy.</td></tr>
   </table>
 </section>
@@ -120,7 +122,7 @@
     <tr><td>Undo / Redo</td><td>Steps back and forward through edits (<kbd>Ctrl+Z</kbd>, <kbd>Ctrl+Shift+Z</kbd>).</td></tr>
     <tr><td>Workspace list</td><td>The same workspace layouts as the Window menu.</td></tr>
     <tr><td>⚙ Settings</td><td>Coordinate format (hms/dms or decimal degrees), and canvas crosshair, pixel grid, compass and hints. Stored in this browser only.</td></tr>
-    <tr><td>⌨ Keyboard shortcuts</td><td>Opens the shortcut sheet (<kbd>?</kbd>); see section 6.</td></tr>
+    <tr><td>⌨ Keyboard shortcuts</td><td>Opens the shortcut sheet (<kbd>?</kbd>); see section 7.</td></tr>
     <tr><td>Simple / Pro</td><td>Back to the Simple view, keeping the same target.</td></tr>
   </table>
   <h3>Options bar and canvas</h3>
@@ -178,7 +180,21 @@
 </section>
 
 <section class="page">
-  <h2>6 · Keyboard shortcuts</h2>
+  <h2>6 · Proof: how we know the tool is right</h2>
+  <figure><img src="img/13-proof.jpg" alt="Proof page"><figcaption>The Proof page at <code>/proof</code>. Every number is loaded live from the same measurement files the viewer uses.</figcaption></figure>
+  <table>
+    <tr><td>Scoreboard</td><td>Moving stars that agree with Gaia DR3, the control star that shows no motion, honest refusals, and the per-year precision on Barnard's Star in pixels.</td></tr>
+    <tr><td>1 · Motion vs Gaia</td><td>Every view's measured motion next to Gaia DR3, with the difference in units of our error (agreement means under 3σ). It includes views built live on the server (Teegarden's Star). Each target name opens it in the Sky Viewer.</td></tr>
+    <tr><td>Charts</td><td><b>Measured against the answer key:</b> SPHEREx vs Gaia, one point per star, on a line of perfect agreement. <b>Barnard's Star, visit by visit:</b> its fitted position at each usable visit, our straight-line fit, and Gaia's predicted slope.</td></tr>
+    <tr><td>2–4 · Methods</td><td>The maths of the motion fit (background removal, noise-weighted coadd, Gaussian position fit, line fit, conversion to the sky, grading against Gaia), the epoch propagation that keeps fast movers in view, spectra on the fly, the shape classifier, and change detection.</td></tr>
+    <tr><td>5 · Evidence</td><td>Checks on real data, the automated tests with planted answers, and the bugs the tests missed that real data caught.</td></tr>
+    <tr><td>6–7 · Limits, provenance</td><td>Known limits stated plainly, and where every dataset comes from.</td></tr>
+  </table>
+  <figure class="half"><img src="img/14-proof-charts.jpg" alt="Proof charts"><figcaption>The two charts: measured vs Gaia, and Barnard's Star visit by visit.</figcaption></figure>
+</section>
+
+<section class="page">
+  <h2>7 · Keyboard shortcuts</h2>
   <p>Press <kbd>?</kbd> in the Pro view for this sheet. <kbd>Space</kbd> and the arrow keys also work in the Simple view. Shortcuts are ignored while you are typing in a field.</p>
   <table class="keys">
     <tr><th>Key</th><th>Action</th><th>Key</th><th>Action</th></tr>
@@ -195,7 +211,7 @@
     <tr><td><kbd>\</kbd></td><td>Show / hide the panel dock</td><td><kbd>Esc</kbd></td><td>Close a dialog / leave a text field</td></tr>
   </table>
 
-  <h2 style="margin-top:6mm">7 · Planet X pages (experimental)</h2>
+  <h2 style="margin-top:6mm">8 · Planet X pages (experimental)</h2>
   <div class="note">These four pages run on a <b>synthetic sample</b> with injected test planets. They show how a Planet Nine search pipeline would work; nothing on them is a discovery. Each one carries a green banner saying so, with a link back to the Sky Viewer.</div>
   <div class="grid2">
     <figure><img src="img/09-hunt.jpg" alt="The Hunt"><figcaption><b>The Hunt</b> (<code>/hunt</code>)</figcaption></figure>
@@ -206,7 +222,7 @@
 <section>
   <div class="grid2">
     <figure><img src="img/11-classify.jpg" alt="Classify"><figcaption><b>Classify</b> (<code>/classify</code>)</figcaption></figure>
-    <figure><img src="img/12-proof.jpg" alt="Proof"><figcaption><b>Proof</b> (<code>/proof</code>)</figcaption></figure>
+    <figure><img src="img/12-proof.jpg" alt="Injection tests"><figcaption><b>Injection tests</b> (<code>/hunt/proof</code>)</figcaption></figure>
   </div>
   <table>
     <tr><th>Page · control</th><th>What it does</th></tr>
@@ -219,7 +235,7 @@
     <tr><td>Lab · Score it here</td><td>Runs our small classifier, trained from scratch on injections, in the browser; shown next to the rule-based score and the crowd vote.</td></tr>
     <tr><td>Classify · pause</td><td>Stops the frame blink.</td></tr>
     <tr><td>Classify · Real mover / Artifact / Nothing</td><td>Your vote on the card; you can also tap the spot first. About 1 card in 10 is a hidden test that trains your reliability score.</td></tr>
-    <tr><td>Proof</td><td>No buttons. Charts of the fraction of injected planets recovered, by brightness and by distance, followed by the honest list of limits.</td></tr>
+    <tr><td>Injection tests</td><td>No buttons. Charts of the fraction of injected planets recovered, by brightness and by distance, followed by the honest list of limits.</td></tr>
   </table>
 </section>
 
