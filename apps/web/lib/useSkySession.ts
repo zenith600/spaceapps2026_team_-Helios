@@ -99,8 +99,9 @@ export function useSkySession() {
           try {
             const e = await getEpochs(t.ra_deg, t.dec_deg, fov);
             if (!cancelled) { setEpochs(e); setStatus(e.n_exposures === 0 ? "no-coverage" : "not-built"); }
-          } catch {
-            if (!cancelled) setStatus("not-built");
+          } catch (err) {
+            // e.g. 503 when NASA's archive is down: say so, rather than implying there is no data here
+            if (!cancelled) { setError(String((err as Error).message || err)); setStatus("not-built"); }
           }
           if (!cancelled) setBusy(false);
         }

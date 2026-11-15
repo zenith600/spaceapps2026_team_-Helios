@@ -172,7 +172,10 @@ export function SkySpectrum({ bundle, pixel, radius, onRadius, onJump }: {
                   <span>colour temperature <span className="mono text-fg">{cls.temperature.temperature_k} K</span></span>
                 ) : null}
                 {cls.methane_score != null ? (
-                  <span>methane score <span className="mono text-fg">{cls.methane_score.toFixed(2)}</span></span>
+                  <span title="exp(−½Δχ²) of the methane shape, normalised over the three shapes tried. A relative weight between these three models only — not the probability that the object contains methane.">
+                    methane-shape relative weight <span className="mono text-fg">{cls.methane_score.toFixed(2)}</span>
+                    <span className="text-muted"> (not a probability)</span>
+                  </span>
                 ) : null}
               </div>
               <details className="mt-1.5 text-[10px] text-muted">

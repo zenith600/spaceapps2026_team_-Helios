@@ -254,6 +254,12 @@ def sky_epochs(ra: float = Query(..., ge=0, le=360), dec: float = Query(..., ge=
                max_frames: int = 48, per_visit: int = 16, refresh: bool = False):
     """What SPHEREx has at this position. One cached SIA2 query per collection, no images."""
     df, meta = SVC.search_epochs(ra, dec, fov, max_age_hours=(FRESHNESS_TTL_HOURS if refresh else None))
+    per = meta.get("per_collection", {})
+    errors = {c: v.get("error") for c, v in per.items() if v.get("error")}
+    if len(df) == 0 and errors and len(errors) == len(per):
+        # Every collection failed: an archive outage, which says nothing about SPHEREx coverage.
+        raise HTTPException(503, "NASA's IRSA archive is not answering right now, so we cannot tell what SPHEREx has "
+                                 "observed here. This is not evidence that it hasn't; please try again in a few minutes.")
     if len(df) == 0:
         return {"ra_deg": ra, "dec_deg": dec, "fov_deg": fov, "n_exposures": 0, "visits": [],
                 "search": meta, "estimate": None,
