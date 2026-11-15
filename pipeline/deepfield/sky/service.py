@@ -401,6 +401,12 @@ def build_sky_bundle(req: SkyRequest, out_root: Path | None = None, *, progress=
     df, search_meta = search_epochs(req.ra_deg, req.dec_deg, req.fov_deg, req.collections,
                                     max_age_hours=max_age_hours)
     if len(df) == 0:
+        errors = {c: v.get("error") for c, v in search_meta.get("per_collection", {}).items() if v.get("error")}
+        if errors and len(errors) == len(search_meta.get("per_collection", {})):
+            # Every collection failed to answer: that is an archive outage, not an empty sky.
+            raise ConnectionError(
+                f"NASA's IRSA archive did not answer the coverage search ({'; '.join(f'{c}: {e}' for c, e in errors.items())}). "
+                "This is not evidence that SPHEREx has not observed this position; try again later.")
         raise LookupError(
             f"No SPHEREx exposures cover RA {req.ra_deg:.5f} Dec {req.dec_deg:+.5f} in "
             f"{', '.join(search_meta['collections_searched'])}. SPHEREx surveys the whole sky "

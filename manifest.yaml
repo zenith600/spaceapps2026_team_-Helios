@@ -125,6 +125,31 @@ datasets:
       precise positions, magnitudes and proper motions overlaid on a field. The brief
       suggests Gaia explicitly. Optional: the viewer works without it.
 
+  - id: irsa_gator_catalogs
+    name: Gaia DR3 (IRSA mirror), 2MASS Extended Source Catalog and AllWISE via IRSA Gator
+    owner: NASA/IPAC Infrared Science Archive (Gaia DR3 data by ESA/DPAC)
+    country: USA
+    licence: Public domain (NASA data policy); Gaia DR3 under the ESA Gaia Data Licence with attribution
+    access: ["https://irsa.ipac.caltech.edu/cgi-bin/Gator/nph-query"]
+    domains: [irsa.ipac.caltech.edu]
+    optional: true
+    used_for: >
+      validation: Gaia DR3 astrometry (positions, parallaxes, proper motions, covariances) to
+      check the official SPHEREx WCS and to grade motion measurements; 2MASS XSC and AllWISE
+      ext_flg to identify extended sources. Used when IRSA TAP or ESA's archive are down.
+
+  - id: ned_objdir
+    name: NASA/IPAC Extragalactic Database (NED) object directory, via NED TAP
+    owner: NASA/IPAC (Caltech)
+    country: USA
+    licence: Free for research use with acknowledgement of NED
+    access: ["https://ned.ipac.caltech.edu/tap/sync"]
+    domains: [ned.ipac.caltech.edu]
+    optional: true
+    used_for: >
+      galaxy identification: catalogued object type (prefphytype) and redshift for sources in
+      a field. Coverage is heterogeneous; an absent entry is not evidence of absence.
+
   - id: cds_aladin_lite
     name: Aladin Lite v3 sky atlas (CDS)
     owner: Centre de Donnees astronomiques de Strasbourg (CNRS)

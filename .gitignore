@@ -16,3 +16,4 @@ out/
 *.sqlite
 AGENTS.md
 .vercel/
+data/validation/

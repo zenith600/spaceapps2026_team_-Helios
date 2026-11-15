@@ -1,0 +1,49 @@
+# Deep Field validation run, configuration v1.
+# Run:  PYTHONPATH=pipeline:apps/api python -m deepfield.validation --config pipeline/deepfield/validation/configs/v1.yaml
+#
+# Split protocol (enforced by the runner, recorded in the log):
+#   development  → choose the covariance policy (raw vs χ²-inflated) from injection coverage
+#   calibration  → measure the astrometric systematic floor and the photometric floor (f_sys)
+#   freeze       → parameters written to frozen_params.json with a hash, BEFORE holdout data is read
+#   holdout      → everything evaluated once with the frozen parameters
+name: deepfield-validation
+version: 1
+seed: 20261115
+
+fields:
+  - {id: rw_aur,   name: "RW Aurigae",      slug: ra76.9565-dec+30.4014-fov0.100,  split: development, target: brightest_near_centre}
+  - {id: barnard,  name: "Barnard's Star",  slug: ra269.4463-dec+4.7679-fov0.100,  split: development, target: "4472832130942575872"}
+  - {id: eps_ind,  name: "Epsilon Indi B",  slug: ra331.0964-dec-56.8006-fov0.100, split: calibration, target: "6412596012146801152"}
+  - {id: r_dra,    name: "R Draconis",      slug: ra248.1676-dec+66.7550-fov0.100, split: holdout,     target: brightest_near_centre}
+  - {id: wise0855, name: "WISE 0855-0714",  slug: ra133.7951-dec-7.2451-fov0.100,  split: holdout,     target: null}
+  - {id: teegarden, name: "Teegarden's Star", slug: ra43.2795-dec+16.8539-fov0.100, split: holdout,    target: "35227046884571776"}
+  - {id: hilat,    name: "High-latitude field (RA 210.25, Dec -5.5)", slug: ra210.2500-dec-5.5000-fov0.100, split: holdout, target: null, galaxy_field: true}
+
+window_half_px: 45            # every exposure is measured in the same 91×91 window around the field centre
+gaia_g_max_for_prediction: 20.5
+detection_nsigma: 5.0
+
+provisional:                  # used only before the split that calibrates them
+  sys_floor_arcsec: 0.3
+  covariance_policy: inflated
+  f_sys: 0.05
+
+variability: {p_threshold: 0.0027, fdr_q: 0.05, min_epochs: 6}
+extendedness: {p_threshold: 0.001, min_blur_px: 0.5, exposures_per_source: 6, max_sources_per_field: 40}
+registration: {max_fraction_inconsistent: 0.05, min_epochs: 5}
+
+pass_criteria:
+  official_wcs:   {min_confirmed_per_exposure: 5, max_median_residual_arcsec: 0.6, max_abs_mean_offset_arcsec: 0.6}
+  seeded_solve:   {min_matches: 6, min_vote_ratio: 2.0, max_out_of_sample_rms_px: 0.35, max_scale_deviation: 0.02}
+
+injection:
+  counts: {static: 36, moving: 36, variable: 36, steep: 18, extended: 18, blend: 10}
+  snr_range: [2.0, 300.0]
+  pm_range_arcsec_yr: [0.5, 12.0]
+  var_amplitudes: [0.1, 0.2, 0.5]
+  var_period_days: [30.0, 400.0]
+  steep_beta: [-3.0, 3.0]
+  blur_px: [0.75, 1.0, 1.5, 2.0]
+  blend_sep_px: [0.6, 2.5]
+  batch_size: 12
+  radius_px: 38
